@@ -109,11 +109,14 @@ const ResultCard = styled.div`
 function TestTaker() {
   const { id } = useParams();
   const [test, setTest] = useState(null);
+  const [mode, setMode] = useState('Test'); // 'Practice' or 'Test'
   const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [timerExpired, setTimerExpired] = useState(false);
+  const [overdueSeconds, setOverdueSeconds] = useState(0);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -130,7 +133,14 @@ function TestTaker() {
   useEffect(() => {
     if (isSubmitted) return;
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+      setTimeLeft(prev => {
+          if (prev <= 0) {
+              setTimerExpired(true);
+              setOverdueSeconds(os => os + 1);
+              return 0;
+          }
+          return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [isSubmitted]);
@@ -143,41 +153,77 @@ function TestTaker() {
 
   const handleSelect = (idx) => {
     if (isSubmitted) return;
-    setAnswers({ ...answers, [currentQ]: idx });
+    // In practice mode, we allow selection but maybe prevent changing? 
+    // Usually practice mode allows exploration.
+    setAnswers({ ...answers, [currentQ]: { 
+        index: idx, 
+        overdue: timerExpired 
+    } });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (window.confirm('Submit test?')) {
       let correctCount = 0;
-      test.questions.forEach((q, idx) => {
-          const selectedIdx = answers[idx];
-          if (selectedIdx !== undefined && q.options[selectedIdx].isCorrect) {
-              correctCount++;
-          }
+      const submissionAnswers = test.questions.map((q, idx) => {
+          const ans = answers[idx];
+          const isCorrect = ans !== undefined && q.options[ans.index].isCorrect;
+          if (isCorrect) correctCount++;
+          return {
+              questionIndex: idx,
+              selectedOption: ans?.index ?? -1,
+              isCorrect,
+              isOverdue: ans?.overdue ?? false
+          };
       });
+
       setScore(correctCount);
       setIsSubmitted(true);
+
+      // Save attempt to backend
+      try {
+          await axios.post(`http://localhost:5000/api/tests/${id}/attempt`, {
+              score: correctCount,
+              totalQuestions: test.questions.length,
+              duration: (30 * 60) - timeLeft,
+              overdueTime: overdueSeconds,
+              answers: submissionAnswers,
+              mode
+          });
+      } catch (err) {
+          console.error("Failed to save attempt", err);
+      }
     }
   };
 
   if (!test) return <div>Loading...</div>;
 
   const currentQuestion = test.questions[currentQ];
+  const currentAnswer = answers[currentQ];
+  const showFeedback = mode === 'Practice' ? (currentAnswer !== undefined) : isSubmitted;
 
   return (
     <Container>
       <Header>
         <div>
           <h3>{test.title}</h3>
-          <small>Mode: {isSubmitted ? 'Result' : 'Practice'}</small>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <small>Mode: </small>
+              <select value={mode} onChange={(e) => setMode(e.target.value)} disabled={currentAnswer !== undefined || isSubmitted}>
+                  <option value="Test">Test (Submit at end)</option>
+                  <option value="Practice">Practice (Instant Feedback)</option>
+              </select>
+          </div>
         </div>
-        <TimerDisplay>{formatTime(timeLeft)}</TimerDisplay>
+        <TimerDisplay style={{ color: timerExpired ? 'red' : '#D4A373' }}>
+            {timerExpired ? `+${formatTime(overdueSeconds)}` : formatTime(timeLeft)}
+        </TimerDisplay>
       </Header>
 
-      {isSubmitted && currentQ === 0 && (
+      {isSubmitted && (
           <ResultCard>
               <h2>Your Score: {score} / {test.questions.length}</h2>
               <p>{Math.round((score / test.questions.length) * 100)}%</p>
+              {overdueSeconds > 0 && <p style={{ color: 'red' }}>Test completed {formatTime(overdueSeconds)} after time limit.</p>}
           </ResultCard>
       )}
 
@@ -190,9 +236,9 @@ function TestTaker() {
           {currentQuestion.options.map((opt, idx) => (
             <OptionButton 
               key={idx} 
-              selected={answers[currentQ] === idx}
+              selected={currentAnswer?.index === idx}
               isCorrect={opt.isCorrect}
-              submitted={isSubmitted}
+              submitted={showFeedback}
               onClick={() => handleSelect(idx)}
             >
               {idx + 1}. {opt.text}
@@ -200,7 +246,7 @@ function TestTaker() {
           ))}
         </OptionsGrid>
 
-        {isSubmitted && currentQuestion.explanation && (
+        {showFeedback && currentQuestion.explanation && (
             <Explanation>
                 <strong>Explanation:</strong> {currentQuestion.explanation}
             </Explanation>

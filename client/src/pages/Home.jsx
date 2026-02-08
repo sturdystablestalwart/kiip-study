@@ -69,6 +69,14 @@ function Home() {
           <Card key={test._id} to={`/test/${test._id}`}>
             <h3>{test.title}</h3>
             <p>{test.questions?.length || 0} Questions</p>
+            {test.lastAttempt ? (
+                <div style={{ marginTop: '10px', color: '#D4A373', fontSize: '0.8rem' }}>
+                    Last Score: {test.lastAttempt.score}/{test.lastAttempt.totalQuestions} 
+                    ({new Date(test.lastAttempt.createdAt).toLocaleDateString()})
+                </div>
+            ) : (
+                <div style={{ marginTop: '10px', color: '#CCC', fontSize: '0.8rem' }}>No attempts yet</div>
+            )}
           </Card>
         ))}
       </Grid>

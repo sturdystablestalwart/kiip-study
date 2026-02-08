@@ -50,6 +50,7 @@ const PreviewImage = styled.img`
 function CreateTest() {
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -73,10 +74,14 @@ function CreateTest() {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      // We pass the image URLs in the text or as a separate field
-      // For now, let's append them to the prompt text so the LLM knows about them
-      const fullText = `${text}\n\n[Images available: ${images.join(', ')}]`;
-      await axios.post('http://localhost:5000/api/tests/generate', { text: fullText });
+      if (file) {
+          const formData = new FormData();
+          formData.append('file', file);
+          await axios.post('http://localhost:5000/api/tests/generate-from-file', formData);
+      } else {
+          const fullText = `${text}\n\n[Images available: ${images.join(', ')}]`;
+          await axios.post('http://localhost:5000/api/tests/generate', { text: fullText });
+      }
       alert('Test Generated Successfully!');
       navigate('/');
     } catch (err) {
@@ -90,24 +95,33 @@ function CreateTest() {
   return (
     <Wrapper>
       <h1>Create New Test</h1>
-      <p>Paste your study material or raw text below. The AI will generate a test for you.</p>
-      <TextArea 
-        placeholder="Paste text here..." 
-        value={text} 
-        onChange={(e) => setText(e.target.value)} 
-      />
       
-      <UploadSection>
-        <p>Add images for visual questions</p>
-        <input type="file" multiple onChange={handleImageUpload} accept="image/*" />
-        <ImagePreviewGrid>
-          {images.map((url, i) => (
-            <PreviewImage key={i} src={`http://localhost:5000${url}`} alt="preview" />
-          ))}
-        </ImagePreviewGrid>
-      </UploadSection>
+      <div style={{ marginBottom: '30px' }}>
+          <h3>Option A: Paste Text</h3>
+          <TextArea 
+            placeholder="Paste text here..." 
+            value={text} 
+            onChange={(e) => setText(e.target.value)} 
+            disabled={!!file}
+          />
+          
+          <UploadSection>
+            <p>Add images for visual questions</p>
+            <input type="file" multiple onChange={handleImageUpload} accept="image/*" disabled={!!file} />
+            <ImagePreviewGrid>
+              {images.map((url, i) => (
+                <PreviewImage key={i} src={`http://localhost:5000${url}`} alt="preview" />
+              ))}
+            </ImagePreviewGrid>
+          </UploadSection>
+      </div>
 
-      <Button onClick={handleGenerate} disabled={loading || !text}>
+      <div style={{ marginBottom: '30px' }}>
+          <h3>Option B: Upload Document (PDF, Docx, TXT)</h3>
+          <input type="file" onChange={(e) => setFile(e.target.files[0])} accept=".pdf,.docx,.txt,.md" disabled={text.length > 0} />
+      </div>
+
+      <Button onClick={handleGenerate} disabled={loading || (!text && !file)}>
         {loading ? 'Generating...' : 'Generate Test'}
       </Button>
     </Wrapper>

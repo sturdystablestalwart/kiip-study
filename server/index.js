@@ -23,15 +23,18 @@ if (!fs.existsSync(uploadDir)){
 }
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app')
+.then(async () => {
+    console.log('MongoDB Connected');
+    // Run Auto-Importer
+    const autoImportTests = require('./utils/autoImporter');
+    const { parseTextWithLLM } = require('./routes/tests');
+    await autoImportTests(parseTextWithLLM);
 })
-.then(() => console.log('MongoDB Connected'))
 .catch(err => console.log(err));
 
 // Routes
-const testRoutes = require('./routes/tests');
+const { router: testRoutes } = require('./routes/tests');
 app.use('/api/tests', testRoutes);
 
 app.get('/', (req, res) => {

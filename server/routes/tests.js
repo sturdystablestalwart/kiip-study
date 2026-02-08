@@ -15,6 +15,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Attempt = require('../models/Attempt');
 
 // --- GEMINI AI Integration ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -28,10 +29,12 @@ const parseTextWithLLM = async (text) => {
         The text might be raw study material or an existing mock test.
 
         REQUIREMENTS:
-        1. Generate exactly 20 questions if possible, or as many as the content allows.
+        1. Generate exactly 20 questions if possible.
         2. Questions must be multiple-choice with 4 options each.
-        3. Include a helpful explanation for each answer in Korean.
-        4. The output MUST be a valid JSON object matching this structure:
+        3. Include a helpful explanation for each answer IN ENGLISH.
+        4. If the text mentions images like "[Image 1]" or "q1.jpg", include the filename in the "image" field.
+        5. Point spread: Vocabulary/Grammar (Questions 1-10) are usually 4 points each, Reading (11-20) are 6 points each (or adjust to fit KIIP standard total of 100).
+        6. The output MUST be a valid JSON object matching this structure:
         {
           "title": "A descriptive title for the test",
           "questions": [
@@ -43,8 +46,9 @@ const parseTextWithLLM = async (text) => {
                 { "text": "Option 3", "isCorrect": false },
                 { "text": "Option 4", "isCorrect": false }
               ],
-              "explanation": "Why the correct answer is right (in Korean)",
-              "type": "multiple-choice"
+              "explanation": "Why the correct answer is right (IN ENGLISH)",
+              "type": "multiple-choice",
+              "image": "optional_filename.jpg"
             }
           ]
         }
@@ -52,7 +56,7 @@ const parseTextWithLLM = async (text) => {
         TEXT TO PARSE:
         ${text}
 
-        Respond ONLY with the JSON object. Do not include markdown formatting like \`\`\`json.
+        Respond ONLY with the JSON object.
     `;
 
     try {
@@ -66,13 +70,72 @@ const parseTextWithLLM = async (text) => {
     }
 };
 
-// GET all tests
+// GET all tests with last attempt
 router.get('/', async (req, res) => {
     try {
-        const tests = await Test.find();
-        res.json(tests);
+        const tests = await Test.find().lean();
+        const testsWithAttempts = await Promise.all(tests.map(async (test) => {
+            const lastAttempt = await Attempt.findOne({ testId: test._id }).sort({ createdAt: -1 });
+            return { ...test, lastAttempt };
+        }));
+        res.json(testsWithAttempts);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// POST save attempt
+router.post('/:id/attempt', async (req, res) => {
+    try {
+        const attempt = new Attempt({
+            testId: req.params.id,
+            ...req.body
+        });
+        const savedAttempt = await attempt.save();
+        res.status(201).json(savedAttempt);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
+const fs = require('fs');
+
+// POST generate from file
+router.post('/generate-from-file', upload.single('file'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    
+    let text = '';
+    const filePath = req.file.path;
+
+    try {
+        if (req.file.mimetype === 'application/pdf') {
+            const dataBuffer = fs.readFileSync(filePath);
+            const data = await pdf(dataBuffer);
+            text = data.text;
+        } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            const result = await mammoth.extractRawText({ path: filePath });
+            text = result.value;
+        } else {
+            text = fs.readFileSync(filePath, 'utf-8');
+        }
+
+        const data = await parseTextWithLLM(text);
+        const newTest = new Test({
+            title: data.title,
+            questions: data.questions,
+            category: 'File Upload'
+        });
+        const savedTest = await newTest.save();
+        
+        // Clean up temp file
+        fs.unlinkSync(filePath);
+        
+        res.status(201).json(savedTest);
+    } catch (err) {
+        console.error("File Generation Error:", err);
+        res.status(400).json({ message: err.message });
     }
 });
 
@@ -87,27 +150,4 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// POST generate test
-router.post('/generate', async (req, res) => {
-    const { text } = req.body;
-    try {
-        const data = await parseTextWithLLM(text);
-        const newTest = new Test({
-            title: data.title,
-            questions: data.questions
-        });
-        const savedTest = await newTest.save();
-        res.status(201).json(savedTest);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
-
-// POST upload image
-router.post('/upload', upload.single('image'), (req, res) => {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ imageUrl });
-});
-
-module.exports = router;
+module.exports = { router, parseTextWithLLM };
