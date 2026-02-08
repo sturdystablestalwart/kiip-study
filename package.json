@@ -1,0 +1,17 @@
+{
+  "name": "kiip_test_app",
+  "version": "1.0.0",
+  "description": "KIIP Test Application",
+  "scripts": {
+    "install-all": "cd server && npm install && cd ../client && npm install",
+    "start": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.58.2",
+    "concurrently": "^8.2.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
