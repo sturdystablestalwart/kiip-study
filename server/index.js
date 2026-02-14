@@ -16,10 +16,19 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Ensure upload directory exists
+// Ensure upload directories exist
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir);
+const imagesDir = path.join(uploadDir, 'images');
+const documentsDir = path.join(uploadDir, 'documents');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+}
+if (!fs.existsSync(documentsDir)) {
+    fs.mkdirSync(documentsDir, { recursive: true });
 }
 
 // Database Connection
@@ -39,6 +48,16 @@ app.use('/api/tests', testRoutes);
 
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
+});
+
+app.get('/health', (req, res) => {
+    const mongoState = mongoose.connection.readyState;
+    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    res.json({
+        status: mongoState === 1 ? 'ok' : 'degraded',
+        mongo: states[mongoState] || 'unknown',
+        uptime: process.uptime()
+    });
 });
 
 app.listen(PORT, () => {

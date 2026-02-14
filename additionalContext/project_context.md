@@ -1,90 +1,211 @@
-# Project Context: KIIP Test Application
+# Project Context: KIIP Study
 
 ## Overview
-This project is a MERN (MongoDB, Express, React, Node.js) web application designed to help users prepare for the KIIP (Korea Immigration and Integration Program) Level 2 exam. The core feature is an LLM-powered test generator that takes raw text (study materials) and converts it into interactive practice tests.
 
-## User Requirements & Decisions
-The following constraints and preferences were established during the initial setup:
+KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress (attempts + resumable sessions). Test generation is admin-only. The user experience prioritizes fast access to a large library via a dashboard plus keyboard-first navigation (Ctrl+P palette, Ctrl+K shortcuts). The app is designed in a Japandi aesthetic and deploys on a home server via Docker Compose with a polished CI pipeline.
 
-1.  **AI Integration:** The app uses an LLM (Large Language Model) to parse and generate tests from unstructured text input.
-2.  **Tech Stack:** MERN Stack (MongoDB, Express, React, Node.js).
-3.  **Database:** MongoDB for storing tests and user progress.
-4.  **Modes:** The app supports both "Practice Mode" (instant feedback) and "Test Mode" (submit at the end).
-5.  **Timer:** A countdown timer is included for test simulation (30 minutes default), but it does **not** auto-submit.
-6.  **Answer Key:** Answers are hidden until the user explicitly submits the test.
-7.  **Editing:** No inline editing of questions is required for the MVP.
-8.  **Design Style:** "Japanese Warm Minimalism" - Clean, functional, using off-white (#F9F7F2), wood tones (#D4A373), and muted grey/browns.
-9.  **Deployment:** Intended for local network use (e.g., accessing from different devices within a home network).
-10. **Media:** Image support is critical for questions that require visual identification.
+**Owner:** Alex Reznitskii | **Version:** 2.0 | **Date:** 2026-02-15
+
+---
+
+## Product Principles
+
+| Item | Decision |
+|------|----------|
+| Primary persona | KIIP self-learner |
+| Core value | Practice tests effectively and track mastery |
+| Library model | All tests are public; progress is per-user |
+| Generator access | Admin-only |
+| Platform target | Desktop-first; keyboard-first |
+| Aesthetic | Japandi: warm minimalism, off-white canvas `#F7F2E8`, earth-tone accents |
+| Non-goals | No listening/speaking; no spaced repetition; no recommendations; no gamification |
+
+---
+
+## Confirmed Decisions (from Alignment Q&A)
+
+| Item | Decision |
+|------|----------|
+| Question language | Korean questions; explanations bilingual (EN + optional KO) |
+| Question types | All KIIP paper (written) types, excluding listening/speaking |
+| Timer | Default enabled; no pausing; configurable by admin; overdue tracked informationally |
+| Practice mode | Show explanation immediately after answer selection; answers not changeable after feedback |
+| Test mode | Submit early supported; no pauses; reveal after submit |
+| Export | Export everything to PDF (blank, answer key, student answers, attempt report) in Japandi style |
+| Editing | Admin can edit every detail; reorder/add/remove; validate structure; supports multiple correct where applicable |
+| Uploads | Admin-only uploads; PDF/TXT/MD; max 2 MB; delete after extraction; show extracted text preview to admin |
+| Flags | Users can flag issues privately to admin |
+| Auth | Google OAuth + JWT; cross-device continuation required; audit logs required |
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 19 (Vite), styled-components 6, React Router DOM 7, axios
+- **Backend:** Node.js, Express 5, Mongoose 9 (MongoDB)
+- **AI:** Google Gemini 2.5 Flash (`@google/generative-ai`)
+- **File processing:** multer 2, pdf-parse, mammoth
+- **Validation:** express-validator, express-rate-limit
+- **Auth (planned):** Google OAuth + JWT (passport, passport-google-oauth20)
+- **Testing:** Playwright E2E
+- **Deployment:** Docker Compose (mongo + server + client), nginx for production static serving
+- **Design:** Japandi warm minimalism — tokens in `client/src/theme/tokens.js`
+
+---
 
 ## Project Structure
 
 ```
 kiip_test_app/
-├── client/                 # Frontend (Vite + React)
+├── client/                     # React 19 frontend (Vite)
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route pages
-│   │   │   ├── Home.jsx       # Dashboard / Test List
-│   │   │   ├── CreateTest.jsx # LLM Input Interface
-│   │   │   └── TestTaker.jsx  # Exam Interface
-│   │   └── App.jsx         # Main Router & Layout
-│   ├── package.json        # Frontend dependencies
-│   └── vite.config.js      # Vite configuration
-├── server/                 # Backend (Express + Node.js)
-│   ├── models/             # Mongoose Schemas
-│   │   └── Test.js         # Schema for Test/Question data
-│   ├── routes/             # API Routes
-│   │   └── tests.js        # Test CRUD & LLM Generation logic
-│   ├── index.js            # Server entry point
-│   └── package.json        # Backend dependencies
-├── additionalContext/      # Context & Documentation (This folder)
-└── package.json            # Root configuration for concurrent running
+│   │   ├── pages/              # Route pages (Home, CreateTest, TestTaker)
+│   │   ├── components/         # Reusable UI components
+│   │   ├── theme/              # Design tokens & global styles
+│   │   ├── config/api.js       # API base URL config
+│   │   ├── App.jsx             # Router, ThemeProvider, AppShell
+│   │   ├── main.jsx            # Entry point
+│   │   └── index.css           # Minimal CSS reset
+│   ├── package.json
+│   └── vite.config.js
+├── server/                     # Express 5 backend
+│   ├── models/
+│   │   ├── Test.js             # Mongoose: Test + Question + Option schemas
+│   │   └── Attempt.js          # Mongoose: Attempt + Answer schemas
+│   ├── routes/tests.js         # All API endpoints
+│   ├── utils/autoImporter.js   # Auto-loads .md/.txt from additionalContext/tests/
+│   ├── uploads/                # Local file storage (images, documents)
+│   └── index.js                # Server entry point
+├── additionalContext/          # Project docs & sample test data
+│   ├── project_context.md      # This file — project vision & decisions
+│   ├── SETUP_AND_USAGE.md      # Setup guide, Docker, env vars, troubleshooting
+│   ├── KIIP_Study_Requirements_Roadmap_Checklist.docx  # Full requirements & roadmap
+│   └── tests/                  # 5 sample KIIP Level 2 tests (.md), auto-imported on startup
+├── tests/                      # Playwright E2E tests
+│   ├── app.spec.js
+│   └── verify_app.js
+├── IMPLEMENTATION_PLAN.md      # Phased roadmap (Phase 0–6)
+├── CLAUDE.md                   # Claude Code context & coding conventions
+├── docker-compose.yaml         # Full-stack Docker deployment
+├── .env.example                # Root env template (GEMINI_API_KEY)
+└── package.json                # Root monorepo scripts (concurrently)
 ```
+
+---
 
 ## Current Implementation Status
 
-### Backend (`server/`)
-*   **Server:** initialized with Express.
-*   **Database:** Connected to MongoDB (default: `mongodb://localhost:27017/kiip_test_app`).
-*   **API Endpoints:**
-    *   `GET /api/tests`: Fetch all tests.
-    *   `GET /api/tests/:id`: Fetch a specific test.
-    *   `POST /api/tests/generate`: Accepts text, simulates LLM parsing (currently a regex placeholder), and saves a new test.
-    *   `POST /api/tests/upload`: Image upload handler.
+### What Works Now
+- Express 5 backend with MongoDB (Mongoose 9)
+- Google Gemini AI integration for test generation from text and file uploads
+- React 19 frontend with styled-components (Japandi design tokens)
+- Practice mode (instant feedback) and Test mode (submit-to-reveal)
+- 30-minute timer with overdue tracking
+- Image uploads (single + batch up to 20)
+- Document parsing (PDF, DOCX, TXT, MD)
+- Test attempt tracking (score, duration, answers)
+- Auto-import of sample tests from `additionalContext/tests/`
+- Docker Compose deployment (mongo + server + client)
+- Rate limiting on generation endpoints
 
-### Frontend (`client/`)
-*   **Framework:** React (Vite).
-*   **Styling:** `styled-components` implementing the warm minimalist theme.
-*   **Pages:**
-    *   **Home:** Displays a grid of available tests.
-    *   **Create Test:** A text area to input raw study material for generation.
-    *   **Test Taker:** A fully functional exam interface with a 30-minute timer, question navigation, and option selection.
+### What's Planned (See IMPLEMENTATION_PLAN.md)
+- **Phase 0:** Bug fixes, validation, error handling improvements
+- **Phase 1:** Production Docker with nginx, CI pipeline, home server deployment
+- **Phase 2:** Dashboard, server-side search, Ctrl+P palette, Ctrl+K shortcuts
+- **Phase 3:** Additional question types (MCQ multi, short answer, ordering, fill-in-the-blank), endless mode
+- **Phase 4:** Admin suite (generation, editing, moderation, flags)
+- **Phase 5:** Google OAuth + JWT auth, cross-device sessions, audit logs
+- **Phase 6:** PDF exports (blank, answer key, student answers, attempt report)
 
-## Next Steps / To-Do List
+---
 
-1.  **LLM Integration (Critical):**
-    *   The `server/routes/tests.js` file currently uses a `parseTextWithLLM` function that relies on simple Regex.
-    *   **Action:** Replace this with a real call to OpenAI API (`npm install openai`) or Google Gemini API.
-    *   **Prompt Engineering:** Design a system prompt that enforces the JSON output format for questions.
+## Functional Requirements Summary
 
-2.  **Database Setup:**
-    *   Ensure MongoDB is running locally.
-    *   Create a `.env` file in `server/` with `MONGO_URI` and `OPENAI_API_KEY`.
+### 3.1 Public Test Library
+- All tests visible to all users (public library)
+- Home dashboard: "Continue last session" card + "Recent attempts" list
+- Ctrl+P command palette (VSCode-style) for fast test access
+- Ctrl+K global shortcuts modal
+- Pagination/infinite scroll with server-side search
 
-3.  **Image Uploads:**
-    *   Frontend `CreateTest.jsx` needs a file input to allow uploading images alongside the text.
-    *   The backend `upload` route is ready but needs to be integrated into the test creation flow.
+### 3.2 Test Taking
+- Modes: Practice, Test, and Endless
+- Practice: immediate explanation after selection; answers locked after feedback
+- Test: submit at any time; full review after submit; no pauses
+- Timer: default enabled; configurable by admin; overdue tracked informationally
+- "Missed questions only" review flow after attempts
 
-4.  **Local Network Access:**
-    *   To allow other devices to access the app, update `vite.config.js` to expose the server (`server: { host: true }`) and ensure firewall rules allow traffic on ports 5173 (client) and 5000 (server).
+### 3.3 Endless Mode
+- Select theme/unit or random; draw from full public library pool
+- Recent-window exclusion to avoid repeats (~last 30 questions)
+- Chunked submissions (every N questions) for tracking
 
-5.  **State Management:**
-    *   Currently, the "Submit" button in `TestTaker.jsx` just alerts. It needs to calculate the score and display a results modal.
+### 3.4 Issue Flagging
+- Users flag tests/questions with reason + optional note
+- Flags private to admins; admin can resolve/dismiss with notes
 
-## Design Palette (Reference)
-*   **Background:** `#F9F7F2` (Cream/Off-White)
-*   **Card Background:** `#FFFFFF` (White)
-*   **Primary Text:** `#4A4A4A` (Dark Grey)
-*   **Accent (Highlight):** `#D4A373` (Soft Wood/Sand)
-*   **Button/Secondary:** `#8B7E74` (Muted Brown)
+### 3.5 Admin Suite
+- Admin-only access gate (role-based)
+- Upload PDF/TXT/MD (2 MB max); preview extracted text before generation
+- AI generation with per-question regen; up to 2 validation passes
+- Full test editor: metadata, questions, options, explanations; reorder/add/remove
+- Moderation: flags queue with resolution workflow
+
+### 3.6 Accounts & Cross-Device Continuation
+- Google OAuth + JWT session management (httpOnly cookies)
+- Per-user progress: attempts + resumable sessions across devices
+- Anonymous progress migration on first login
+- Audit logs for admin actions
+
+### 3.7 PDF Export
+- Variants: blank test, answer key, student answers, attempt report
+- Japandi-styled templates with timing/overdue data
+
+---
+
+## Data Model (Current + Planned)
+
+### Current Collections
+- **Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type }], createdAt }`
+- **Attempt** — `{ testId, score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOption, isCorrect, isOverdue }], mode, createdAt }`
+
+### Planned Collections
+- **User** — `{ email, googleId, isAdmin, createdAt }`
+- **TestSession** — resumable in-progress state per user (per test or endless)
+- **Flag** — user-submitted issue reports for admin review
+- **AuditLog** — append-only admin and sensitive event log
+
+### Question Types (Current + Planned)
+- MCQ single correct (current)
+- MCQ multiple correct (planned)
+- Short answer / fill-in (planned)
+- Ordering / sequence (planned)
+- Fill-in-the-blank (planned)
+
+---
+
+## Design Palette (Japandi Tokens)
+
+Design tokens live in `client/src/theme/tokens.js`:
+
+- **Canvas:** `#F7F2E8` — **Surface:** `#FFFFFF` — **Surface alt:** `#FAF7F1`
+- **Text:** primary `#1F2328`, muted `#5B5F64`, faint `#7B8086`
+- **Accents:** clay `#A0634A`, moss `#657655`, indigo `#2A536D`
+- **States:** success `#2F6B4F`, warning `#B07A2A`, danger `#B43A3A`
+- **Font:** Inter, BIZ UDPGothic, system-ui fallback
+- **Radii:** sm 10px, md 14px, lg 18px, pill 999px
+- **Max width:** 1040px — **Grid unit:** 8px
+- **Control heights:** buttons 44px, inputs 48px
+
+**Rules:** No neon colors. No pure white background. No aggressive red. No harsh shadows. Warm microcopy. WCAG AA contrast. Focus rings indigo `#2A536D`. Touch targets min 44px.
+
+---
+
+## Non-Functional Requirements
+
+| Area | Requirement |
+|------|-------------|
+| Performance | Responsive with hundreds of tests; server-side indexing; paginated endpoints |
+| Reliability | Docker volumes persist data; source files deleted after extraction; backup/restore documented |
+| Security | JWT in httpOnly cookies; rate limiting by IP and user; strict validation; MIME allowlists; audit log |
+| UX | Desktop-first 1040px max width; Japandi tokens; 44px min touch targets; keyboard-first navigation |

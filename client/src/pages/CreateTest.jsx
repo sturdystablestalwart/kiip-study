@@ -2,128 +2,477 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config/api';
+
+/* ───────── Styled Components ───────── */
 
 const Wrapper = styled.div`
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
+`;
+
+const PageTitle = styled.h1`
+  margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
+`;
+
+const SectionTitle = styled.h3`
+  margin-bottom: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const SectionHint = styled.p`
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.small.line}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const Section = styled.div`
+  margin-bottom: ${({ theme }) => theme.layout.space[7]}px;
+  opacity: ${({ disabled }) => disabled ? 0.45 : 1};
+  pointer-events: ${({ disabled }) => disabled ? 'none' : 'auto'};
+  transition: opacity ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
 `;
 
 const TextArea = styled.textarea`
   width: 100%;
   height: 200px;
-  padding: 20px;
-  border: 1px solid #E0E0E0;
-  border-radius: 8px;
+  padding: ${({ theme }) => theme.layout.space[4]}px;
+  border: 1px solid ${({ $hasError, theme }) => $hasError ? theme.colors.state.danger : theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
   font-family: inherit;
-  font-size: 1rem;
-  background: #FFFFFF;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.body.line}px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  color: ${({ theme }) => theme.colors.text.primary};
   resize: vertical;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text.faint};
+  }
+
   &:focus {
     outline: none;
-    border-color: #D4A373;
+    border-color: ${({ $hasError, theme }) => $hasError ? theme.colors.state.danger : theme.colors.accent.indigo};
+    box-shadow: 0 0 0 3px ${({ $hasError }) => $hasError ? 'rgba(180,58,58,0.12)' : 'rgba(42,83,109,0.12)'};
   }
 `;
 
-const UploadSection = styled.div`
-  margin-top: 20px;
-  padding: 20px;
-  border: 2px dashed #D4A373;
-  border-radius: 8px;
+const CharCount = styled.div`
+  text-align: right;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.micro.line}px;
+  color: ${({ $hasError, theme }) => $hasError ? theme.colors.state.danger : theme.colors.text.faint};
+  margin-top: ${({ theme }) => theme.layout.space[1]}px;
+`;
+
+const UploadZone = styled.div`
+  margin-top: ${({ theme }) => theme.layout.space[5]}px;
+  padding: ${({ theme }) => theme.layout.space[5]}px;
+  border: 2px dashed ${({ $hasError, theme }) => $hasError ? theme.colors.state.danger : theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
   text-align: center;
-  background: #F9F7F2;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+
+  p {
+    color: ${({ theme }) => theme.colors.text.muted};
+    font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+    margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
+  }
+`;
+
+const FileInput = styled.input`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+
+  &::file-selector-button {
+    height: 36px;
+    padding: 0 ${({ theme }) => theme.layout.space[4]}px;
+    border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+    border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+    background: ${({ theme }) => theme.colors.bg.surface};
+    color: ${({ theme }) => theme.colors.text.primary};
+    font-family: inherit;
+    font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+    cursor: pointer;
+    margin-right: ${({ theme }) => theme.layout.space[3]}px;
+    transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+    &:hover {
+      background: ${({ theme }) => theme.colors.selection.bg};
+    }
+  }
 `;
 
 const ImagePreviewGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  margin-top: 10px;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const PreviewImageContainer = styled.div`
+  position: relative;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  overflow: hidden;
 `;
 
 const PreviewImage = styled.img`
   width: 100%;
   height: 100px;
   object-fit: cover;
-  border-radius: 4px;
+  display: block;
 `;
+
+const RemoveImageButton = styled.button`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(31, 35, 40, 0.55);
+  color: ${({ theme }) => theme.colors.bg.surface};
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.state.danger};
+  }
+`;
+
+const ImageCount = styled.p`
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+`;
+
+const UploadProgress = styled.div`
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+  color: ${({ theme }) => theme.colors.accent.indigo};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+`;
+
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  margin: ${({ theme }) => theme.layout.space[7]}px 0;
+  color: ${({ theme }) => theme.colors.text.faint};
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  }
+
+  span {
+    padding: 0 ${({ theme }) => theme.layout.space[4]}px;
+    font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+`;
+
+const FileDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  padding: ${({ theme }) => theme.layout.space[4]}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+
+  span {
+    flex: 1;
+    font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+    color: ${({ theme }) => theme.colors.text.primary};
+  }
+`;
+
+const ClearFileButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.text.faint};
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.state.danger};
+  }
+`;
+
+const SubmitButton = styled.button`
+  width: 100%;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  background: ${({ theme }) => theme.colors.accent.clay};
+  color: ${({ theme }) => theme.colors.bg.surface};
+  border: none;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+  cursor: pointer;
+  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover:not(:disabled) {
+    background: #8B5340;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: ${({ theme }) => theme.colors.border.subtle};
+    color: ${({ theme }) => theme.colors.text.faint};
+    cursor: not-allowed;
+  }
+`;
+
+const ErrorBanner = styled.div`
+  background: ${({ theme }) => theme.colors.state.wrongBg};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  color: ${({ theme }) => theme.colors.state.danger};
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.small.line}px;
+`;
+
+const LoadingHint = styled.p`
+  text-align: center;
+  color: ${({ theme }) => theme.colors.text.faint};
+  margin-top: ${({ theme }) => theme.layout.space[4]}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+`;
+
+/* ───────── Component ───────── */
+
+const MIN_TEXT_LENGTH = 200;
+const MAX_TEXT_LENGTH = 50000;
+const MAX_IMAGES = 20;
 
 function CreateTest() {
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
   const navigate = useNavigate();
+
+  const textLength = text.trim().length;
+  const isTextValid = textLength >= MIN_TEXT_LENGTH && textLength <= MAX_TEXT_LENGTH;
+  const canSubmit = (text.trim().length > 0 || file) && !loading && !uploadingImages;
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
+
+    if (images.length + files.length > MAX_IMAGES) {
+      setUploadError(`You can add up to ${MAX_IMAGES - images.length} more images.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    setUploadError(null);
     const uploadedUrls = [];
 
     for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError(`"${file.name}" is too large (max 10 MB).`);
+        continue;
+      }
+
       const formData = new FormData();
       formData.append('image', file);
       try {
-        const res = await axios.post('http://localhost:5000/api/tests/upload', formData);
+        const res = await axios.post(`${API_BASE_URL}/api/tests/upload`, formData, {
+          timeout: 30000,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
         uploadedUrls.push(res.data.imageUrl);
       } catch (err) {
         console.error("Upload failed", err);
+        setUploadError(err.response?.data?.message || `Could not upload "${file.name}".`);
       }
     }
-    setImages([...images, ...uploadedUrls]);
+
+    if (uploadedUrls.length > 0) {
+      setImages([...images, ...uploadedUrls]);
+    }
+    setUploadingImages(false);
+    e.target.value = '';
+  };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const validateInput = () => {
+    if (!text.trim() && !file) {
+      setError('Please paste some text or upload a document to get started.');
+      return false;
+    }
+
+    if (text.trim() && !file) {
+      if (textLength < MIN_TEXT_LENGTH) {
+        setError(`A bit more text is needed — at least ${MIN_TEXT_LENGTH} characters (currently ${textLength}).`);
+        return false;
+      }
+      if (textLength > MAX_TEXT_LENGTH) {
+        setError(`The text is too long — please keep it under ${MAX_TEXT_LENGTH.toLocaleString()} characters.`);
+        return false;
+      }
+    }
+
+    setError(null);
+    return true;
   };
 
   const handleGenerate = async () => {
+    if (!validateInput()) return;
+
     setLoading(true);
+    setError(null);
+
     try {
       if (file) {
-          const formData = new FormData();
-          formData.append('file', file);
-          await axios.post('http://localhost:5000/api/tests/generate-from-file', formData);
+        const formData = new FormData();
+        formData.append('file', file);
+        await axios.post(`${API_BASE_URL}/api/tests/generate-from-file`, formData, {
+          timeout: 120000,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-          const fullText = `${text}\n\n[Images available: ${images.join(', ')}]`;
-          await axios.post('http://localhost:5000/api/tests/generate', { text: fullText });
+        const fullText = images.length > 0
+          ? `${text}\n\n[Images available: ${images.join(', ')}]`
+          : text;
+        await axios.post(`${API_BASE_URL}/api/tests/generate`, { text: fullText }, {
+          timeout: 120000
+        });
       }
-      alert('Test Generated Successfully!');
       navigate('/');
     } catch (err) {
       console.error(err);
-      alert('Error generating test: ' + (err.response?.data?.message || err.message));
+      setError(err.response?.data?.message || 'Something went wrong while generating the test. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError('This document is too large (max 10 MB).');
+        e.target.value = '';
+        return;
+      }
+      setFile(selectedFile);
+      setError(null);
+    }
+  };
+
+  const clearFile = () => {
+    setFile(null);
+  };
+
+  const textHasError = text.trim().length > 0 && textLength < MIN_TEXT_LENGTH;
+
   return (
     <Wrapper>
-      <h1>Create New Test</h1>
-      
-      <div style={{ marginBottom: '30px' }}>
-          <h3>Option A: Paste Text</h3>
-          <TextArea 
-            placeholder="Paste text here..." 
-            value={text} 
-            onChange={(e) => setText(e.target.value)} 
-            disabled={!!file}
+      <PageTitle>Create a New Test</PageTitle>
+
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      <Section disabled={!!file}>
+        <SectionTitle>Paste your study material</SectionTitle>
+        <SectionHint>
+          Korean text, mock test content, or any study notes (min. {MIN_TEXT_LENGTH} characters)
+        </SectionHint>
+        <TextArea
+          placeholder="Paste your text here..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={!!file}
+          $hasError={textHasError}
+        />
+        <CharCount $hasError={textHasError}>
+          {textLength.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()}
+          {textHasError && ` (need ${MIN_TEXT_LENGTH - textLength} more)`}
+        </CharCount>
+
+        <UploadZone $hasError={!!uploadError}>
+          <p>Add images for visual questions (up to {MAX_IMAGES})</p>
+          <FileInput
+            type="file"
+            multiple
+            onChange={handleImageUpload}
+            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff"
+            disabled={!!file || uploadingImages || images.length >= MAX_IMAGES}
           />
-          
-          <UploadSection>
-            <p>Add images for visual questions</p>
-            <input type="file" multiple onChange={handleImageUpload} accept="image/*" disabled={!!file} />
-            <ImagePreviewGrid>
-              {images.map((url, i) => (
-                <PreviewImage key={i} src={`http://localhost:5000${url}`} alt="preview" />
-              ))}
-            </ImagePreviewGrid>
-          </UploadSection>
-      </div>
+          {uploadingImages && <UploadProgress>Uploading...</UploadProgress>}
+          {uploadError && <ErrorBanner style={{ marginTop: '8px' }}>{uploadError}</ErrorBanner>}
+          <ImagePreviewGrid>
+            {images.map((url, i) => (
+              <PreviewImageContainer key={i}>
+                <PreviewImage src={`${API_BASE_URL}${url}`} alt={`Preview ${i + 1}`} />
+                <RemoveImageButton onClick={() => removeImage(i)} aria-label="Remove image">&times;</RemoveImageButton>
+              </PreviewImageContainer>
+            ))}
+          </ImagePreviewGrid>
+          {images.length > 0 && (
+            <ImageCount>{images.length} / {MAX_IMAGES} images</ImageCount>
+          )}
+        </UploadZone>
+      </Section>
 
-      <div style={{ marginBottom: '30px' }}>
-          <h3>Option B: Upload Document (PDF, Docx, TXT)</h3>
-          <input type="file" onChange={(e) => setFile(e.target.files[0])} accept=".pdf,.docx,.txt,.md" disabled={text.length > 0} />
-      </div>
+      <Divider><span>or</span></Divider>
 
-      <Button onClick={handleGenerate} disabled={loading || (!text && !file)}>
-        {loading ? 'Generating...' : 'Generate Test'}
-      </Button>
+      <Section disabled={text.trim().length > 0}>
+        <SectionTitle>Upload a document</SectionTitle>
+        <SectionHint>
+          PDF, DOCX, TXT, or Markdown file (max 10 MB)
+        </SectionHint>
+        {file ? (
+          <FileDisplay>
+            <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+            <ClearFileButton onClick={clearFile} aria-label="Remove file">&times;</ClearFileButton>
+          </FileDisplay>
+        ) : (
+          <FileInput
+            type="file"
+            onChange={handleFileChange}
+            accept=".pdf,.docx,.txt,.md"
+            disabled={text.trim().length > 0}
+          />
+        )}
+      </Section>
+
+      <SubmitButton
+        onClick={handleGenerate}
+        disabled={!canSubmit || (text.trim().length > 0 && !isTextValid && !file)}
+      >
+        {loading ? 'Preparing your test...' : 'Generate Test'}
+      </SubmitButton>
+
+      {loading && (
+        <LoadingHint>
+          The AI is reading your material and crafting questions. This usually takes under a minute.
+        </LoadingHint>
+      )}
     </Wrapper>
   );
 }
