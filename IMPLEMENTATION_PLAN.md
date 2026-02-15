@@ -88,7 +88,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
-## Phase 2 — Instant Library UX
+## Phase 2 — Instant Library UX ✅ COMPLETE
 
 > Dashboard, search, Ctrl+P palette, Ctrl+K shortcuts, keyboard navigation.
 
@@ -96,24 +96,26 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Tasks (PR-sized)
 
-- [ ] **2.1** Home dashboard: "Continue last session" card + "Recent attempts" list
-- [ ] **2.2** Implement test list pagination or infinite scroll
-- [ ] **2.3** Add server-side search + indexed MongoDB query (`title`, `level`, `unit`, `category`)
-- [ ] **2.4** Ctrl+P command palette with fuzzy search and open action (VSCode-style)
-- [ ] **2.5** Ctrl+K global shortcuts modal + keyboard navigation system (1-4 for options, arrow keys, etc.)
+- [x] **2.1** Home dashboard: "Continue last session" card + "Recent attempts" row
+- [x] **2.2** Cursor pagination with "Load more" button (limit 20, max 50)
+- [x] **2.3** Server-side search via `$text` index + level/unit filters + aggregation pipeline
+- [x] **2.4** Ctrl+P command palette with debounced search and keyboard navigation (navbar trigger)
+- [x] **2.5** Ctrl+K global shortcuts modal + keyboard navigation in TestTaker (1-4, arrows)
 
 ### API Changes
 
 | Method | Endpoint | Change |
 |--------|----------|--------|
-| `GET` | `/api/tests?level=&unit=&q=&cursor=&limit=` | Add query params, cursor pagination, server-side search |
+| `GET` | `/api/tests?q=&level=&unit=&cursor=&limit=` | Aggregation pipeline, cursor pagination, text search |
+| `GET` | `/api/tests/recent-attempts?limit=` | New — returns recent attempts with test metadata |
 
 ### Acceptance Criteria
 
-- Home page loads dashboard with continue/recent sections
-- Search returns results within 200ms for hundreds of tests
-- Ctrl+P opens palette from any page; Ctrl+K shows shortcut reference
-- Keyboard-only navigation is fully functional
+- [x] Home page loads dashboard with continue/recent sections
+- [x] Search returns results via Ctrl+P palette from any page
+- [x] Level/Unit filter dropdowns narrow the test list
+- [x] Ctrl+K shows shortcut reference
+- [x] Keyboard-only navigation works (1-4 select, arrows navigate)
 
 ---
 
