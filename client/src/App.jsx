@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import tokens from './theme/tokens';
@@ -6,6 +6,8 @@ import GlobalStyles from './theme/GlobalStyles';
 import Home from './pages/Home';
 import CreateTest from './pages/CreateTest';
 import TestTaker from './pages/TestTaker';
+import CommandPalette from './components/CommandPalette';
+import ShortcutsModal from './components/ShortcutsModal';
 
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
@@ -60,12 +62,49 @@ const NavLink = styled(Link)`
   }
 `;
 
-function Navigation() {
+const NavSearchTrigger = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  min-width: 200px;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    background: ${({ theme }) => theme.colors.bg.surface};
+  }
+
+  @media (max-width: 600px) {
+    min-width: 140px;
+  }
+`;
+
+const SearchHint = styled.span`
+  margin-left: auto;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  opacity: 0.6;
+`;
+
+function Navigation({ onSearchClick }) {
   const location = useLocation();
 
   return (
     <Nav>
       <Logo to="/">KIIP Study</Logo>
+      <NavSearchTrigger onClick={onSearchClick} aria-label="Search tests">
+        Search tests...
+        <SearchHint>Ctrl+P</SearchHint>
+      </NavSearchTrigger>
       <NavLinks>
         <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>Tests</NavLink>
         <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>New Test</NavLink>
@@ -75,18 +114,40 @@ function Navigation() {
 }
 
 function App() {
+  const [showPalette, setShowPalette] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  const handleGlobalKeyDown = useCallback((e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      e.preventDefault();
+      setShowPalette(prev => !prev);
+      setShowShortcuts(false);
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      setShowShortcuts(prev => !prev);
+      setShowPalette(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
+
   return (
     <ThemeProvider theme={tokens}>
       <GlobalStyles />
       <Router>
         <AppShell>
-          <Navigation />
+          <Navigation onSearchClick={() => setShowPalette(true)} />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<CreateTest />} />
             <Route path="/test/:id" element={<TestTaker />} />
           </Routes>
         </AppShell>
+        {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
+        {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
       </Router>
     </ThemeProvider>
   );
