@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Test = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const multer = require('multer');
@@ -177,17 +178,102 @@ const validateTextGeneration = [
 // ROUTES
 // ============================================
 
-// GET all tests with last attempt
+// GET all tests with last attempt (aggregation + cursor pagination + search)
 router.get('/', async (req, res) => {
     try {
-        const tests = await Test.find().lean();
-        const testsWithAttempts = await Promise.all(tests.map(async (test) => {
-            const lastAttempt = await Attempt.findOne({ testId: test._id }).sort({ createdAt: -1 });
-            return { ...test, lastAttempt };
-        }));
-        res.json(testsWithAttempts);
+        const { q, level, unit, cursor, limit: rawLimit } = req.query;
+        const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 50);
+
+        // Build match stage
+        const match = {};
+        if (q && q.trim()) {
+            match.$text = { $search: q.trim() };
+        }
+        if (level) match.level = level;
+        if (unit) match.unit = unit;
+
+        // Cursor pagination: fetch items older than cursor
+        if (cursor) {
+            if (mongoose.Types.ObjectId.isValid(cursor)) {
+                match._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+            }
+        }
+
+        // Build aggregation pipeline
+        const pipeline = [
+            { $match: match },
+            { $sort: { createdAt: -1, _id: -1 } },
+            { $limit: limit + 1 },
+            // Exclude questions array from list response (save bandwidth)
+            { $project: {
+                title: 1, category: 1, description: 1, level: 1, unit: 1,
+                createdAt: 1, questionCount: { $size: '$questions' }
+            }},
+            // Join last attempt per test
+            { $lookup: {
+                from: 'attempts',
+                let: { testId: '$_id' },
+                pipeline: [
+                    { $match: { $expr: { $eq: ['$testId', '$$testId'] } } },
+                    { $sort: { createdAt: -1 } },
+                    { $limit: 1 },
+                    { $project: { score: 1, totalQuestions: 1, mode: 1, createdAt: 1 } }
+                ],
+                as: 'attempts'
+            }},
+            { $addFields: {
+                lastAttempt: { $arrayElemAt: ['$attempts', 0] }
+            }},
+            { $project: { attempts: 0 } }
+        ];
+
+        const results = await Test.aggregate(pipeline);
+
+        // Determine if there are more results
+        const hasMore = results.length > limit;
+        const tests = hasMore ? results.slice(0, limit) : results;
+        const nextCursor = hasMore ? tests[tests.length - 1]._id : null;
+
+        // Get total count (without cursor filter)
+        const countMatch = { ...match };
+        delete countMatch._id;
+        const countResult = await Test.aggregate([
+            { $match: countMatch },
+            { $count: 'total' }
+        ]);
+        const total = countResult[0]?.total || 0;
+
+        res.json({ tests, nextCursor, total });
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch tests: ' + err.message });
+    }
+});
+
+// GET recent attempts for dashboard
+router.get('/recent-attempts', async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 5, 20);
+        const attempts = await Attempt.find()
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        // Attach test title to each attempt
+        const testIds = [...new Set(attempts.map(a => a.testId.toString()))];
+        const tests = await Test.find(
+            { _id: { $in: testIds } },
+            { title: 1, level: 1, unit: 1 }
+        ).lean();
+        const testMap = Object.fromEntries(tests.map(t => [t._id.toString(), t]));
+
+        const enriched = attempts.map(a => ({
+            ...a,
+            test: testMap[a.testId.toString()] || { title: 'Deleted test' }
+        }));
+
+        res.json(enriched);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch recent attempts: ' + err.message });
     }
 });
 
