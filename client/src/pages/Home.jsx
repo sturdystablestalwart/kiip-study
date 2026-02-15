@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -402,7 +402,7 @@ function Home() {
   const [deleteModal, setDeleteModal] = useState({ show: false, testId: null, testTitle: '' });
   const [deleting, setDeleting] = useState(false);
 
-  const fetchTests = async (cursor = null, append = false) => {
+  const fetchTests = useCallback(async (cursor = null, append = false) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -435,11 +435,11 @@ function Home() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [levelFilter, unitFilter]);
 
   useEffect(() => {
     fetchTests();
-  }, [levelFilter, unitFilter]);
+  }, [fetchTests]);
 
   useEffect(() => {
     const fetchRecent = async () => {
