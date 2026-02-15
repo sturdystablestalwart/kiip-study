@@ -19,8 +19,10 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull origin main
-            docker compose build --no-cache
+            docker compose build
             docker compose up -d
-            sleep 10
-            curl -sf http://localhost:80/health || (echo "Health check failed" && exit 1)
-            echo "Deploy successful"
+            for i in $(seq 1 30); do
+              curl -sf http://localhost:80/health && echo "Deploy successful" && exit 0
+              sleep 5
+            done
+            echo "Health check failed after 150s" && exit 1
