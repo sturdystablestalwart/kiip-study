@@ -64,7 +64,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
-## Phase 1 — Production Foundation
+## Phase 1 — Production Foundation ✅ COMPLETE
 
 > Docker, CI, deploy to home server.
 
@@ -72,19 +72,19 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Tasks (PR-sized)
 
-- [ ] **1.1** Create production client build container (static assets via `npm run build`)
-- [ ] **1.2** Add nginx (or Express static) to serve client build in production
-- [ ] **1.3** Add Docker volumes for MongoDB data and uploads persistence
-- [ ] **1.4** Add `/health` endpoint + uptime check
-- [ ] **1.5** CI: install → lint → build → Playwright headless on every PR
-- [ ] **1.6** CI: build images and deploy (main branch) to home server
+- [x] **1.1** Multi-stage client Dockerfile (node:20-alpine build → nginx:alpine serve)
+- [x] **1.2** Nginx reverse proxy: serves SPA, proxies `/api` + `/uploads` + `/health` to Express
+- [x] **1.3** Docker volumes: `mongo_data` + `server_uploads` named volumes, persistent across rebuilds
+- [x] **1.4** `/health` endpoint with MongoDB state + uptime (done in Phase 0)
+- [x] **1.5** CI: install → lint → build → Playwright chromium on every PR (`.github/workflows/ci.yml`)
+- [x] **1.6** CI: SSH deploy on main push — pull → build → up → health check (`.github/workflows/deploy.yml`)
 
 ### Acceptance Criteria
 
-- Production instance runs on home server via Docker Compose
-- Data persists across container restarts
-- CI blocks PRs with lint/build/test failures
-- Deploy triggers automatically on main branch merge
+- [x] Production instance runs on home server via Docker Compose
+- [x] Data persists across container restarts (named volumes)
+- [x] CI blocks PRs with lint/build/test failures
+- [x] Deploy triggers automatically on main branch push
 
 ---
 
