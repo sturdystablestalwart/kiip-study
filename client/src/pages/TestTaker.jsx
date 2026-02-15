@@ -484,16 +484,47 @@ function TestTaker() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleSelect = (idx) => {
+  const handleSelect = useCallback((idx) => {
     if (isSubmitted) return;
-    setAnswers({
-      ...answers,
+    setAnswers(prev => ({
+      ...prev,
       [currentQ]: {
         index: idx,
         overdue: timerExpired
       }
-    });
-  };
+    }));
+  }, [isSubmitted, currentQ, timerExpired]);
+
+  // Keyboard shortcuts: 1-4 select options, arrow keys navigate
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isSubmitted || showExitModal || showModeModal) return;
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (!test) return;
+
+      const question = test.questions[currentQ];
+      if (!question) return;
+
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= question.options.length) {
+        e.preventDefault();
+        handleSelect(num - 1);
+        return;
+      }
+
+      if (e.key === 'ArrowRight' && currentQ < test.questions.length - 1) {
+        e.preventDefault();
+        setCurrentQ(currentQ + 1);
+      } else if (e.key === 'ArrowLeft' && currentQ > 0) {
+        e.preventDefault();
+        setCurrentQ(currentQ - 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [test, currentQ, isSubmitted, showExitModal, showModeModal, handleSelect]);
 
   const handleModeChange = (newMode) => {
     if (hasProgress) {
