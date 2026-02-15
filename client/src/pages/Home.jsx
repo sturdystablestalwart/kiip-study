@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
+import FilterDropdown from '../components/FilterDropdown';
 
 /* ───────── Styled Components ───────── */
 
@@ -249,34 +250,216 @@ const ModalBtnDanger = styled(ModalBtn)`
   color: ${({ theme }) => theme.colors.bg.surface};
 `;
 
+const DashboardSection = styled.section`
+  margin-bottom: ${({ theme }) => theme.layout.space[7]}px;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: ${({ theme }) => theme.typography.scale.h3.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin: 0 0 ${({ theme }) => theme.layout.space[4]}px 0;
+`;
+
+const ContinueCard = styled(Link)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  padding: ${({ theme }) => theme.layout.space[5]}px ${({ theme }) => theme.layout.space[6]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.accent.indigo}33;
+  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+  text-decoration: none;
+  color: inherit;
+  transition: transform ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease},
+              box-shadow ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.layout.shadow.md};
+  }
+`;
+
+const ContinueInfo = styled.div`
+  flex: 1;
+`;
+
+const ContinueTitle = styled.h3`
+  margin: 0 0 ${({ theme }) => theme.layout.space[1]}px 0;
+  color: ${({ theme }) => theme.colors.text.primary};
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+`;
+
+const ContinueMeta = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+`;
+
+const ContinueScore = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.h2.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h2.weight};
+  color: ${({ theme }) => theme.colors.accent.moss};
+`;
+
+const RecentRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  overflow-x: auto;
+  padding-bottom: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const RecentChip = styled(Link)`
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  text-decoration: none;
+  color: inherit;
+  transition: transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+`;
+
+const RecentScore = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
+  color: ${({ theme }) => theme.colors.accent.moss};
+`;
+
+const RecentLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  margin-top: 2px;
+`;
+
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  align-items: center;
+`;
+
+const TestCount = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+`;
+
+const LoadMoreButton = styled.button`
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: ${({ theme }) => theme.layout.space[6]}px auto 0;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  color: ${({ theme }) => theme.colors.text.muted};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+  cursor: pointer;
+  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.border.subtle};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 /* ───────── Component ───────── */
 
 function Home() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [levelFilter, setLevelFilter] = useState('');
+  const [unitFilter, setUnitFilter] = useState('');
+  const [recentAttempts, setRecentAttempts] = useState([]);
   const [deleteModal, setDeleteModal] = useState({ show: false, testId: null, testTitle: '' });
   const [deleting, setDeleting] = useState(false);
 
-  const fetchTests = async () => {
+  const fetchTests = async (cursor = null, append = false) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
-      const res = await axios.get(`${API_BASE_URL}/api/tests`, {
+
+      const params = new URLSearchParams();
+      if (levelFilter) params.set('level', levelFilter);
+      if (unitFilter) params.set('unit', unitFilter);
+      if (cursor) params.set('cursor', cursor);
+      params.set('limit', '20');
+
+      const res = await axios.get(`${API_BASE_URL}/api/tests?${params}`, {
         timeout: 10000
       });
-      setTests(res.data);
+
+      if (append) {
+        setTests(prev => [...prev, ...res.data.tests]);
+      } else {
+        setTests(res.data.tests);
+      }
+      setNextCursor(res.data.nextCursor);
+      setTotal(res.data.total);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.message || 'Could not reach the server');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
     fetchTests();
+  }, [levelFilter, unitFilter]);
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/tests/recent-attempts?limit=5`, {
+          timeout: 10000
+        });
+        setRecentAttempts(res.data);
+      } catch (err) {
+        console.error('Failed to fetch recent attempts:', err);
+      }
+    };
+    fetchRecent();
   }, []);
+
+  const handleLoadMore = () => {
+    if (nextCursor) {
+      fetchTests(nextCursor, true);
+    }
+  };
 
   const handleDeleteClick = (e, testId, testTitle) => {
     e.preventDefault();
@@ -302,16 +485,13 @@ function Home() {
     setDeleteModal({ show: false, testId: null, testTitle: '' });
   };
 
-  if (loading) {
-    return (
-      <div>
-        <PageHeader>
-          <h1>Your Tests</h1>
-        </PageHeader>
-        <LoadingState>Loading your tests...</LoadingState>
-      </div>
-    );
-  }
+  const lastAttempt = recentAttempts[0];
+  const scorePercent = lastAttempt
+    ? Math.round((lastAttempt.score / lastAttempt.totalQuestions) * 100)
+    : 0;
+
+  const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
+  const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 
   return (
     <div>
@@ -323,15 +503,69 @@ function Home() {
       {error && (
         <ErrorBanner>
           <span>{error}</span>
-          <RetryButton onClick={fetchTests}>Try again</RetryButton>
+          <RetryButton onClick={() => fetchTests()}>Try again</RetryButton>
         </ErrorBanner>
       )}
 
-      {!error && tests.length === 0 && (
+      {lastAttempt && (
+        <DashboardSection>
+          <ContinueCard to={`/test/${lastAttempt.testId}`}>
+            <ContinueInfo>
+              <ContinueTitle>{lastAttempt.test?.title || 'Test'}</ContinueTitle>
+              <ContinueMeta>
+                {lastAttempt.mode} mode &middot; {lastAttempt.score}/{lastAttempt.totalQuestions}
+                {' '}&middot; {new Date(lastAttempt.createdAt).toLocaleDateString()}
+              </ContinueMeta>
+            </ContinueInfo>
+            <ContinueScore>{scorePercent}%</ContinueScore>
+          </ContinueCard>
+        </DashboardSection>
+      )}
+
+      {recentAttempts.length > 1 && (
+        <DashboardSection>
+          <SectionTitle>Recent Attempts</SectionTitle>
+          <RecentRow>
+            {recentAttempts.map((attempt, i) => (
+              <RecentChip key={attempt._id || i} to={`/test/${attempt.testId}`}>
+                <RecentScore>
+                  {Math.round((attempt.score / attempt.totalQuestions) * 100)}%
+                </RecentScore>
+                <RecentLabel>
+                  {attempt.test?.unit || attempt.test?.title?.slice(0, 8) || '...'}
+                </RecentLabel>
+              </RecentChip>
+            ))}
+          </RecentRow>
+        </DashboardSection>
+      )}
+
+      <FilterBar>
+        <SectionTitle style={{ margin: 0 }}>All Tests</SectionTitle>
+        <FilterGroup>
+          <FilterDropdown
+            label="Level"
+            value={levelFilter}
+            options={LEVEL_OPTIONS}
+            onChange={setLevelFilter}
+          />
+          <FilterDropdown
+            label="Unit"
+            value={unitFilter}
+            options={UNIT_OPTIONS}
+            onChange={setUnitFilter}
+          />
+          {total > 0 && <TestCount>{total} tests</TestCount>}
+        </FilterGroup>
+      </FilterBar>
+
+      {!loading && !error && tests.length === 0 && (
         <EmptyState>
-          <h2>No tests yet</h2>
-          <p>Create one to start practicing!</p>
-          <CreateButton to="/create">Create a Test</CreateButton>
+          <h2>No tests found</h2>
+          <p>{levelFilter || unitFilter ? 'Try different filters.' : 'Create one to start practicing!'}</p>
+          {!levelFilter && !unitFilter && (
+            <CreateButton to="/create">Create a Test</CreateButton>
+          )}
         </EmptyState>
       )}
 
@@ -346,7 +580,7 @@ function Home() {
                 &times;
               </DeleteButton>
               <CardTitle>{test.title}</CardTitle>
-              <CardMeta>{test.questions?.length || 0} questions</CardMeta>
+              <CardMeta>{test.questionCount} questions</CardMeta>
               {test.lastAttempt ? (
                 <CardScore>
                   Last score: {test.lastAttempt.score}/{test.lastAttempt.totalQuestions}
@@ -360,12 +594,18 @@ function Home() {
         </Grid>
       )}
 
+      {nextCursor && (
+        <LoadMoreButton onClick={handleLoadMore} disabled={loadingMore}>
+          {loadingMore ? 'Loading...' : 'Load more tests'}
+        </LoadMoreButton>
+      )}
+
       {deleteModal.show && (
         <ModalOverlay onClick={cancelDelete}>
           <ModalCard onClick={e => e.stopPropagation()}>
             <h3>Remove this test?</h3>
             <p>
-              "{deleteModal.testTitle}" and its attempt history will be permanently removed.
+              &ldquo;{deleteModal.testTitle}&rdquo; and its attempt history will be permanently removed.
             </p>
             <ModalActions>
               <ModalBtnCancel onClick={cancelDelete}>Keep it</ModalBtnCancel>
