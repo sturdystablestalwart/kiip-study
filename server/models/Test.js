@@ -10,7 +10,12 @@ const QuestionSchema = new mongoose.Schema({
     image: { type: String },
     options: [OptionSchema],
     explanation: { type: String },
-    type: { type: String, default: 'multiple-choice' }
+    type: { type: String, enum: ['mcq-single', 'mcq-multiple', 'short-answer', 'ordering', 'fill-in-the-blank'], default: 'mcq-single' },
+    acceptedAnswers: [{ type: String }],
+    correctOrder: [{ type: Number }],
+    blanks: [{
+        acceptedAnswers: [{ type: String }]
+    }]
 });
 
 const TestSchema = new mongoose.Schema({
