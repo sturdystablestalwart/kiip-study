@@ -6,6 +6,7 @@ import GlobalStyles from './theme/GlobalStyles';
 import Home from './pages/Home';
 import CreateTest from './pages/CreateTest';
 import TestTaker from './pages/TestTaker';
+import EndlessMode from './pages/EndlessMode';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
 
@@ -144,6 +145,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<CreateTest />} />
             <Route path="/test/:id" element={<TestTaker />} />
+            <Route path="/endless" element={<EndlessMode />} />
           </Routes>
         </AppShell>
         {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
