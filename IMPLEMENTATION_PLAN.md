@@ -119,38 +119,43 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
-## Phase 3 — Exam-Accurate Formats + Endless Mode
+## Phase 3 — Exam-Accurate Formats + Endless Mode ✅ COMPLETE
 
-> Written question types, missed-only review, endless mode with pools and repetition control.
+> 5 question types, missed-only review, endless mode with batch fetching and chunk submissions.
 
 **Goal:** Support all KIIP paper question types and offer an endless practice mode drawing from the full library.
 
 ### Tasks (PR-sized)
 
-- [ ] **3.1** Define question type enum + schema validation (MCQ single, MCQ multiple, short answer, ordering, fill-in-the-blank)
-- [ ] **3.2** Implement MCQ single and multiple correct rendering + scoring
-- [ ] **3.3** Implement at least one additional written type (short answer or ordering) based on KIIP source materials
-- [ ] **3.4** Update TestTaker UI to render per-type interaction widgets
-- [ ] **3.5** Update scoring logic per question type
-- [ ] **3.6** Add "missed questions only" review flow after attempts
-- [ ] **3.7** Endless mode: start session selecting theme/unit OR random
-- [ ] **3.8** Endless mode: draw from full public library pool with recent-window exclusion (last ~30 questions)
-- [ ] **3.9** Endless mode: chunked submissions (every N questions) to create attempts for tracking
+- [x] **3.1** Question type enum (`mcq-single`, `mcq-multiple`, `short-answer`, `ordering`, `fill-in-the-blank`) + schema fields (`acceptedAnswers`, `correctOrder`, `blanks`) + migration script
+- [x] **3.2** AnswerSchema updated (`selectedOptions`, `textAnswer`, `orderedItems`, `blankAnswers`) + Endless mode support (`testId` optional, `sourceQuestions`, `mode: 'Endless'`)
+- [x] **3.3** Shared scoring utility (server + client) for all 5 question types
+- [x] **3.4** Per-type question renderer components (MCQSingle, MCQMultiple, ShortAnswer, Ordering, FillInTheBlank) + QuestionRenderer switcher
+- [x] **3.5** TestTaker integrated with QuestionRenderer + keyboard shortcuts for MCQ types + missed-only review mode
+- [x] **3.6** Server-side score verification in POST /:id/attempt using scoring utility
+- [x] **3.7** Endless mode API: GET /endless (random batch with exclusion) + POST /endless/attempt (chunk submission)
+- [x] **3.8** EndlessMode page: start screen with filters, Practice-style instant feedback, batch fetching, chunk auto-submission, stats bar, end screen
+- [x] **3.9** Endless Mode entry card on Home dashboard + recent attempts display handles Endless mode
+
+### API Changes
+
+| Method | Endpoint | Change |
+|--------|----------|--------|
+| `GET` | `/api/tests/endless?level=&unit=&exclude=&limit=` | New — random question batch with exclusion |
+| `POST` | `/api/tests/endless/attempt` | New — save endless chunk attempt |
+| `POST` | `/api/tests/:id/attempt` | Updated — server-side score verification |
 
 ### Data Model Changes
 
-**Question types supported:**
-- MCQ (single correct)
-- MCQ (multiple correct)
-- Short answer / fill-in
-- Ordering / sequence
-- Fill-in-the-blank
+**QuestionSchema additions:** `type` enum, `acceptedAnswers`, `correctOrder`, `blanks`
+**AnswerSchema:** `selectedOptions`, `textAnswer`, `orderedItems`, `blankAnswers` (replaces `selectedOption`)
+**AttemptSchema:** `mode` enum includes `'Endless'`, `testId` optional, `sourceQuestions` added
 
 ### Acceptance Criteria
 
-- At least 3 question types render correctly with proper scoring
-- Endless mode draws non-repeating questions from the full library
-- Missed-only review shows only incorrect answers for re-practice
+- [x] All 5 question types render correctly with proper scoring
+- [x] Endless mode draws non-repeating questions from the full library (rolling 30-question exclusion window)
+- [x] Missed-only review shows only incorrect answers for re-practice
 
 ---
 
