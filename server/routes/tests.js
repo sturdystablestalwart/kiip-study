@@ -259,8 +259,10 @@ router.get('/recent-attempts', async (req, res) => {
             .limit(limit)
             .lean();
 
-        // Attach test title to each attempt
-        const testIds = [...new Set(attempts.map(a => a.testId.toString()))];
+        // Attach test title to each attempt (skip null testIds from endless mode)
+        const testIds = [...new Set(
+            attempts.filter(a => a.testId).map(a => a.testId.toString())
+        )];
         const tests = await Test.find(
             { _id: { $in: testIds } },
             { title: 1, level: 1, unit: 1 }
@@ -269,12 +271,95 @@ router.get('/recent-attempts', async (req, res) => {
 
         const enriched = attempts.map(a => ({
             ...a,
-            test: testMap[a.testId.toString()] || { title: 'Deleted test' }
+            test: a.testId
+                ? (testMap[a.testId.toString()] || { title: 'Deleted test' })
+                : { title: 'Endless Mode' }
         }));
 
         res.json(enriched);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch recent attempts: ' + err.message });
+    }
+});
+
+// GET random questions for endless mode
+router.get('/endless', async (req, res) => {
+    try {
+        const { level, unit, exclude, limit: rawLimit } = req.query;
+        const limit = Math.min(Math.max(parseInt(rawLimit) || 10, 1), 20);
+
+        // Parse excluded question identifiers (format: "testId:qIdx,testId:qIdx")
+        const excludeSet = new Set((exclude || '').split(',').filter(Boolean));
+
+        // Build match for tests
+        const match = {};
+        if (level) match.level = level;
+        if (unit) match.unit = unit;
+
+        // Fetch matching tests with their questions
+        const tests = await Test.find(match, { questions: 1, title: 1 }).lean();
+
+        // Flatten all questions with source references
+        let pool = [];
+        for (const test of tests) {
+            for (let i = 0; i < test.questions.length; i++) {
+                const key = `${test._id}:${i}`;
+                if (!excludeSet.has(key)) {
+                    pool.push({
+                        ...test.questions[i],
+                        _sourceTestId: test._id,
+                        _sourceIndex: i,
+                        _sourceKey: key
+                    });
+                }
+            }
+        }
+
+        // Shuffle and pick `limit` questions (Fisher-Yates)
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+
+        const selected = pool.slice(0, limit);
+
+        res.json({
+            questions: selected,
+            remaining: pool.length - selected.length
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch endless questions: ' + err.message });
+    }
+});
+
+// POST save endless mode chunk attempt
+router.post('/endless/attempt', async (req, res) => {
+    try {
+        const { answers, duration, sourceQuestions } = req.body;
+        if (!answers || !answers.length) {
+            return res.status(400).json({ message: 'No answers provided' });
+        }
+
+        let score = 0;
+        const verifiedAnswers = answers.map(ans => {
+            if (ans.isCorrect) score++;
+            return ans;
+        });
+
+        const attempt = new Attempt({
+            testId: null,
+            score,
+            totalQuestions: answers.length,
+            duration: duration || 0,
+            overdueTime: 0,
+            answers: verifiedAnswers,
+            sourceQuestions: sourceQuestions || [],
+            mode: 'Endless'
+        });
+        const savedAttempt = await attempt.save();
+        res.status(201).json(savedAttempt);
+    } catch (err) {
+        res.status(400).json({ message: 'Failed to save endless attempt: ' + err.message });
     }
 });
 
