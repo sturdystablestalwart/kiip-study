@@ -342,6 +342,48 @@ const RecentLabel = styled.span`
   margin-top: 2px;
 `;
 
+const EndlessCard = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[5]}px;
+  padding: ${({ theme }) => theme.layout.space[5]}px ${({ theme }) => theme.layout.space[6]}px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+  text-decoration: none;
+  color: inherit;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              box-shadow ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent.moss};
+    box-shadow: ${({ theme }) => theme.layout.shadow.md};
+  }
+`;
+
+const EndlessIcon = styled.span`
+  font-size: 32px;
+  color: ${({ theme }) => theme.colors.accent.moss};
+  line-height: 1;
+`;
+
+const EndlessInfo = styled.div`
+  flex: 1;
+`;
+
+const EndlessTitle = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: ${({ theme }) => theme.layout.space[1]}px;
+`;
+
+const EndlessMeta = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+`;
+
 const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
@@ -539,6 +581,16 @@ function Home() {
           </RecentRow>
         </DashboardSection>
       )}
+
+      <DashboardSection>
+        <EndlessCard to="/endless">
+          <EndlessIcon>&#x221E;</EndlessIcon>
+          <EndlessInfo>
+            <EndlessTitle>Endless Practice</EndlessTitle>
+            <EndlessMeta>Random questions from the full library. No timer, no limits.</EndlessMeta>
+          </EndlessInfo>
+        </EndlessCard>
+      </DashboardSection>
 
       <FilterBar>
         <SectionTitle style={{ margin: 0 }}>All Tests</SectionTitle>
