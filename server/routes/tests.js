@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
+const { scoreQuestion } = require('../utils/scoring');
 
 // --- Rate Limiting (10 requests per minute) ---
 const apiLimiter = rateLimit({
@@ -422,12 +423,30 @@ router.post('/generate-from-file', apiLimiter, documentUpload.single('file'), as
     }
 });
 
-// POST save attempt
+// POST save attempt (server-side score verification)
 router.post('/:id/attempt', async (req, res) => {
     try {
+        const test = await Test.findById(req.params.id);
+        if (!test) return res.status(404).json({ message: 'Test not found' });
+
+        // Server-side score verification
+        let serverScore = 0;
+        const verifiedAnswers = (req.body.answers || []).map((ans, idx) => {
+            const question = test.questions[idx];
+            if (!question) return { ...ans, isCorrect: false };
+            const isCorrect = scoreQuestion(question, ans);
+            if (isCorrect) serverScore++;
+            return { ...ans, isCorrect };
+        });
+
         const attempt = new Attempt({
             testId: req.params.id,
-            ...req.body
+            score: serverScore,
+            totalQuestions: test.questions.length,
+            duration: req.body.duration,
+            overdueTime: req.body.overdueTime || 0,
+            answers: verifiedAnswers,
+            mode: req.body.mode || 'Test'
         });
         const savedAttempt = await attempt.save();
         res.status(201).json(savedAttempt);
