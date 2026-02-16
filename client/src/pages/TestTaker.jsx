@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
+import QuestionRenderer from '../components/QuestionRenderer';
+import { scoreQuestion } from '../utils/scoring';
 
 /* ───────── Styled Components ───────── */
 
@@ -154,67 +156,6 @@ const QuestionText = styled.h2`
   line-height: ${({ theme }) => theme.typography.scale.h2.line}px;
 `;
 
-const OptionsGrid = styled.div`
-  display: grid;
-  gap: ${({ theme }) => theme.layout.space[3]}px;
-`;
-
-const OptionButton = styled.button`
-  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  text-align: left;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  line-height: ${({ theme }) => theme.typography.scale.body.line}px;
-  cursor: pointer;
-  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  background: ${({ $isCorrect, $selected, $submitted, theme }) => {
-    if ($isCorrect && $submitted) return theme.colors.state.correctBg;
-    if ($selected && $submitted && !$isCorrect) return theme.colors.state.wrongBg;
-    if ($selected) return theme.colors.selection.bg;
-    return theme.colors.bg.surface;
-  }};
-
-  border: 1px solid ${({ $isCorrect, $selected, $submitted, theme }) => {
-    if ($isCorrect && $submitted) return theme.colors.state.success;
-    if ($selected && $submitted && !$isCorrect) return theme.colors.state.danger;
-    if ($selected) return theme.colors.accent.indigo;
-    return theme.colors.border.subtle;
-  }};
-
-  color: ${({ theme }) => theme.colors.text.primary};
-
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.accent.indigo};
-    background: ${({ $selected, $submitted, theme }) => {
-      if ($submitted) return undefined;
-      if ($selected) return theme.colors.selection.bg;
-      return theme.colors.bg.surfaceAlt;
-    }};
-  }
-
-  &:disabled {
-    cursor: default;
-  }
-`;
-
-const ExplanationPanel = styled.div`
-  margin-top: ${({ theme }) => theme.layout.space[6]}px;
-  padding: ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.state.infoBg};
-  border-left: 4px solid ${({ theme }) => theme.colors.accent.indigo};
-  border-radius: 0 ${({ theme }) => theme.layout.radius.sm}px ${({ theme }) => theme.layout.radius.sm}px 0;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  line-height: ${({ theme }) => theme.typography.scale.body.line}px;
-  color: ${({ theme }) => theme.colors.text.primary};
-
-  strong {
-    color: ${({ theme }) => theme.colors.accent.indigo};
-  }
-`;
-
 const Controls = styled.div`
   display: flex;
   justify-content: space-between;
@@ -273,6 +214,20 @@ const BackToTestsButton = styled(NavButton)`
   &:hover:not(:disabled) {
     background: #8B5340;
   }
+`;
+
+const ReviewButton = styled.button`
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  background: ${({ theme }) => theme.colors.accent.moss};
+  color: ${({ theme }) => theme.colors.bg.surface};
+  border: none;
+  cursor: pointer;
+  margin-top: ${({ theme }) => theme.layout.space[4]}px;
+  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:hover { opacity: 0.9; }
 `;
 
 /* ── Question navigation dots ── */
@@ -431,6 +386,7 @@ function TestTaker() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
+  const [reviewMode, setReviewMode] = useState(false);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -484,18 +440,7 @@ function TestTaker() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleSelect = useCallback((idx) => {
-    if (isSubmitted) return;
-    setAnswers(prev => ({
-      ...prev,
-      [currentQ]: {
-        index: idx,
-        overdue: timerExpired
-      }
-    }));
-  }, [isSubmitted, currentQ, timerExpired]);
-
-  // Keyboard shortcuts: 1-4 select options, arrow keys navigate
+  // Keyboard shortcuts: 1-N select options (MCQ types), arrow keys navigate
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (isSubmitted || showExitModal || showModeModal) return;
@@ -506,11 +451,31 @@ function TestTaker() {
       const question = test.questions[currentQ];
       if (!question) return;
 
-      const num = parseInt(e.key);
-      if (num >= 1 && num <= question.options.length) {
-        e.preventDefault();
-        handleSelect(num - 1);
-        return;
+      const qType = question.type || 'mcq-single';
+      if ((qType === 'mcq-single' || qType === 'mcq-multiple' || qType === 'multiple-choice') && question.options) {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= question.options.length) {
+          e.preventDefault();
+          if (qType === 'mcq-multiple') {
+            // Toggle selection for multi-select
+            const current = answers[currentQ]?.selectedOptions || [];
+            const idx = num - 1;
+            const newSelected = current.includes(idx)
+              ? current.filter(i => i !== idx)
+              : [...current, idx];
+            setAnswers(prev => ({
+              ...prev,
+              [currentQ]: { selectedOptions: newSelected, overdue: timerExpired }
+            }));
+          } else {
+            // Single select
+            setAnswers(prev => ({
+              ...prev,
+              [currentQ]: { selectedOptions: [num - 1], overdue: timerExpired }
+            }));
+          }
+          return;
+        }
       }
 
       if (e.key === 'ArrowRight' && currentQ < test.questions.length - 1) {
@@ -524,7 +489,7 @@ function TestTaker() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [test, currentQ, isSubmitted, showExitModal, showModeModal, handleSelect]);
+  }, [test, currentQ, answers, isSubmitted, showExitModal, showModeModal, timerExpired]);
 
   const handleModeChange = (newMode) => {
     if (hasProgress) {
@@ -552,11 +517,14 @@ function TestTaker() {
     let correctCount = 0;
     const submissionAnswers = test.questions.map((q, idx) => {
       const ans = answers[idx];
-      const isCorrect = ans !== undefined && q.options[ans.index]?.isCorrect;
+      const isCorrect = ans ? scoreQuestion(q, ans) : false;
       if (isCorrect) correctCount++;
       return {
         questionIndex: idx,
-        selectedOption: ans?.index ?? -1,
+        selectedOptions: ans?.selectedOptions,
+        textAnswer: ans?.textAnswer,
+        orderedItems: ans?.orderedItems,
+        blankAnswers: ans?.blankAnswers,
         isCorrect,
         isOverdue: ans?.overdue ?? false
       };
@@ -611,6 +579,36 @@ function TestTaker() {
     return <LoadingScreen>Loading your test...</LoadingScreen>;
   }
 
+  const missedIndices = (isSubmitted && test)
+    ? test.questions.map((q, i) => {
+        const ans = answers[i];
+        return (!ans || !scoreQuestion(q, ans)) ? i : -1;
+      }).filter(i => i >= 0)
+    : [];
+
+  // Review-mode navigation helpers
+  const reviewPos = reviewMode ? missedIndices.indexOf(currentQ) : -1;
+  const canGoPrev = reviewMode ? reviewPos > 0 : currentQ > 0;
+  const canGoNext = reviewMode
+    ? reviewPos < missedIndices.length - 1
+    : currentQ < test.questions.length - 1;
+
+  const goPrev = () => {
+    if (reviewMode) {
+      setCurrentQ(missedIndices[reviewPos - 1]);
+    } else {
+      setCurrentQ(Math.max(0, currentQ - 1));
+    }
+  };
+
+  const goNext = () => {
+    if (reviewMode) {
+      setCurrentQ(missedIndices[reviewPos + 1]);
+    } else {
+      setCurrentQ(currentQ + 1);
+    }
+  };
+
   const currentQuestion = test.questions[currentQ];
   const currentAnswer = answers[currentQ];
   const showFeedback = mode === 'Practice' ? (currentAnswer !== undefined) : isSubmitted;
@@ -652,6 +650,16 @@ function TestTaker() {
               You went over by {formatTime(overdueSeconds)}.
             </OverdueNote>
           )}
+          {missedIndices.length > 0 && !reviewMode && (
+            <ReviewButton onClick={() => { setReviewMode(true); setCurrentQ(missedIndices[0]); }}>
+              Review {missedIndices.length} missed question{missedIndices.length !== 1 ? 's' : ''}
+            </ReviewButton>
+          )}
+          {reviewMode && (
+            <ReviewButton onClick={() => setReviewMode(false)}>
+              Back to results
+            </ReviewButton>
+          )}
           <BackToTestsButton onClick={() => navigate('/')}>
             Back to tests
           </BackToTestsButton>
@@ -666,33 +674,28 @@ function TestTaker() {
           />
         )}
         <QuestionText>{currentQ + 1}. {currentQuestion.text}</QuestionText>
-        <OptionsGrid>
-          {currentQuestion.options.map((opt, idx) => (
-            <OptionButton
-              key={idx}
-              $selected={currentAnswer?.index === idx}
-              $isCorrect={opt.isCorrect}
-              $submitted={showFeedback}
-              onClick={() => handleSelect(idx)}
-              disabled={isSubmitted}
-            >
-              {idx + 1}. {opt.text}
-            </OptionButton>
-          ))}
-        </OptionsGrid>
-
-        {showFeedback && currentQuestion.explanation && (
-          <ExplanationPanel>
-            <strong>Why?</strong> {currentQuestion.explanation}
-          </ExplanationPanel>
-        )}
+        <QuestionRenderer
+          question={currentQuestion}
+          answer={currentAnswer}
+          onAnswer={(answerData) => {
+            if (isSubmitted) return;
+            setAnswers(prev => ({
+              ...prev,
+              [currentQ]: { ...answerData, overdue: timerExpired }
+            }));
+          }}
+          showFeedback={showFeedback}
+          disabled={isSubmitted}
+        />
 
         <Controls>
-          <NavButton onClick={() => setCurrentQ(Math.max(0, currentQ - 1))} disabled={currentQ === 0}>
+          <NavButton onClick={goPrev} disabled={!canGoPrev}>
             Previous
           </NavButton>
-          {currentQ < test.questions.length - 1 ? (
-            <NavButton $primary onClick={() => setCurrentQ(currentQ + 1)}>Next</NavButton>
+          {reviewMode ? (
+            <NavButton $primary onClick={goNext} disabled={!canGoNext}>Next</NavButton>
+          ) : canGoNext ? (
+            <NavButton $primary onClick={goNext}>Next</NavButton>
           ) : (
             <SubmitButton onClick={handleSubmit} disabled={isSubmitted}>
               Submit
@@ -701,15 +704,15 @@ function TestTaker() {
         </Controls>
 
         <QuestionNav>
-          {test.questions.map((_, idx) => (
+          {(reviewMode ? missedIndices : test.questions.map((_, i) => i)).map((qIdx) => (
             <QuestionDot
-              key={idx}
-              $current={idx === currentQ}
-              $answered={answers[idx] !== undefined}
-              onClick={() => setCurrentQ(idx)}
-              aria-label={`Question ${idx + 1}`}
+              key={qIdx}
+              $current={qIdx === currentQ}
+              $answered={answers[qIdx] !== undefined}
+              onClick={() => setCurrentQ(qIdx)}
+              aria-label={`Question ${qIdx + 1}`}
             >
-              {idx + 1}
+              {qIdx + 1}
             </QuestionDot>
           ))}
         </QuestionNav>
