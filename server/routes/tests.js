@@ -52,7 +52,7 @@ const parseTextWithLLM = async (text) => {
                 { "text": "Option 4", "isCorrect": false }
               ],
               "explanation": "Why the correct answer is right (IN ENGLISH)",
-              "type": "multiple-choice",
+              "type": "mcq-single",
               "image": "optional_filename.jpg"
             }
           ]
