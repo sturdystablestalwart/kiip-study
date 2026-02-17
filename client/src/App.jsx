@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import CreateTest from './pages/CreateTest';
 import TestTaker from './pages/TestTaker';
 import EndlessMode from './pages/EndlessMode';
+import AdminTestEditor from './pages/AdminTestEditor';
+import AdminFlags from './pages/AdminFlags';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -202,6 +204,8 @@ function App() {
               <Route path="/create" element={<CreateTest />} />
               <Route path="/test/:id" element={<TestTaker />} />
               <Route path="/endless" element={<EndlessMode />} />
+              <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
+              <Route path="/admin/flags" element={<AdminFlags />} />
             </Routes>
           </AppShell>
           {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
