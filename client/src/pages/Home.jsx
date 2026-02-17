@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import FilterDropdown from '../components/FilterDropdown';
 
 /* ───────── Styled Components ───────── */
@@ -117,6 +117,28 @@ const DeleteButton = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.state.danger};
     background: ${({ theme }) => theme.colors.state.wrongBg};
+  }
+`;
+
+const EditButton = styled(Link)`
+  position: absolute;
+  top: ${({ theme }) => theme.layout.space[3]}px;
+  right: ${({ theme }) => theme.layout.space[8]}px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: 14px;
+  text-decoration: none;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.accent.indigo};
+    background: ${({ theme }) => theme.colors.selection.bg};
   }
 `;
 
@@ -432,6 +454,8 @@ const LoadMoreButton = styled.button`
 /* ───────── Component ───────── */
 
 function Home() {
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin;
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -459,7 +483,7 @@ function Home() {
       if (cursor) params.set('cursor', cursor);
       params.set('limit', '20');
 
-      const res = await axios.get(`${API_BASE_URL}/api/tests?${params}`, {
+      const res = await api.get(`/api/tests?${params}`, {
         timeout: 10000
       });
 
@@ -486,7 +510,7 @@ function Home() {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/tests/recent-attempts?limit=5`, {
+        const res = await api.get(`/api/tests/recent-attempts?limit=5`, {
           timeout: 10000
         });
         setRecentAttempts(res.data);
@@ -512,7 +536,7 @@ function Home() {
   const confirmDelete = async () => {
     setDeleting(true);
     try {
-      await axios.delete(`${API_BASE_URL}/api/tests/${deleteModal.testId}`);
+      await api.delete(`/api/admin/tests/${deleteModal.testId}`);
       setTests(tests.filter(t => t._id !== deleteModal.testId));
       setDeleteModal({ show: false, testId: null, testTitle: '' });
     } catch (err) {
@@ -539,7 +563,7 @@ function Home() {
     <div>
       <PageHeader>
         <h1>Your Tests</h1>
-        <CreateButton to="/create">+ New Test</CreateButton>
+        {isAdmin && <CreateButton to="/create">+ New Test</CreateButton>}
       </PageHeader>
 
       {error && (
@@ -615,7 +639,7 @@ function Home() {
         <EmptyState>
           <h2>No tests found</h2>
           <p>{levelFilter || unitFilter ? 'Try different filters.' : 'Create one to start practicing!'}</p>
-          {!levelFilter && !unitFilter && (
+          {isAdmin && !levelFilter && !unitFilter && (
             <CreateButton to="/create">Create a Test</CreateButton>
           )}
         </EmptyState>
@@ -625,12 +649,23 @@ function Home() {
         <Grid>
           {tests.map(test => (
             <Card key={test._id} to={`/test/${test._id}`}>
-              <DeleteButton
-                onClick={(e) => handleDeleteClick(e, test._id, test.title)}
-                aria-label={`Delete ${test.title}`}
-              >
-                &times;
-              </DeleteButton>
+              {isAdmin && (
+                <EditButton
+                  to={`/admin/tests/${test._id}/edit`}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Edit ${test.title}`}
+                >
+                  &#9998;
+                </EditButton>
+              )}
+              {isAdmin && (
+                <DeleteButton
+                  onClick={(e) => handleDeleteClick(e, test._id, test.title)}
+                  aria-label={`Delete ${test.title}`}
+                >
+                  &times;
+                </DeleteButton>
+              )}
               <CardTitle>{test.title}</CardTitle>
               <CardMeta>{test.questionCount} questions</CardMeta>
               {test.lastAttempt ? (

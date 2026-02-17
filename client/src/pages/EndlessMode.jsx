@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import api from '../utils/api';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import FilterDropdown from '../components/FilterDropdown';
@@ -384,7 +383,7 @@ function EndlessMode() {
       if (keysToExclude.length) params.set('exclude', keysToExclude.join(','));
       params.set('limit', '10');
 
-      const res = await axios.get(`${API_BASE_URL}/api/tests/endless?${params}`, { timeout: 10000 });
+      const res = await api.get(`/api/tests/endless?${params}`, { timeout: 10000 });
       setQuestions(res.data.questions);
       setRemaining(res.data.remaining);
       setCurrentIdx(0);
@@ -420,7 +419,7 @@ function EndlessMode() {
     }));
 
     try {
-      await axios.post(`${API_BASE_URL}/api/tests/endless/attempt`, {
+      await api.post('/api/tests/endless/attempt', {
         answers: formattedAnswers,
         duration: sessionDurationRef.current,
         sourceQuestions
@@ -593,7 +592,7 @@ function EndlessMode() {
       <QuestionCard>
         {currentQuestion.image && (
           <QuestionImage
-            src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${API_BASE_URL}${currentQuestion.image}`}
+            src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${currentQuestion.image}`}
             alt="Question visual"
           />
         )}

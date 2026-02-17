@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import api from '../utils/api';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 
@@ -391,7 +390,7 @@ function TestTaker() {
   useEffect(() => {
     const fetchTest = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/tests/${id}`, {
+        const res = await api.get(`/api/tests/${id}`, {
           timeout: 10000
         });
         setTest(res.data);
@@ -534,7 +533,7 @@ function TestTaker() {
     setIsSubmitted(true);
 
     try {
-      await axios.post(`${API_BASE_URL}/api/tests/${id}/attempt`, {
+      await api.post(`/api/tests/${id}/attempt`, {
         score: correctCount,
         totalQuestions: test.questions.length,
         duration: (30 * 60) - timeLeft,
@@ -669,7 +668,7 @@ function TestTaker() {
       <QuestionCard>
         {currentQuestion.image && (
           <QuestionImage
-            src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${API_BASE_URL}${currentQuestion.image}`}
+            src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${currentQuestion.image}`}
             alt="Question visual"
           />
         )}

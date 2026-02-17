@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import api from '../utils/api';
 
 const Overlay = styled.div`
   position: fixed;
@@ -121,8 +120,8 @@ function CommandPalette({ onClose }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/api/tests?q=${encodeURIComponent(query.trim())}&limit=10`,
+        const res = await api.get(
+          `/api/tests?q=${encodeURIComponent(query.trim())}&limit=10`,
           { timeout: 5000 }
         );
         setResults(res.data.tests || []);

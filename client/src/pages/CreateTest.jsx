@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import API_BASE_URL from '../config/api';
+import api from '../utils/api';
 
 /* ───────── Styled Components ───────── */
 
@@ -298,7 +297,7 @@ function CreateTest() {
       const formData = new FormData();
       formData.append('image', file);
       try {
-        const res = await axios.post(`${API_BASE_URL}/api/tests/upload`, formData, {
+        const res = await api.post('/api/admin/tests/upload', formData, {
           timeout: 30000,
           headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -351,7 +350,7 @@ function CreateTest() {
       if (file) {
         const formData = new FormData();
         formData.append('file', file);
-        await axios.post(`${API_BASE_URL}/api/tests/generate-from-file`, formData, {
+        await api.post('/api/admin/tests/generate-from-file', formData, {
           timeout: 120000,
           headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -359,7 +358,7 @@ function CreateTest() {
         const fullText = images.length > 0
           ? `${text}\n\n[Images available: ${images.join(', ')}]`
           : text;
-        await axios.post(`${API_BASE_URL}/api/tests/generate`, { text: fullText }, {
+        await api.post('/api/admin/tests/generate', { text: fullText }, {
           timeout: 120000
         });
       }
@@ -428,7 +427,7 @@ function CreateTest() {
           <ImagePreviewGrid>
             {images.map((url, i) => (
               <PreviewImageContainer key={i}>
-                <PreviewImage src={`${API_BASE_URL}${url}`} alt={`Preview ${i + 1}`} />
+                <PreviewImage src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`} alt={`Preview ${i + 1}`} />
                 <RemoveImageButton onClick={() => removeImage(i)} aria-label="Remove image">&times;</RemoveImageButton>
               </PreviewImageContainer>
             ))}
