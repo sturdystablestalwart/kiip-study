@@ -1,7 +1,9 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Test = require('../models/Test');
 const Attempt = require('../models/Attempt');
+const Flag = require('../models/Flag');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -294,6 +296,77 @@ router.delete('/tests/:id', async (req, res) => {
         res.json({ message: 'Test deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Failed to delete test: ' + err.message });
+    }
+});
+
+// ============================================
+// FLAG MANAGEMENT ROUTES
+// ============================================
+
+// GET /api/admin/flags — List flags (cursor-paginated, filterable by status)
+router.get('/flags', async (req, res) => {
+    try {
+        const { status, cursor, limit: rawLimit } = req.query;
+        const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 50);
+
+        const match = {};
+        if (status) match.status = status;
+        if (cursor) {
+            if (mongoose.Types.ObjectId.isValid(cursor)) {
+                match._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+            }
+        }
+
+        const flags = await Flag.find(match)
+            .sort({ createdAt: -1 })
+            .limit(limit + 1)
+            .populate('userId', 'email displayName')
+            .populate('testId', 'title')
+            .lean();
+
+        const hasMore = flags.length > limit;
+        const results = hasMore ? flags.slice(0, limit) : flags;
+        const nextCursor = hasMore ? results[results.length - 1]._id : null;
+
+        const openCount = await Flag.countDocuments({ status: 'open' });
+
+        res.json({ flags: results, nextCursor, openCount });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch flags: ' + err.message });
+    }
+});
+
+// GET /api/admin/flags/count — Get open flags count (for nav badge)
+router.get('/flags/count', async (req, res) => {
+    try {
+        const openCount = await Flag.countDocuments({ status: 'open' });
+        res.json({ openCount });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to count flags: ' + err.message });
+    }
+});
+
+// PATCH /api/admin/flags/:id — Resolve or dismiss a flag
+router.patch('/flags/:id', async (req, res) => {
+    try {
+        const { status, resolution } = req.body;
+        if (!['resolved', 'dismissed'].includes(status)) {
+            return res.status(400).json({ message: 'Status must be "resolved" or "dismissed"' });
+        }
+
+        const flag = await Flag.findByIdAndUpdate(
+            req.params.id,
+            { status, resolution: resolution || '' },
+            { new: true }
+        );
+
+        if (!flag) {
+            return res.status(404).json({ message: 'Flag not found' });
+        }
+
+        res.json(flag);
+    } catch (err) {
+        res.status(400).json({ message: 'Failed to update flag: ' + err.message });
     }
 });
 

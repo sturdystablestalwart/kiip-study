@@ -59,6 +59,9 @@ app.use('/api/auth', authRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+const flagRoutes = require('./routes/flags');
+app.use('/api/flags', flagRoutes);
+
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });
