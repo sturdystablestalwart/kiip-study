@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 
@@ -367,6 +368,63 @@ const ModalBtnDanger = styled(ModalBtn)`
   color: ${({ theme }) => theme.colors.bg.surface};
 `;
 
+/* ── Flag UI ── */
+
+const FlagButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  background: none;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
+  padding: ${({ theme }) => theme.layout.space[2]}px ${({ theme }) => theme.layout.space[3]}px;
+  cursor: pointer;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.state.warning};
+    border-color: ${({ theme }) => theme.colors.state.warning};
+  }
+`;
+
+const FlagSelect = styled.select`
+  width: 100%;
+  height: ${({ theme }) => theme.layout.controlHeights.input}px;
+  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
+  color: ${({ theme }) => theme.colors.text.primary};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+`;
+
+const FlagTextarea = styled.textarea`
+  width: 100%;
+  min-height: 80px;
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
+  color: ${({ theme }) => theme.colors.text.primary};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  resize: vertical;
+  margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+`;
+
+const FlagSuccessMsg = styled.p`
+  color: ${({ theme }) => theme.colors.state.success};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  text-align: center;
+  margin: ${({ theme }) => theme.layout.space[4]}px 0;
+`;
+
 /* ───────── Component ───────── */
 
 function TestTaker() {
@@ -386,6 +444,13 @@ function TestTaker() {
   const [showModeModal, setShowModeModal] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
   const [reviewMode, setReviewMode] = useState(false);
+
+  const { user } = useAuth();
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [flagNote, setFlagNote] = useState('');
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
+  const [flagSuccess, setFlagSuccess] = useState(false);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -442,7 +507,7 @@ function TestTaker() {
   // Keyboard shortcuts: 1-N select options (MCQ types), arrow keys navigate
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isSubmitted || showExitModal || showModeModal) return;
+      if (isSubmitted || showExitModal || showModeModal || showFlagModal) return;
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!test) return;
@@ -488,7 +553,7 @@ function TestTaker() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [test, currentQ, answers, isSubmitted, showExitModal, showModeModal, timerExpired]);
+  }, [test, currentQ, answers, isSubmitted, showExitModal, showModeModal, showFlagModal, timerExpired]);
 
   const handleModeChange = (newMode) => {
     if (hasProgress) {
@@ -560,6 +625,30 @@ function TestTaker() {
 
   const cancelExit = () => {
     setShowExitModal(false);
+  };
+
+  const handleFlagSubmit = async () => {
+    if (!flagReason) return;
+    setFlagSubmitting(true);
+    try {
+      await api.post('/api/flags', {
+        testId: id,
+        questionIndex: currentQ,
+        reason: flagReason,
+        note: flagNote
+      });
+      setFlagSuccess(true);
+      setTimeout(() => {
+        setShowFlagModal(false);
+        setFlagSuccess(false);
+        setFlagReason('');
+        setFlagNote('');
+      }, 1500);
+    } catch (err) {
+      console.error('Flag submit error:', err);
+    } finally {
+      setFlagSubmitting(false);
+    }
   };
 
   // Error state
@@ -687,6 +776,12 @@ function TestTaker() {
           disabled={isSubmitted}
         />
 
+        {user && !reviewMode && (
+          <FlagButton onClick={() => setShowFlagModal(true)}>
+            &#9873; Report issue
+          </FlagButton>
+        )}
+
         <Controls>
           <NavButton onClick={goPrev} disabled={!canGoPrev}>
             Previous
@@ -739,6 +834,47 @@ function TestTaker() {
               <ModalBtnSecondary onClick={cancelModeChange}>Cancel</ModalBtnSecondary>
               <ModalBtnPrimary onClick={confirmModeChange}>Switch & reset</ModalBtnPrimary>
             </ModalActions>
+          </ModalCard>
+        </ModalOverlay>
+      )}
+
+      {showFlagModal && (
+        <ModalOverlay onClick={() => setShowFlagModal(false)}>
+          <ModalCard onClick={e => e.stopPropagation()}>
+            <h3>Report an issue</h3>
+            {flagSuccess ? (
+              <FlagSuccessMsg>Thanks for your feedback!</FlagSuccessMsg>
+            ) : (
+              <>
+                <FlagSelect
+                  value={flagReason}
+                  onChange={e => setFlagReason(e.target.value)}
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="incorrect-answer">Incorrect answer</option>
+                  <option value="unclear-question">Unclear question</option>
+                  <option value="typo">Typo</option>
+                  <option value="other">Other</option>
+                </FlagSelect>
+                <FlagTextarea
+                  placeholder="Additional details (optional)"
+                  value={flagNote}
+                  onChange={e => setFlagNote(e.target.value)}
+                  maxLength={500}
+                />
+                <ModalActions>
+                  <ModalBtnSecondary onClick={() => setShowFlagModal(false)}>
+                    Cancel
+                  </ModalBtnSecondary>
+                  <ModalBtnPrimary
+                    onClick={handleFlagSubmit}
+                    disabled={!flagReason || flagSubmitting}
+                  >
+                    {flagSubmitting ? 'Submitting...' : 'Submit'}
+                  </ModalBtnPrimary>
+                </ModalActions>
+              </>
+            )}
           </ModalCard>
         </ModalOverlay>
       )}
