@@ -12,6 +12,7 @@ import AdminFlags from './pages/AdminFlags';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import api from './utils/api';
 
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
@@ -138,9 +139,33 @@ const SignOutButton = styled.button`
   &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
 `;
 
+const Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
+  background: ${({ theme }) => theme.colors.state.warning};
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: ${({ theme }) => theme.layout.space[1]}px;
+`;
+
 function Navigation({ onSearchClick }) {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
+  const [flagCount, setFlagCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.isAdmin) {
+      api.get('/api/admin/flags/count')
+        .then(res => setFlagCount(res.data.openCount))
+        .catch(() => {});
+    }
+  }, [user]);
 
   return (
     <Nav>
@@ -153,6 +178,11 @@ function Navigation({ onSearchClick }) {
         <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>Tests</NavLink>
         {user?.isAdmin && (
           <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>New Test</NavLink>
+        )}
+        {user?.isAdmin && (
+          <NavLink to="/admin/flags" active={location.pathname.startsWith('/admin/flags') ? 1 : 0}>
+            Flags{flagCount > 0 && <Badge>{flagCount}</Badge>}
+          </NavLink>
         )}
       </NavLinks>
       <AuthSection>
