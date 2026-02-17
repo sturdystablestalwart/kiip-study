@@ -12,6 +12,7 @@ const AnswerSchema = new mongoose.Schema({
 
 const AttemptSchema = new mongoose.Schema({
     testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     score: { type: Number, required: true },
     totalQuestions: { type: Number, required: true },
     duration: { type: Number, required: true }, // in seconds

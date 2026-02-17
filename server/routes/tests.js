@@ -5,6 +5,7 @@ const Test = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const { scoreQuestion } = require('../utils/scoring');
 const { parseTextWithLLM } = require('../utils/llm');
+const { requireAuth } = require('../middleware/auth');
 
 // ============================================
 // ROUTES
@@ -82,10 +83,10 @@ router.get('/', async (req, res) => {
 });
 
 // GET recent attempts for dashboard
-router.get('/recent-attempts', async (req, res) => {
+router.get('/recent-attempts', requireAuth, async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 5, 20);
-        const attempts = await Attempt.find()
+        const attempts = await Attempt.find({ userId: req.user._id })
             .sort({ createdAt: -1 })
             .limit(limit)
             .lean();
@@ -114,7 +115,7 @@ router.get('/recent-attempts', async (req, res) => {
 });
 
 // GET random questions for endless mode
-router.get('/endless', async (req, res) => {
+router.get('/endless', requireAuth, async (req, res) => {
     try {
         const { level, unit, exclude, limit: rawLimit } = req.query;
         const limit = Math.min(Math.max(parseInt(rawLimit) || 10, 1), 20);
@@ -164,7 +165,7 @@ router.get('/endless', async (req, res) => {
 });
 
 // POST save endless mode chunk attempt
-router.post('/endless/attempt', async (req, res) => {
+router.post('/endless/attempt', requireAuth, async (req, res) => {
     try {
         const { answers, duration, sourceQuestions } = req.body;
         if (!answers || !answers.length) {
@@ -179,6 +180,7 @@ router.post('/endless/attempt', async (req, res) => {
 
         const attempt = new Attempt({
             testId: null,
+            userId: req.user._id,
             score,
             totalQuestions: answers.length,
             duration: duration || 0,
@@ -206,7 +208,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST save attempt (server-side score verification)
-router.post('/:id/attempt', async (req, res) => {
+router.post('/:id/attempt', requireAuth, async (req, res) => {
     try {
         const test = await Test.findById(req.params.id);
         if (!test) return res.status(404).json({ message: 'Test not found' });
@@ -223,6 +225,7 @@ router.post('/:id/attempt', async (req, res) => {
 
         const attempt = new Attempt({
             testId: req.params.id,
+            userId: req.user._id,
             score: serverScore,
             totalQuestions: test.questions.length,
             duration: req.body.duration,
