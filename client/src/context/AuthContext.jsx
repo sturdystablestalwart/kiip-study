@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
 
@@ -17,7 +18,7 @@ export function AuthProvider({ children }) {
     const logout = async () => {
         try {
             await api.post('/api/auth/logout');
-        } catch (err) {
+        } catch {
             // Ignore — clear client state regardless
         }
         setUser(null);

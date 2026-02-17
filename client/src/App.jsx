@@ -9,6 +9,7 @@ import TestTaker from './pages/TestTaker';
 import EndlessMode from './pages/EndlessMode';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
@@ -96,8 +97,48 @@ const SearchHint = styled.span`
   opacity: 0.6;
 `;
 
+const AuthSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const SignInButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
+  background: ${({ theme }) => theme.colors.accent.indigo};
+  color: #fff;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover { opacity: 0.85; }
+`;
+
+const UserName = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+`;
+
+const SignOutButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: ${({ theme }) => theme.layout.space[2]}px;
+
+  &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
+`;
+
 function Navigation({ onSearchClick }) {
   const location = useLocation();
+  const { user, loading, logout } = useAuth();
 
   return (
     <Nav>
@@ -108,8 +149,22 @@ function Navigation({ onSearchClick }) {
       </NavSearchTrigger>
       <NavLinks>
         <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>Tests</NavLink>
-        <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>New Test</NavLink>
+        {user?.isAdmin && (
+          <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>New Test</NavLink>
+        )}
       </NavLinks>
+      <AuthSection>
+        {loading ? null : user ? (
+          <>
+            <UserName>{user.displayName}</UserName>
+            <SignOutButton onClick={logout}>Sign out</SignOutButton>
+          </>
+        ) : (
+          <SignInButton href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google/start`}>
+            Sign in
+          </SignInButton>
+        )}
+      </AuthSection>
     </Nav>
   );
 }
@@ -138,19 +193,21 @@ function App() {
   return (
     <ThemeProvider theme={tokens}>
       <GlobalStyles />
-      <Router>
-        <AppShell>
-          <Navigation onSearchClick={() => setShowPalette(true)} />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/create" element={<CreateTest />} />
-            <Route path="/test/:id" element={<TestTaker />} />
-            <Route path="/endless" element={<EndlessMode />} />
-          </Routes>
-        </AppShell>
-        {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
-        {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppShell>
+            <Navigation onSearchClick={() => setShowPalette(true)} />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/create" element={<CreateTest />} />
+              <Route path="/test/:id" element={<TestTaker />} />
+              <Route path="/endless" element={<EndlessMode />} />
+            </Routes>
+          </AppShell>
+          {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
+          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
