@@ -159,57 +159,29 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
-## Phase 4 — Admin Suite
+## Phase 4 — Admin Suite & Authentication ✅ COMPLETE
 
-> Generation, import, editing, validation, flags moderation.
+> Auth pulled from Phase 5 into Phase 4. Google OAuth, admin guards, test editor, flags.
 
-**Goal:** Admin can generate, validate, edit, and publish tests; users can privately flag issues.
-
-### Tasks (PR-sized)
-
-- [ ] **4.1** Admin route guard + role check middleware (`isAdmin` on User model)
-- [ ] **4.2** Admin import: upload PDF/TXT/MD (2 MB max) → extract text → preview → delete source file after extraction
-- [ ] **4.3** Admin generate: AI generates test matching source question count or admin-selected count
-- [ ] **4.4** AI response validation + retry + fallback; max 2 additional validation passes
-- [ ] **4.5** Admin editor: full CRUD on test metadata, questions, options, correct answers, explanations; reorder/add/remove; structural validation (option counts, at least one correct)
-- [ ] **4.6** Admin flags queue: view user-submitted flags, resolve/dismiss with optional notes
-
-### API Changes
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `POST` | `/api/admin/tests/import` | Upload + extract preview |
-| `POST` | `/api/admin/tests/generate` | AI generation |
-| `PATCH` | `/api/admin/tests/:id` | Edit everything |
-| `DELETE` | `/api/admin/tests/:id` | Delete test |
-| `POST` | `/api/flags` | User submits flag |
-| `GET` | `/api/admin/flags` | Admin views flag queue |
-| `PATCH` | `/api/admin/flags/:id` | Resolve/dismiss flag |
-
-### Acceptance Criteria
-
-- Only admins can access generation/import/editing routes
-- Extracted text preview shows before generation starts
-- AI validation catches structural issues in generated tests
-- Flag queue displays all open flags with resolution workflow
-
----
-
-## Phase 5 — Auth + Continuity + Audit
-
-> Google OAuth, JWT cookies, cross-device sessions, audit logs.
-
-**Goal:** Sessions are resumable across devices without timer reset; admin actions are audited.
+**Goal:** Add authentication, admin role guards, admin test editor, and user flag system.
 
 ### Tasks (PR-sized)
 
-- [ ] **5.1** Google OAuth flow + User creation (`email`, `googleId`, `isAdmin`, `createdAt`)
-- [ ] **5.2** JWT cookie session management and `/me` endpoint (httpOnly cookies)
-- [ ] **5.3** Anonymous progress migration on first login (merge existing attempts)
-- [ ] **5.4** AuditLog collection + middleware to record admin actions (create/edit/delete/generate/resolve)
-- [ ] **5.5** TestSession model: persist remaining time server-side; refresh restores timer
-- [ ] **5.6** Prevent duplicate active sessions per user per test
-- [ ] **5.7** Submit creates Attempt and closes session atomically
+- [x] **4.1** Install auth dependencies (passport, jwt, cookie-parser)
+- [x] **4.2** User model with Google OAuth fields
+- [x] **4.3** requireAuth + requireAdmin middleware
+- [x] **4.4** Google OAuth strategy + auth routes (/me, /logout, /google/start, /google/callback)
+- [x] **4.5** Frontend AuthContext + shared axios instance with credentials
+- [x] **4.6** Nav auth UI (sign in/out, admin-gated links)
+- [x] **4.7** Move generate/upload/delete routes to /api/admin/ with auth guards
+- [x] **4.8** Update all frontend API calls to shared axios instance + admin URLs
+- [x] **4.9** Gate admin features in UI (CreateButton, DeleteButton, EditButton)
+- [x] **4.10** Add userId to Attempt model + requireAuth on user routes
+- [x] **4.11** Flag model + flag API routes (user submit + admin queue)
+- [x] **4.12** Flag submission UI in TestTaker (modal with reason + note)
+- [x] **4.13** Admin flags moderation page (/admin/flags)
+- [x] **4.14** Admin test editor page (/admin/tests/:id/edit) — all 5 question types
+- [x] **4.15** Flag count badge in admin nav
 
 ### API Changes
 
@@ -219,6 +191,44 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | `GET` | `/api/auth/google/start` | Initiate OAuth |
 | `GET` | `/api/auth/google/callback` | OAuth callback |
 | `POST` | `/api/auth/logout` | Clear session |
+| `POST` | `/api/admin/tests/import` | Import test from JSON |
+| `POST` | `/api/admin/tests/generate` | AI generation (admin-only) |
+| `POST` | `/api/admin/tests/generate-from-file` | File-based generation (admin-only) |
+| `PATCH` | `/api/admin/tests/:id` | Edit test |
+| `DELETE` | `/api/admin/tests/:id` | Delete test |
+| `POST` | `/api/flags` | User submits flag |
+| `GET` | `/api/admin/flags` | Admin views flag queue |
+| `GET` | `/api/admin/flags/count` | Open flags count (badge) |
+| `PATCH` | `/api/admin/flags/:id` | Resolve/dismiss flag |
+
+### Acceptance Criteria
+
+- [x] Google OAuth login works; JWT stored in httpOnly cookie
+- [x] Only admins can access generation/import/editing/delete routes
+- [x] Admin test editor supports all 5 question types with validation
+- [x] Flag queue displays all open flags with resolve/dismiss workflow
+- [x] Nav shows sign in/out, admin links gated by isAdmin
+- [x] User attempts tracked with userId, filtered per-user
+
+---
+
+## Phase 5 — Continuity + Audit
+
+> Resumable sessions, audit logs. (Auth moved to Phase 4.)
+
+**Goal:** Sessions are resumable across devices without timer reset; admin actions are audited.
+
+### Tasks (PR-sized)
+
+- [ ] **5.1** AuditLog collection + middleware to record admin actions (create/edit/delete/generate/resolve)
+- [ ] **5.2** TestSession model: persist remaining time server-side; refresh restores timer
+- [ ] **5.3** Prevent duplicate active sessions per user per test
+- [ ] **5.4** Submit creates Attempt and closes session atomically
+
+### API Changes
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
 | `POST` | `/api/sessions/start` | Start test/endless session |
 | `PATCH` | `/api/sessions/:id` | Save progress |
 | `POST` | `/api/sessions/:id/submit` | Submit → create Attempt |
@@ -226,15 +236,12 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Data Model Additions
 
-- **User** — `{ email, googleId, isAdmin, createdAt }`
 - **TestSession** — resumable in-progress state per user (per test or endless)
 - **AuditLog** — append-only admin and sensitive event log
 
 ### Acceptance Criteria
 
-- Google OAuth login works; JWT stored in httpOnly cookie
 - Session persists across devices; timer state survives refresh
-- Anonymous attempts migrate to user account on first login
 - Audit log records all admin mutations
 
 ---
