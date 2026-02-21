@@ -7,4 +7,16 @@ export default defineConfig({
   server: {
     host: true,
   },
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/anychart')) return 'anychart';
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'vendor';
+          if (id.includes('node_modules/i18next') || id.includes('node_modules/react-i18next')) return 'i18n';
+        },
+      },
+    },
+  },
 })

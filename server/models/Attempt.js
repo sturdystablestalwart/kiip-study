@@ -26,4 +26,9 @@ const AttemptSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// Indexes for common query patterns
+AttemptSchema.index({ userId: 1, createdAt: -1 });
+AttemptSchema.index({ userId: 1, testId: 1 });
+AttemptSchema.index({ testId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Attempt', AttemptSchema);

@@ -6,20 +6,21 @@ import GlobalStyles from './theme/GlobalStyles';
 import { below } from './theme/breakpoints';
 import { ThemeModeProvider, useThemeMode } from './context/ThemeContext';
 import Home from './pages/Home';
-import CreateTest from './pages/CreateTest';
 import TestTaker from './pages/TestTaker';
-import EndlessMode from './pages/EndlessMode';
-import AdminTestEditor from './pages/AdminTestEditor';
-import AdminFlags from './pages/AdminFlags';
-import AdminBulkImport from './pages/AdminBulkImport';
-import AdminDuplicates from './pages/AdminDuplicates';
-import SharedTest from './pages/SharedTest';
-import CommandPalette from './components/CommandPalette';
-import ShortcutsModal from './components/ShortcutsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import api from './utils/api';
 
+// Lazy-load routes that aren't needed on initial page load
+const CreateTest = React.lazy(() => import('./pages/CreateTest'));
+const EndlessMode = React.lazy(() => import('./pages/EndlessMode'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const AdminTestEditor = React.lazy(() => import('./pages/AdminTestEditor'));
+const AdminFlags = React.lazy(() => import('./pages/AdminFlags'));
+const AdminBulkImport = React.lazy(() => import('./pages/AdminBulkImport'));
+const AdminDuplicates = React.lazy(() => import('./pages/AdminDuplicates'));
+const SharedTest = React.lazy(() => import('./pages/SharedTest'));
+const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
+const ShortcutsModal = React.lazy(() => import('./components/ShortcutsModal'));
 
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
@@ -382,22 +383,24 @@ function AppInner() {
         <Router>
           <AppShell>
             <Navigation onSearchClick={() => setShowPalette(true)} />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/dashboard" element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
-              <Route path="/create" element={<CreateTest />} />
-              <Route path="/test/:id" element={<TestTaker />} />
-              <Route path="/endless" element={<EndlessMode />} />
-              <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
-              <Route path="/admin/flags" element={<AdminFlags />} />
-              <Route path="/admin/import" element={<AdminBulkImport />} />
-              <Route path="/admin/duplicates" element={<AdminDuplicates />} />
-              <Route path="/shared/:shareId" element={<SharedTest />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/create" element={<CreateTest />} />
+                <Route path="/test/:id" element={<TestTaker />} />
+                <Route path="/endless" element={<EndlessMode />} />
+                <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
+                <Route path="/admin/flags" element={<AdminFlags />} />
+                <Route path="/admin/import" element={<AdminBulkImport />} />
+                <Route path="/admin/duplicates" element={<AdminDuplicates />} />
+                <Route path="/shared/:shareId" element={<SharedTest />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </AppShell>
-          {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
-          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+          {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
+          {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
         </Router>
       </AuthProvider>
     </ThemeProvider>
