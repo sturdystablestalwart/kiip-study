@@ -170,6 +170,44 @@ const ExportLink = styled.a`
   }
 `;
 
+const ShareButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[1]}px;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  cursor: pointer;
+  font-family: inherit;
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent.indigo};
+    color: ${({ theme }) => theme.colors.accent.indigo};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const CardActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const CopiedToast = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.state.success};
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
@@ -573,6 +611,8 @@ function Home() {
   const [activeSessions, setActiveSessions] = useState([]);
   const [deleteModal, setDeleteModal] = useState({ show: false, testId: null, testTitle: '' });
   const [deleting, setDeleting] = useState(false);
+  const [copiedTestId, setCopiedTestId] = useState(null);
+  const [sharingTestId, setSharingTestId] = useState(null);
 
   const fetchTests = useCallback(async (cursor = null, append = false) => {
     try {
@@ -661,6 +701,22 @@ function Home() {
 
   const cancelDelete = () => {
     setDeleteModal({ show: false, testId: null, testTitle: '' });
+  };
+
+  const handleShare = async (e, testId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSharingTestId(testId);
+    try {
+      const res = await api.post(`/api/tests/${testId}/share`);
+      await navigator.clipboard.writeText(res.data.shareUrl);
+      setCopiedTestId(testId);
+      setTimeout(() => setCopiedTestId(null), 2000);
+    } catch (err) {
+      console.error('Failed to share test:', err);
+    } finally {
+      setSharingTestId(null);
+    }
   };
 
   const lastAttempt = recentAttempts[0];
@@ -811,17 +867,32 @@ function Home() {
               ) : (
                 <CardNoAttempt>{t('home.notAttempted')}</CardNoAttempt>
               )}
-              {user && (
-                <ExportLink
-                  href={`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`}
-                  target="_blank"
-                  rel="noopener"
-                  title="Download blank PDF"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  PDF
-                </ExportLink>
-              )}
+              <CardActions>
+                {user && (
+                  <>
+                    <ShareButton
+                      onClick={(e) => handleShare(e, test._id)}
+                      disabled={sharingTestId === test._id}
+                      title={t('home.share')}
+                    >
+                      {copiedTestId === test._id ? (
+                        <CopiedToast>{t('home.linkCopied')}</CopiedToast>
+                      ) : (
+                        <>&#128279; {t('home.share')}</>
+                      )}
+                    </ShareButton>
+                    <ExportLink
+                      href={`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`}
+                      target="_blank"
+                      rel="noopener"
+                      title={t('home.downloadPdf')}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      PDF
+                    </ExportLink>
+                  </>
+                )}
+              </CardActions>
             </Card>
           ))}
         </Grid>

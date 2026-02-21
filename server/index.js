@@ -92,6 +92,10 @@ app.use('/api/pdf', pdfRoutes);
 const statsRoutes = require('./routes/stats');
 app.use('/api/stats', statsRoutes);
 
+const shareRoutes = require('./routes/share');
+app.use('/api/shared', shareRoutes);   // GET /api/shared/:shareId (public)
+app.use('/api/tests', shareRoutes);    // POST /api/tests/:id/share
+
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });

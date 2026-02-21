@@ -134,6 +134,11 @@
     "yes": "Yes",
     "no": "No"
   },
+  "shared": {
+    "notFound": "Test not found",
+    "notFoundDesc": "This shared link may have expired or the test was removed.",
+    "startPractice": "Start Practice"
+  },
   "flag": {
     "title": "Flag this question",
     "reason": "Reason",

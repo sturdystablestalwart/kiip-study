@@ -24,6 +24,7 @@ const TestSchema = new mongoose.Schema({
     description: { type: String },
     level: { type: String },
     unit: { type: String },
+    shareId: { type: String, unique: true, sparse: true },
     questions: [QuestionSchema],
     createdAt: { type: Date, default: Date.now }
 });
@@ -33,5 +34,8 @@ TestSchema.index({ title: 'text', category: 'text', description: 'text' });
 
 // Compound index for filtering + sorting
 TestSchema.index({ level: 1, unit: 1, createdAt: -1 });
+
+// Unique sparse index for share links
+TestSchema.index({ shareId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Test', TestSchema);

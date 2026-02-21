@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -11,10 +11,13 @@ import TestTaker from './pages/TestTaker';
 import EndlessMode from './pages/EndlessMode';
 import AdminTestEditor from './pages/AdminTestEditor';
 import AdminFlags from './pages/AdminFlags';
+import SharedTest from './pages/SharedTest';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import api from './utils/api';
+
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
@@ -268,6 +271,9 @@ function Navigation({ onSearchClick }) {
       </NavSearchTrigger>
       <NavLinks>
         <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>{t('nav.home')}</NavLink>
+        {user && (
+          <NavLink to="/dashboard" active={location.pathname === '/dashboard' ? 1 : 0}>{t('nav.dashboard')}</NavLink>
+        )}
         {user?.isAdmin && (
           <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>{t('nav.create')}</NavLink>
         )}
@@ -330,11 +336,13 @@ function AppInner() {
             <Navigation onSearchClick={() => setShowPalette(true)} />
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>} />
               <Route path="/create" element={<CreateTest />} />
               <Route path="/test/:id" element={<TestTaker />} />
               <Route path="/endless" element={<EndlessMode />} />
               <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
               <Route path="/admin/flags" element={<AdminFlags />} />
+              <Route path="/shared/:shareId" element={<SharedTest />} />
             </Routes>
           </AppShell>
           {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}
