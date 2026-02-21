@@ -13,6 +13,7 @@ const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
+const AuditLog = require('../models/AuditLog');
 
 // All admin routes require auth + admin
 router.use(requireAuth, requireAdmin);
@@ -139,6 +140,13 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
         });
 
         const savedTest = await newTest.save();
+        AuditLog.create({
+            userId: req.user._id,
+            action: 'test.generate',
+            targetType: 'Test',
+            targetId: savedTest._id,
+            details: { title: savedTest.title }
+        }).catch(() => {});
         res.status(201).json(savedTest);
     } catch (err) {
         console.error("Text Generation Error:", err);
@@ -224,6 +232,13 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
         });
         const savedTest = await newTest.save();
         fs.unlinkSync(filePath);
+        AuditLog.create({
+            userId: req.user._id,
+            action: 'test.generate-from-file',
+            targetType: 'Test',
+            targetId: savedTest._id,
+            details: { title: savedTest.title }
+        }).catch(() => {});
         res.status(201).json(savedTest);
     } catch (err) {
         if (fs.existsSync(filePath)) {
@@ -253,6 +268,13 @@ router.post('/tests/import', async (req, res) => {
         });
 
         const savedTest = await newTest.save();
+        AuditLog.create({
+            userId: req.user._id,
+            action: 'test.import',
+            targetType: 'Test',
+            targetId: savedTest._id,
+            details: { title: savedTest.title }
+        }).catch(() => {});
         res.status(201).json(savedTest);
     } catch (err) {
         res.status(400).json({ message: 'Failed to import test: ' + err.message });
@@ -276,6 +298,13 @@ router.patch('/tests/:id', async (req, res) => {
         if (questions !== undefined) test.questions = questions;
 
         const savedTest = await test.save();
+        AuditLog.create({
+            userId: req.user._id,
+            action: 'test.edit',
+            targetType: 'Test',
+            targetId: savedTest._id,
+            details: { title: savedTest.title }
+        }).catch(() => {});
         res.json(savedTest);
     } catch (err) {
         res.status(400).json({ message: 'Failed to update test: ' + err.message });
@@ -290,8 +319,16 @@ router.delete('/tests/:id', async (req, res) => {
             return res.status(404).json({ message: 'Test not found' });
         }
 
+        const deletedTitle = test.title;
         await Attempt.deleteMany({ testId: req.params.id });
         await Test.findByIdAndDelete(req.params.id);
+        AuditLog.create({
+            userId: req.user._id,
+            action: 'test.delete',
+            targetType: 'Test',
+            targetId: req.params.id,
+            details: { title: deletedTitle }
+        }).catch(() => {});
 
         res.json({ message: 'Test deleted successfully' });
     } catch (err) {
@@ -364,9 +401,37 @@ router.patch('/flags/:id', async (req, res) => {
             return res.status(404).json({ message: 'Flag not found' });
         }
 
+        AuditLog.create({
+            userId: req.user._id,
+            action: status === 'resolved' ? 'flag.resolve' : 'flag.dismiss',
+            targetType: 'Flag',
+            targetId: flag._id,
+            details: { resolution: resolution || '' }
+        }).catch(() => {});
+
         res.json(flag);
     } catch (err) {
         res.status(400).json({ message: 'Failed to update flag: ' + err.message });
+    }
+});
+
+// GET /api/admin/audit — Cursor-paginated audit log
+router.get('/audit', async (req, res) => {
+    try {
+        const { cursor, limit: rawLimit } = req.query;
+        const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 50);
+        const query = cursor ? { _id: { $lt: cursor } } : {};
+        const logs = await AuditLog.find(query)
+            .sort({ _id: -1 })
+            .limit(limit + 1)
+            .populate('userId', 'displayName email')
+            .lean();
+        const hasMore = logs.length > limit;
+        if (hasMore) logs.pop();
+        const nextCursor = hasMore ? logs[logs.length - 1]._id : null;
+        res.json({ logs, nextCursor });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch audit log: ' + err.message });
     }
 });
 
