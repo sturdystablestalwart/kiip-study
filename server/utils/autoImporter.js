@@ -24,9 +24,15 @@ const autoImportTests = async (parseFunction) => {
             const content = fs.readFileSync(filePath, 'utf-8');
             const parsedData = await parseFunction(content);
             
+            // Extract level from title or filename (e.g. "Level 2", "2단계")
+            const title = parsedData.title || fileName;
+            const levelMatch = title.match(/Level\s*(\d)/i) || title.match(/(\d)\s*단계/);
+            const level = levelMatch ? `Level ${levelMatch[1]}` : undefined;
+
             const newTest = new Test({
-                title: parsedData.title || fileName,
+                title,
                 category: 'Auto-Imported',
+                level,
                 questions: parsedData.questions
             });
             await newTest.save();

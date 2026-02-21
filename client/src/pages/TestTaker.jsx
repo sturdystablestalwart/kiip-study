@@ -250,19 +250,27 @@ const QuestionDot = styled.button`
   cursor: pointer;
   transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
-  border: 1px solid ${({ $current, $answered, theme }) => {
+  border: 1px solid ${({ $current, $answered, $correct, $missed, theme }) => {
     if ($current) return theme.colors.accent.indigo;
+    if ($correct) return theme.colors.accent.moss;
+    if ($missed) return theme.colors.state.danger;
     if ($answered) return theme.colors.accent.moss;
     return theme.colors.border.subtle;
   }};
 
-  background: ${({ $current, $answered, theme }) => {
+  background: ${({ $current, $answered, $correct, $missed, theme }) => {
     if ($current) return theme.colors.accent.indigo;
+    if ($correct) return theme.colors.state.correctBg;
+    if ($missed) return theme.colors.state.wrongBg;
     if ($answered) return theme.colors.state.correctBg;
     return theme.colors.bg.surface;
   }};
 
-  color: ${({ $current, theme }) => $current ? theme.colors.bg.surface : theme.colors.text.muted};
+  color: ${({ $current, $missed, theme }) => {
+    if ($current) return theme.colors.bg.surface;
+    if ($missed) return theme.colors.state.danger;
+    return theme.colors.text.muted;
+  }};
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.accent.indigo};
@@ -798,17 +806,26 @@ function TestTaker() {
         </Controls>
 
         <QuestionNav>
-          {(reviewMode ? missedIndices : test.questions.map((_, i) => i)).map((qIdx) => (
-            <QuestionDot
-              key={qIdx}
-              $current={qIdx === currentQ}
-              $answered={answers[qIdx] !== undefined}
-              onClick={() => setCurrentQ(qIdx)}
-              aria-label={`Question ${qIdx + 1}`}
-            >
-              {qIdx + 1}
-            </QuestionDot>
-          ))}
+          {(reviewMode ? missedIndices : test.questions.map((_, i) => i)).map((qIdx) => {
+            const ans = answers[qIdx];
+            const hasAnswer = ans !== undefined;
+            const feedbackVisible = mode === 'Practice' ? hasAnswer : isSubmitted;
+            const isCorrect = feedbackVisible && hasAnswer && scoreQuestion(test.questions[qIdx], ans);
+            const isMissed = feedbackVisible && (!hasAnswer || !scoreQuestion(test.questions[qIdx], ans));
+            return (
+              <QuestionDot
+                key={qIdx}
+                $current={qIdx === currentQ}
+                $answered={hasAnswer && !feedbackVisible}
+                $correct={isCorrect}
+                $missed={isMissed}
+                onClick={() => setCurrentQ(qIdx)}
+                aria-label={`Question ${qIdx + 1}`}
+              >
+                {qIdx + 1}
+              </QuestionDot>
+            );
+          })}
         </QuestionNav>
       </QuestionCard>
 

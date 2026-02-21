@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -249,11 +249,28 @@ const ErrorBanner = styled.div`
   line-height: ${({ theme }) => theme.typography.scale.small.line}px;
 `;
 
-const LoadingHint = styled.p`
+const LoadingBox = styled.div`
   text-align: center;
-  color: ${({ theme }) => theme.colors.text.faint};
-  margin-top: ${({ theme }) => theme.layout.space[4]}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  margin-top: ${({ theme }) => theme.layout.space[5]}px;
+  padding: ${({ theme }) => theme.layout.space[5]}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+`;
+
+const LoadingTimer = styled.p`
+  font-size: ${({ theme }) => theme.typography.scale.h3.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
+  color: ${({ theme }) => theme.colors.accent.clay};
+  margin-bottom: ${({ theme }) => theme.layout.space[2]}px;
+  font-variant-numeric: tabular-nums;
+`;
+
+const LoadingPhrase = styled.p`
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.body.line}px;
+  transition: opacity ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
 `;
 
 /* ───────── Component ───────── */
@@ -261,6 +278,18 @@ const LoadingHint = styled.p`
 const MIN_TEXT_LENGTH = 200;
 const MAX_TEXT_LENGTH = 50000;
 const MAX_IMAGES = 20;
+
+const LOADING_PHRASES = [
+  'The AI is reading your material and crafting questions...',
+  'Analyzing key concepts and vocabulary...',
+  'Building answer choices that really test understanding...',
+  'Almost like studying, but the AI does the hard part...',
+  'Great material — this will make a solid practice test...',
+  'Formatting questions and double-checking answers...',
+  'Turning your notes into a real exam experience...',
+  'A well-made test is worth a thousand flashcards...',
+  'Polishing the final details — hang tight...',
+];
 
 function CreateTest() {
   const [text, setText] = useState('');
@@ -270,7 +299,29 @@ function CreateTest() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState(null);
   const [uploadError, setUploadError] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const timerRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) {
+      setElapsedSeconds(0);
+      setPhraseIndex(0);
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds(prev => {
+          const next = prev + 1;
+          if (next % 20 === 0) {
+            setPhraseIndex(pi => (pi + 1) % LOADING_PHRASES.length);
+          }
+          return next;
+        });
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [loading]);
 
   const textLength = text.trim().length;
   const isTextValid = textLength >= MIN_TEXT_LENGTH && textLength <= MAX_TEXT_LENGTH;
@@ -468,9 +519,12 @@ function CreateTest() {
       </SubmitButton>
 
       {loading && (
-        <LoadingHint>
-          The AI is reading your material and crafting questions. This usually takes under a minute.
-        </LoadingHint>
+        <LoadingBox>
+          <LoadingTimer>
+            {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
+          </LoadingTimer>
+          <LoadingPhrase>{LOADING_PHRASES[phraseIndex]}</LoadingPhrase>
+        </LoadingBox>
       )}
     </Wrapper>
   );
