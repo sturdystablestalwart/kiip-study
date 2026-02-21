@@ -555,7 +555,7 @@ function TestTaker() {
         }
       } catch (err) {
         console.error(err);
-        setError(err.response?.data?.message || 'Could not load this test. It may have been removed or the server is unavailable.');
+        setError(t('common.error'));
       }
     };
     fetchTest();
@@ -849,7 +849,7 @@ function TestTaker() {
         <HeaderLeft>
           <TestTitle>{test.title}</TestTitle>
           <ModeRow>
-            <ModeLabel>Mode:</ModeLabel>
+            <ModeLabel>{t('test.mode')}:</ModeLabel>
             <ModeSelect
               value={mode}
               onChange={(e) => handleModeChange(e.target.value)}

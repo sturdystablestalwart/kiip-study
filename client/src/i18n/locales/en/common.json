@@ -9,7 +9,10 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "search": "Search...",
-    "shortcuts": "Shortcuts"
+    "shortcuts": "Shortcuts",
+    "searchPlaceholder": "Search tests...",
+    "searchHint": "Type to search across all tests",
+    "noResults": "No tests found for \"{{query}}\""
   },
   "home": {
     "title": "Your Tests",
@@ -36,6 +39,7 @@
   "test": {
     "practice": "Practice",
     "exam": "Test",
+    "mode": "Mode",
     "submit": "Submit",
     "next": "Next",
     "previous": "Previous",
@@ -151,12 +155,24 @@
     "confirm": "Confirm",
     "close": "Close",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "notFound": "Page not found",
+    "notFoundDesc": "The page you're looking for doesn't exist or has been moved.",
+    "loginRequired": "Please sign in to use this feature."
   },
   "shared": {
     "notFound": "Test not found",
     "notFoundDesc": "This shared link may have expired or the test was removed.",
     "startPractice": "Start Practice"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "commandPalette": "Open command palette",
+    "showPanel": "Show this panel",
+    "selectOption": "Select option (during test)",
+    "prevNext": "Previous / next question",
+    "confirm": "Confirm action",
+    "close": "Close modal"
   },
   "flag": {
     "title": "Flag this question",

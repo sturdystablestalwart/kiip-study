@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -267,12 +267,13 @@ function AdminDuplicates() {
   };
 
   // Redirect non-admins
-  if (!authLoading && !user?.isAdmin) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && !user?.isAdmin) {
+      navigate('/');
+    }
+  }, [authLoading, user, navigate]);
 
-  if (authLoading) return null;
+  if (authLoading || !user?.isAdmin) return null;
 
   const visibleClusters = clusters
     ? clusters.filter((_, idx) => !dismissedIds.has(idx))

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import FilterDropdown from '../components/FilterDropdown';
@@ -337,10 +338,12 @@ function formatDuration(seconds) {
 function EndlessMode() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [authError, setAuthError] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [totalAnswered, setTotalAnswered] = useState(0);
@@ -392,6 +395,9 @@ function EndlessMode() {
       setAnswers({});
     } catch (err) {
       console.error('Failed to fetch endless batch:', err);
+      if (err.response?.status === 401) {
+        setAuthError(true);
+      }
       setQuestions([]);
     } finally {
       setLoading(false);
@@ -553,9 +559,13 @@ function EndlessMode() {
     return (
       <Page>
         <EmptyState>
-          <h3>{t('home.noTests')}</h3>
-          <p>{t('home.endlessDesc')}</p>
-          <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
+          <h3>{authError ? t('common.error') : t('home.noTests')}</h3>
+          <p>{authError ? t('common.loginRequired') : t('home.endlessDesc')}</p>
+          {authError ? (
+            <SecondaryAction onClick={() => navigate('/')}>{t('test.goHome')}</SecondaryAction>
+          ) : (
+            <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
+          )}
         </EmptyState>
       </Page>
     );

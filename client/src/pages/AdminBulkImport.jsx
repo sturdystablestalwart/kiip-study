@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -383,12 +383,13 @@ function AdminBulkImport() {
   };
 
   // Redirect non-admins
-  if (!authLoading && !user?.isAdmin) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && !user?.isAdmin) {
+      navigate('/');
+    }
+  }, [authLoading, user, navigate]);
 
-  if (authLoading) return null;
+  if (authLoading || !user?.isAdmin) return null;
 
   const getTestStatus = (test) => {
     if (test.errors && test.errors.length > 0) return 'error';

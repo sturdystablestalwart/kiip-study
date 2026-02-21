@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 
 const Overlay = styled.div`
   position: fixed;
@@ -58,15 +59,16 @@ const Kbd = styled.kbd`
 `;
 
 const shortcuts = [
-  { keys: 'Ctrl+P', label: 'Open command palette' },
-  { keys: 'Ctrl+K', label: 'Show this panel' },
-  { keys: '1 – 4', label: 'Select option (during test)' },
-  { keys: '\u2190 \u2192', label: 'Previous / next question' },
-  { keys: 'Enter', label: 'Confirm action' },
-  { keys: 'Esc', label: 'Close modal' },
+  { keys: 'Ctrl+P', labelKey: 'shortcuts.commandPalette' },
+  { keys: 'Ctrl+K', labelKey: 'shortcuts.showPanel' },
+  { keys: '1 – 4', labelKey: 'shortcuts.selectOption' },
+  { keys: '\u2190 \u2192', labelKey: 'shortcuts.prevNext' },
+  { keys: 'Enter', labelKey: 'shortcuts.confirm' },
+  { keys: 'Esc', labelKey: 'shortcuts.close' },
 ];
 
 function ShortcutsModal({ onClose }) {
+  const { t } = useTranslation();
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -80,10 +82,10 @@ function ShortcutsModal({ onClose }) {
   return (
     <Overlay onClick={onClose}>
       <Panel ref={panelRef} onClick={e => e.stopPropagation()}>
-        <Title>Keyboard Shortcuts</Title>
-        {shortcuts.map(({ keys, label }) => (
+        <Title>{t('shortcuts.title')}</Title>
+        {shortcuts.map(({ keys, labelKey }) => (
           <ShortcutRow key={keys}>
-            <ShortcutLabel>{label}</ShortcutLabel>
+            <ShortcutLabel>{t(labelKey)}</ShortcutLabel>
             <Kbd>{keys}</Kbd>
           </ShortcutRow>
         ))}

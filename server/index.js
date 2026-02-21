@@ -8,8 +8,6 @@ const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
-const hpp = require('hpp');
 
 dotenv.config();
 
@@ -39,8 +37,24 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
 }));
-app.use(mongoSanitize());
-app.use(hpp());
+
+// Custom NoSQL injection sanitizer (express-mongo-sanitize is incompatible with Express 5)
+app.use((req, _res, next) => {
+  const sanitize = (obj) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    for (const key of Object.keys(obj)) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete obj[key];
+      } else if (typeof obj[key] === 'object') {
+        sanitize(obj[key]);
+      }
+    }
+    return obj;
+  };
+  if (req.body) sanitize(req.body);
+  if (req.params) sanitize(req.params);
+  next();
+});
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

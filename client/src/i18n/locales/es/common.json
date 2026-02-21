@@ -9,7 +9,10 @@
     "signIn": "Iniciar sesión",
     "signOut": "Cerrar sesión",
     "search": "Buscar...",
-    "shortcuts": "Atajos"
+    "shortcuts": "Atajos",
+    "searchPlaceholder": "Buscar pruebas...",
+    "searchHint": "Buscar en todas las pruebas",
+    "noResults": "No se encontraron pruebas para \"{{query}}\""
   },
   "home": {
     "title": "Tus pruebas",
@@ -36,6 +39,7 @@
   "test": {
     "practice": "Práctica",
     "exam": "Examen",
+    "mode": "Modo",
     "submit": "Enviar",
     "next": "Siguiente",
     "previous": "Anterior",
@@ -151,12 +155,24 @@
     "confirm": "Confirmar",
     "close": "Cerrar",
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "notFound": "Pagina no encontrada",
+    "notFoundDesc": "La pagina que buscas no existe o fue movida.",
+    "loginRequired": "Inicia sesion para usar esta funcion."
   },
   "shared": {
     "notFound": "Prueba no encontrada",
     "notFoundDesc": "Este enlace compartido puede haber expirado o la prueba fue eliminada.",
     "startPractice": "Comenzar practica"
+  },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "commandPalette": "Abrir paleta de comandos",
+    "showPanel": "Mostrar este panel",
+    "selectOption": "Seleccionar opcion (durante prueba)",
+    "prevNext": "Pregunta anterior / siguiente",
+    "confirm": "Confirmar",
+    "close": "Cerrar"
   },
   "flag": {
     "title": "Reportar esta pregunta",

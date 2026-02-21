@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { below } from '../theme/breakpoints';
 import api from '../utils/api';
 
@@ -101,6 +102,7 @@ const EmptyMessage = styled.div`
 `;
 
 function CommandPalette({ onClose }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -171,15 +173,15 @@ function CommandPalette({ onClose }) {
         <SearchInput
           ref={inputRef}
           type="text"
-          placeholder="Search tests..."
+          placeholder={t('nav.searchPlaceholder')}
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
         />
         <ResultsList>
-          {loading && <EmptyMessage>Searching...</EmptyMessage>}
+          {loading && <EmptyMessage>{t('common.loading')}</EmptyMessage>}
           {!loading && query && results.length === 0 && (
-            <EmptyMessage>No tests found for &ldquo;{query}&rdquo;</EmptyMessage>
+            <EmptyMessage>{t('nav.noResults', { query })}</EmptyMessage>
           )}
           {!loading && results.map((test, i) => (
             <ResultItem
@@ -196,7 +198,7 @@ function CommandPalette({ onClose }) {
             </ResultItem>
           ))}
           {!loading && !query && (
-            <EmptyMessage>Type to search across all tests</EmptyMessage>
+            <EmptyMessage>{t('nav.searchHint')}</EmptyMessage>
           )}
         </ResultsList>
       </Panel>

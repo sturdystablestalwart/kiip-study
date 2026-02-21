@@ -237,6 +237,42 @@ const LangToggle = styled.button`
   }
 `;
 
+const NotFoundWrapper = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
+`;
+
+const NotFoundTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.text.muted};
+  margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const NotFoundText = styled.p`
+  color: ${({ theme }) => theme.colors.text.faint};
+  margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
+`;
+
+const NotFoundLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.accent.indigo};
+  text-decoration: none;
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+function NotFound() {
+  const { t } = useTranslation();
+  return (
+    <NotFoundWrapper>
+      <NotFoundTitle>{t('common.notFound')}</NotFoundTitle>
+      <NotFoundText>{t('common.notFoundDesc')}</NotFoundText>
+      <NotFoundLink to="/">{t('test.goHome')}</NotFoundLink>
+    </NotFoundWrapper>
+  );
+}
+
 const LANG_CYCLE = ['en', 'ko', 'ru', 'es'];
 const LANG_LABELS = { en: 'EN', ko: '한국어', ru: 'РУ', es: 'ES' };
 
@@ -357,6 +393,7 @@ function AppInner() {
               <Route path="/admin/import" element={<AdminBulkImport />} />
               <Route path="/admin/duplicates" element={<AdminDuplicates />} />
               <Route path="/shared/:shareId" element={<SharedTest />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </AppShell>
           {showPalette && <CommandPalette onClose={() => setShowPalette(false)} />}

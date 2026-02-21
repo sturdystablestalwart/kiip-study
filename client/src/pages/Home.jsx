@@ -654,6 +654,8 @@ function Home() {
   }, [fetchTests]);
 
   useEffect(() => {
+    if (!user) return;
+
     const fetchRecent = async () => {
       try {
         const res = await api.get(`/api/tests/recent-attempts?limit=5`, {
@@ -666,11 +668,9 @@ function Home() {
     };
     fetchRecent();
 
-    if (user) {
-      api.get('/api/sessions/active')
-        .then(res => setActiveSessions(res.data.sessions || []))
-        .catch(() => {});
-    }
+    api.get('/api/sessions/active')
+      .then(res => setActiveSessions(res.data.sessions || []))
+      .catch(() => {});
   }, [user]);
 
   const handleLoadMore = () => {
