@@ -46,7 +46,8 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
 - **AI:** Google Gemini 2.5 Flash (`@google/generative-ai`)
 - **File processing:** multer 2, pdf-parse, mammoth
 - **Validation:** express-validator, express-rate-limit
-- **Auth (planned):** Google OAuth + JWT (passport, passport-google-oauth20)
+- **Auth:** Google OAuth + JWT (passport, passport-google-oauth20, cookie-parser)
+- **PDF generation:** pdfkit (server-side Japandi-styled exports)
 - **Testing:** Playwright E2E
 - **Deployment:** Docker Compose (mongo + server + client), nginx for production static serving
 - **Design:** Japandi warm minimalism — tokens in `client/src/theme/tokens.js`
@@ -95,27 +96,25 @@ kiip_test_app/
 
 ## Current Implementation Status
 
-### What Works Now
-- Express 5 backend with MongoDB (Mongoose 9)
-- Google Gemini AI integration for test generation from text and file uploads
-- React 19 frontend with styled-components (Japandi design tokens)
-- Practice mode (instant feedback) and Test mode (submit-to-reveal)
-- 30-minute timer with overdue tracking
-- Image uploads (single + batch up to 20)
-- Document parsing (PDF, DOCX, TXT, MD)
-- Test attempt tracking (score, duration, answers)
-- Auto-import of sample tests from `additionalContext/tests/`
-- Docker Compose deployment (mongo + server + client)
-- Rate limiting on generation endpoints
+All six implementation phases are complete. The following features are fully implemented:
 
-### What's Planned (See IMPLEMENTATION_PLAN.md)
-- **Phase 0:** Bug fixes, validation, error handling improvements
-- **Phase 1:** Production Docker with nginx, CI pipeline, home server deployment
-- **Phase 2:** Dashboard, server-side search, Ctrl+P palette, Ctrl+K shortcuts
-- **Phase 3:** Additional question types (MCQ multi, short answer, ordering, fill-in-the-blank), endless mode
-- **Phase 4:** Admin suite (generation, editing, moderation, flags)
-- **Phase 5:** Google OAuth + JWT auth, cross-device sessions, audit logs
-- **Phase 6:** PDF exports (blank, answer key, student answers, attempt report)
+- Express 5 backend with MongoDB (Mongoose 9)
+- Google Gemini AI integration for test generation from text and file uploads (admin-only)
+- React 19 frontend with styled-components (Japandi design tokens)
+- Practice mode (instant feedback), Test mode (submit-to-reveal), and Endless mode
+- Five question types: MCQ single, MCQ multiple, short answer, ordering, fill-in-the-blank
+- 30-minute timer with overdue tracking and resumable sessions persisted server-side
+- Image uploads (single + batch up to 20) and document parsing (PDF, DOCX, TXT, MD)
+- Test attempt tracking (score, duration, answers) with server-side score verification
+- Auto-import of sample tests from `additionalContext/tests/`
+- Docker Compose deployment (mongo + server + client) with nginx in production
+- CI pipeline (GitHub Actions) with lint, build, Playwright, and deploy on main push
+- Home dashboard with "Continue last session", recent attempts, server-side search
+- Ctrl+P command palette and Ctrl+K shortcuts modal
+- Google OAuth + JWT auth (httpOnly cookies), per-user progress across devices
+- Admin suite: test editor (all 5 question types), flags moderation, audit log
+- PDF exports: blank test, answer key, student answers, attempt report (Japandi-styled)
+- Rate limiting on generation endpoints; role guards on all admin routes
 
 ---
 
@@ -163,24 +162,22 @@ kiip_test_app/
 
 ---
 
-## Data Model (Current + Planned)
+## Data Model
 
-### Current Collections
-- **Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type }], createdAt }`
-- **Attempt** — `{ testId, score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOption, isCorrect, isOverdue }], mode, createdAt }`
-
-### Planned Collections
+### Collections
+- **Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type, acceptedAnswers?, correctOrder?, blanks? }], createdAt }`
+- **Attempt** — `{ testId (optional for Endless), userId (ref→User), score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOptions, textAnswer, orderedItems, blankAnswers, isCorrect, isOverdue }], mode ('Practice'|'Test'|'Endless'), sourceQuestions?, createdAt }`
 - **User** — `{ email, googleId, isAdmin, createdAt }`
-- **TestSession** — resumable in-progress state per user (per test or endless)
-- **Flag** — user-submitted issue reports for admin review
-- **AuditLog** — append-only admin and sensitive event log
+- **TestSession** — `{ userId (ref→User), testId (ref→Test, optional), mode, answers, remainingSeconds, sourceQuestions?, createdAt, updatedAt }`
+- **Flag** — `{ userId (ref→User), testId (ref→Test), questionIndex?, reason, note?, status ('open'|'resolved'|'dismissed'), resolution?, createdAt }`
+- **AuditLog** — `{ adminId (ref→User), action, targetType, targetId, details?, createdAt }`
 
-### Question Types (Current + Planned)
-- MCQ single correct (current)
-- MCQ multiple correct (planned)
-- Short answer / fill-in (planned)
-- Ordering / sequence (planned)
-- Fill-in-the-blank (planned)
+### Question Types
+- `mcq-single` — MCQ, single correct answer
+- `mcq-multiple` — MCQ, multiple correct answers
+- `short-answer` — Free-text answer matched against `acceptedAnswers`
+- `ordering` — Items arranged into correct sequence via `correctOrder`
+- `fill-in-the-blank` — One or more blanks matched against `blanks`
 
 ---
 

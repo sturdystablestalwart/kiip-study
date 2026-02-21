@@ -4,9 +4,7 @@
 
 KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress. It uses AI (Google Gemini) to convert study materials into interactive practice tests.
 
-**Current capabilities:** Test generation from text/documents, Practice and Test modes with 30-minute timer, attempt tracking, image uploads, Docker deployment.
-
-**Planned features:** Google OAuth auth, admin suite, endless mode, additional question types (MCQ multi, short answer, ordering, fill-in-the-blank), PDF exports, Ctrl+P command palette, Ctrl+K shortcuts. See `IMPLEMENTATION_PLAN.md` for the full 6-phase roadmap.
+**All six implementation phases are complete.** Features include: admin-only test generation from text and files, five question types (MCQ single/multi, short answer, ordering, fill-in-the-blank), Practice/Test/Endless modes with resumable sessions, Google OAuth auth, admin test editor and flags moderation, audit logging, PDF exports, Ctrl+P command palette, and Ctrl+K shortcuts.
 
 ---
 
@@ -80,6 +78,12 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/kiip_test_app
    GEMINI_API_KEY=your_gemini_api_key_here
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   JWT_SECRET=your-jwt-secret-change-in-production
+   ADMIN_EMAIL=admin@example.com
+   CLIENT_URL=http://localhost:5173
+   GOOGLE_CALLBACK_URL=/api/auth/google/callback
    ```
 
    **Client (`client/.env`):**
@@ -149,16 +153,12 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
 - **Delete**: Click the × button on any test card
 - **View attempts**: Last score shown on each test card
 
-### Planned Features (See IMPLEMENTATION_PLAN.md)
+### Keyboard Shortcuts
 
-- **Endless mode**: Continuous practice drawing from the full library with repetition control
-- **Dashboard**: "Continue last session" + "Recent attempts" on home page
-- **Ctrl+P command palette**: VSCode-style quick search and open
-- **Ctrl+K shortcuts**: Global keyboard shortcuts modal
-- **Admin suite**: Admin-only generation, editing, moderation, issue flags
-- **PDF exports**: Blank test, answer key, student answers, attempt report
-- **Auth**: Google OAuth + JWT for per-user progress across devices
-- **Additional question types**: MCQ multi-correct, short answer, ordering, fill-in-the-blank
+- **Ctrl+P**: Open command palette — type to search and jump to any test
+- **Ctrl+K**: Show global keyboard shortcuts reference
+- **1–4 / A–D**: Select answer option in MCQ questions
+- **Arrow keys**: Navigate options in command palette
 
 ---
 
@@ -168,6 +168,12 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `GEMINI_API_KEY` | Google Gemini API key | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Yes |
+| `JWT_SECRET` | Secret for signing JWT cookies | Yes |
+| `ADMIN_EMAIL` | Email granted admin role on first login | Yes |
+| `CLIENT_URL` | Frontend origin for CORS and OAuth redirect | No (`http://localhost:5173`) |
+| `GOOGLE_CALLBACK_URL` | OAuth callback path | No (`/api/auth/google/callback`) |
 
 ### Server `.env`
 | Variable | Description | Default |
@@ -175,6 +181,12 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
 | `PORT` | Server port | `5000` |
 | `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/kiip_test_app` |
 | `GEMINI_API_KEY` | Google Gemini API key | Required |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Required |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Required |
+| `JWT_SECRET` | Secret for signing JWT cookies | Required |
+| `ADMIN_EMAIL` | Email granted admin role on first login | Required |
+| `CLIENT_URL` | Frontend origin for CORS | `http://localhost:5173` |
+| `GOOGLE_CALLBACK_URL` | OAuth callback path | `/api/auth/google/callback` |
 
 ### Client `.env`
 | Variable | Description | Default |
@@ -220,22 +232,65 @@ docker-compose up -d --build
 
 ## API Endpoints
 
-### Current
+### Tests (Public)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/tests` | List all tests with last attempt |
-| `GET` | `/api/tests/:id` | Get specific test |
-| `POST` | `/api/tests/generate` | Generate test from text |
-| `POST` | `/api/tests/generate-from-file` | Generate test from document |
-| `POST` | `/api/tests/upload` | Upload single image |
-| `POST` | `/api/tests/upload-multiple` | Upload up to 20 images |
+| `GET` | `/api/tests?q=&level=&unit=&cursor=&limit=` | List tests with search, filters, cursor pagination |
+| `GET` | `/api/tests/:id` | Get specific test with questions |
+| `GET` | `/api/tests/recent-attempts?limit=` | Recent attempts with test metadata |
 | `POST` | `/api/tests/:id/attempt` | Save test attempt |
-| `DELETE` | `/api/tests/:id` | Delete test and all attempts |
+| `GET` | `/api/tests/endless?level=&unit=&exclude=&limit=` | Random batch for endless mode |
+| `POST` | `/api/tests/endless/attempt` | Save endless chunk attempt |
 
-### Planned (See IMPLEMENTATION_PLAN.md for details)
+### Auth
 
-Auth, sessions, flags, admin, and PDF export endpoints are planned for Phases 4–6.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/auth/me` | Current user info |
+| `GET` | `/api/auth/google/start` | Start Google OAuth flow |
+| `GET` | `/api/auth/google/callback` | Google OAuth callback |
+| `POST` | `/api/auth/logout` | Clear session cookie |
+
+### Sessions (Authenticated)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/sessions/start` | Start a test or endless session |
+| `PATCH` | `/api/sessions/:id` | Save progress |
+| `POST` | `/api/sessions/:id/submit` | Submit and create Attempt |
+| `GET` | `/api/sessions/active` | Get active session for current user |
+| `DELETE` | `/api/sessions/:id` | Abandon session |
+| `GET` | `/api/attempts?cursor=&limit=` | Paginated attempt history |
+
+### Flags (Authenticated)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/flags` | Submit a flag on a question |
+
+### Admin (Admin-only)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/admin/tests/import` | Import test from JSON |
+| `POST` | `/api/admin/tests/generate` | AI generation from text |
+| `POST` | `/api/admin/tests/generate-from-file` | AI generation from file |
+| `POST` | `/api/admin/tests/upload` | Upload single image |
+| `POST` | `/api/admin/tests/upload-multiple` | Upload image batch |
+| `PATCH` | `/api/admin/tests/:id` | Edit test |
+| `DELETE` | `/api/admin/tests/:id` | Delete test and all attempts |
+| `GET` | `/api/admin/flags` | View flag queue |
+| `GET` | `/api/admin/flags/count` | Open flags count |
+| `PATCH` | `/api/admin/flags/:id` | Resolve or dismiss flag |
+| `GET` | `/api/admin/audit` | Audit log |
+
+### PDF Exports (Authenticated)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/pdf/test/:id?variant=blank\|answerKey` | Export test PDF |
+| `GET` | `/api/pdf/attempt/:attemptId?variant=student\|report` | Export attempt PDF |
 
 ---
 
@@ -298,6 +353,8 @@ The application includes 5 sample KIIP Level 2 tests in `additionalContext/tests
 - **AI**: Google Gemini 2.5 Flash (`@google/generative-ai`)
 - **File Processing**: Multer 2, pdf-parse, mammoth
 - **Validation**: express-validator, express-rate-limit
+- **Auth**: passport, passport-google-oauth20, jsonwebtoken, cookie-parser
+- **PDF generation**: pdfkit
 - **Testing**: Playwright E2E
 - **Deployment**: Docker Compose (mongo + server + client)
 - **Design**: Japandi warm minimalism (tokens in `client/src/theme/tokens.js`)

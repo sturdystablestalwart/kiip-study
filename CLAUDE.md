@@ -4,7 +4,7 @@
 
 KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress (attempts + resumable sessions). Test generation is admin-only. The UX prioritizes fast access to a large library via a dashboard plus keyboard-first navigation (Ctrl+P palette, Ctrl+K shortcuts). The app deploys on a home server via Docker Compose with a CI pipeline.
 
-**Current state:** Users can paste text or upload documents, the app calls Gemini AI to generate MCQ tests, and users take tests in Practice or Test mode with a 30-minute timer. Auth, admin suite, endless mode, and PDF exports are planned (see `IMPLEMENTATION_PLAN.md`).
+**Current state:** All six implementation phases are complete. The app supports admin-only test generation (text and file upload), five question types, Practice/Test/Endless modes, Google OAuth with JWT auth, resumable sessions persisted server-side, admin test editor and flags moderation, server-side audit logging, and PDF exports (blank, answer key, student answers, attempt report). See `IMPLEMENTATION_PLAN.md` for the full phase-by-phase breakdown.
 
 **Design aesthetic:** Japanese Warm Minimalism (Japandi) — warm off-white canvas, muted earth accents, minimal clutter, calm feedback. See design tokens in `client/src/theme/tokens.js`.
 
@@ -78,7 +78,10 @@ kiip_test_app/
 - **multer 2** — File uploads (images + documents)
 - **pdf-parse** / **mammoth** — Document text extraction
 - **express-validator** / **express-rate-limit** — Validation & rate limiting
-- bcryptjs / jsonwebtoken installed but not yet used (auth planned)
+- **passport** / **passport-google-oauth20** — Google OAuth strategy
+- **jsonwebtoken** / **cookie-parser** — JWT auth via httpOnly cookies
+- **bcryptjs** — Password hashing utility
+- **pdfkit** — Server-side PDF generation (Japandi-styled exports)
 
 ### Testing & Tooling
 - **Playwright** (`@playwright/test`) — E2E tests in `tests/`
@@ -116,34 +119,67 @@ npx playwright test
 
 ## API Endpoints
 
-### Current Endpoints
+### Tests
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `GET` | `/api/tests` | List all tests with last attempt |
+| `GET` | `/api/tests?q=&level=&unit=&cursor=&limit=` | List tests with search, filters, cursor pagination |
 | `GET` | `/api/tests/:id` | Get specific test with questions |
-| `POST` | `/api/tests/generate` | Generate test from pasted text |
-| `POST` | `/api/tests/generate-from-file` | Generate test from uploaded document |
-| `POST` | `/api/tests/upload` | Upload single image |
-| `POST` | `/api/tests/upload-multiple` | Upload up to 20 images |
+| `GET` | `/api/tests/recent-attempts?limit=` | Recent attempts with test metadata |
 | `POST` | `/api/tests/:id/attempt` | Save test attempt (score, answers, duration) |
-| `DELETE` | `/api/tests/:id` | Delete test and all attempts |
+| `GET` | `/api/tests/endless?level=&unit=&exclude=&limit=` | Random question batch for endless mode |
+| `POST` | `/api/tests/endless/attempt` | Save endless chunk attempt |
 
-Rate-limited: `/generate` and `/generate-from-file` (10 req/min).
+### Auth
 
-### Planned Endpoints (See IMPLEMENTATION_PLAN.md)
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/auth/me` | Current user info |
+| `GET` | `/api/auth/google/start` | Initiate Google OAuth |
+| `GET` | `/api/auth/google/callback` | OAuth callback |
+| `POST` | `/api/auth/logout` | Clear session cookie |
 
-**Public (Phase 2):** `GET /api/tests?level=&unit=&q=&cursor=&limit=` — server-side search + cursor pagination
+### Sessions
 
-**Auth (Phase 5):** `GET /api/auth/me`, `GET /api/auth/google/start`, `GET /api/auth/google/callback`, `POST /api/auth/logout`
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/sessions/start` | Start test or endless session |
+| `PATCH` | `/api/sessions/:id` | Save progress (answers, remaining time) |
+| `POST` | `/api/sessions/:id/submit` | Submit session, create Attempt, close session |
+| `GET` | `/api/sessions/active` | Get active session for current user |
+| `DELETE` | `/api/sessions/:id` | Abandon session |
+| `GET` | `/api/attempts?cursor=&limit=` | Paginated attempt history |
 
-**Sessions (Phase 5):** `POST /api/sessions/start`, `PATCH /api/sessions/:id`, `POST /api/sessions/:id/submit`, `GET /api/attempts?cursor=&limit=`
+### Flags
 
-**Flags (Phase 4):** `POST /api/flags`, `GET /api/admin/flags`, `PATCH /api/admin/flags/:id`
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/flags` | User submits a flag on a question |
+| `GET` | `/api/admin/flags` | Admin views flag queue |
+| `GET` | `/api/admin/flags/count` | Open flags count (nav badge) |
+| `PATCH` | `/api/admin/flags/:id` | Resolve or dismiss a flag |
 
-**Admin (Phase 4):** `POST /api/admin/tests/import`, `POST /api/admin/tests/generate`, `PATCH /api/admin/tests/:id`, `DELETE /api/admin/tests/:id`
+### Admin
 
-**PDF (Phase 6):** `GET /api/pdf/test/:id?variant=blank|answerKey`, `GET /api/pdf/attempt/:attemptId?variant=blank|withKey|student|report`
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/admin/tests/import` | Import test from JSON |
+| `POST` | `/api/admin/tests/generate` | AI generation (admin-only) |
+| `POST` | `/api/admin/tests/generate-from-file` | File-based generation (admin-only) |
+| `POST` | `/api/admin/tests/upload` | Upload image (admin-only) |
+| `POST` | `/api/admin/tests/upload-multiple` | Upload images batch (admin-only) |
+| `PATCH` | `/api/admin/tests/:id` | Edit test |
+| `DELETE` | `/api/admin/tests/:id` | Delete test and all attempts |
+| `GET` | `/api/admin/audit` | Admin audit log |
+
+Rate-limited: generate endpoints (10 req/min).
+
+### PDF Exports
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/pdf/test/:id?variant=blank\|answerKey` | Export test PDF |
+| `GET` | `/api/pdf/attempt/:attemptId?variant=student\|report` | Export attempt PDF |
 
 ---
 
@@ -151,46 +187,49 @@ Rate-limited: `/generate` and `/generate-from-file` (10 req/min).
 
 ### Current Collections
 
-**Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type }], createdAt }`
+**Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type, acceptedAnswers?, correctOrder?, blanks? }], createdAt }`
 
-**Attempt** — `{ testId (ref→Test), score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOption, isCorrect, isOverdue }], mode ('Practice'|'Test'), createdAt }`
+**Attempt** — `{ testId (ref→Test, optional for Endless), userId (ref→User), score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOptions, textAnswer, orderedItems, blankAnswers, isCorrect, isOverdue }], mode ('Practice'|'Test'|'Endless'), sourceQuestions?, createdAt }`
 
-### Planned Collections (See IMPLEMENTATION_PLAN.md)
+**User** — `{ email, googleId, isAdmin, createdAt }`
 
-**User** (Phase 5) — `{ email, googleId, isAdmin, createdAt }`
+**TestSession** — `{ userId (ref→User), testId (ref→Test, optional), mode, answers, remainingSeconds, sourceQuestions?, createdAt, updatedAt }`
 
-**TestSession** (Phase 5) — resumable in-progress state per user (per test or endless); persists remaining time server-side
+**Flag** — `{ userId (ref→User), testId (ref→Test), questionIndex?, reason, note?, status ('open'|'resolved'|'dismissed'), resolution?, createdAt }`
 
-**Flag** (Phase 4) — `{ userId, testId, questionIndex?, reason, note?, status ('open'|'resolved'|'dismissed'), resolution?, createdAt }`
-
-**AuditLog** (Phase 5) — append-only log for admin actions (create/edit/delete/generate/resolve flags)
+**AuditLog** — `{ adminId (ref→User), action, targetType, targetId, details?, createdAt }`
 
 ### Question Types
 
-- MCQ single correct (current)
-- MCQ multiple correct (planned — Phase 3)
-- Short answer / fill-in (planned — Phase 3)
-- Ordering / sequence (planned — Phase 3)
-- Fill-in-the-blank (planned — Phase 3)
+- MCQ single correct (`mcq-single`)
+- MCQ multiple correct (`mcq-multiple`)
+- Short answer (`short-answer`)
+- Ordering / sequence (`ordering`)
+- Fill-in-the-blank (`fill-in-the-blank`)
 
 ---
 
 ## Environment Variables
 
-| Variable | File | Required | Default |
-|----------|------|----------|---------|
-| `GEMINI_API_KEY` | `server/.env` | Yes | — |
-| `PORT` | `server/.env` | No | `5000` |
-| `MONGO_URI` | `server/.env` | No | `mongodb://localhost:27017/kiip_test_app` |
-| `VITE_API_URL` | `client/.env` | No | `http://localhost:5000` |
+### Server (`server/.env`)
 
-**Planned (Phase 5):**
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GEMINI_API_KEY` | Yes | — | Google Gemini API key for test generation |
+| `PORT` | No | `5000` | Express server port |
+| `MONGO_URI` | No | `mongodb://localhost:27017/kiip_test_app` | MongoDB connection string |
+| `GOOGLE_CLIENT_ID` | Yes (auth) | — | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes (auth) | — | Google OAuth client secret |
+| `JWT_SECRET` | Yes (auth) | — | Secret for signing JWT cookies |
+| `ADMIN_EMAIL` | Yes (auth) | — | Email address granted admin role on first login |
+| `CLIENT_URL` | No | `http://localhost:5173` | Frontend origin for CORS and OAuth redirect |
+| `GOOGLE_CALLBACK_URL` | No | `/api/auth/google/callback` | OAuth callback path |
 
-| Variable | File | Required | Default |
-|----------|------|----------|---------|
-| `GOOGLE_CLIENT_ID` | `server/.env` | For auth | — |
-| `GOOGLE_CLIENT_SECRET` | `server/.env` | For auth | — |
-| `JWT_SECRET` | `server/.env` | For auth | — |
+### Client (`client/.env`)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_API_URL` | No | `http://localhost:5000` | Backend API base URL |
 
 ---
 
@@ -399,4 +438,4 @@ These checks are **mandatory** before saying work is done:
 - **MongoDB must be running** — the server will crash on startup without it
 - **Auto-importer** reads from `additionalContext/tests/` on startup — don't put non-test files there
 - **Roadmap source of truth** is `additionalContext/KIIP_Study_Requirements_Roadmap_Checklist.docx` — check it when requirements are unclear
-- **Admin-only generation** is the target model — current open generation will be gated behind auth in Phase 4/5
+- **Admin-only generation** is enforced — all generate/upload/delete routes require `requireAdmin` middleware

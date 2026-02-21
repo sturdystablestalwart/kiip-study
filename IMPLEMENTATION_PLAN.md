@@ -212,7 +212,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
-## Phase 5 — Continuity + Audit
+## Phase 5 — Continuity + Audit ✅ COMPLETE
 
 > Resumable sessions, audit logs. (Auth moved to Phase 4.)
 
@@ -220,10 +220,10 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Tasks (PR-sized)
 
-- [ ] **5.1** AuditLog collection + middleware to record admin actions (create/edit/delete/generate/resolve)
-- [ ] **5.2** TestSession model: persist remaining time server-side; refresh restores timer
-- [ ] **5.3** Prevent duplicate active sessions per user per test
-- [ ] **5.4** Submit creates Attempt and closes session atomically
+- [x] **5.1** AuditLog collection + middleware to record admin actions (create/edit/delete/generate/resolve)
+- [x] **5.2** TestSession model: persist remaining time server-side; refresh restores timer
+- [x] **5.3** Prevent duplicate active sessions per user per test
+- [x] **5.4** Submit creates Attempt and closes session atomically
 
 ### API Changes
 
@@ -232,7 +232,10 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | `POST` | `/api/sessions/start` | Start test/endless session |
 | `PATCH` | `/api/sessions/:id` | Save progress |
 | `POST` | `/api/sessions/:id/submit` | Submit → create Attempt |
+| `GET` | `/api/sessions/active` | Get active session for current user |
+| `DELETE` | `/api/sessions/:id` | Abandon session |
 | `GET` | `/api/attempts?cursor=&limit=` | Dashboard attempt feed |
+| `GET` | `/api/admin/audit` | Admin audit log |
 
 ### Data Model Additions
 
@@ -241,12 +244,12 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Acceptance Criteria
 
-- Session persists across devices; timer state survives refresh
-- Audit log records all admin mutations
+- [x] Session persists across devices; timer state survives refresh
+- [x] Audit log records all admin mutations
 
 ---
 
-## Phase 6 — PDF Exports
+## Phase 6 — PDF Exports ✅ COMPLETE
 
 > Export blank/answer key/student answers/attempt report in Japandi style.
 
@@ -254,35 +257,35 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ### Tasks (PR-sized)
 
-- [ ] **6.1** Server-side PDF generator with Japandi template (colors, fonts, spacing from design tokens)
-- [ ] **6.2** Export variants: blank test, answer key
-- [ ] **6.3** Export variants: student answers, attempt report with timing/overdue data
-- [ ] **6.4** Add UI export actions (download links/buttons) on test detail and attempt pages
+- [x] **6.1** Server-side PDF generator with Japandi template (colors, fonts, spacing from design tokens)
+- [x] **6.2** Export variants: blank test, answer key
+- [x] **6.3** Export variants: student answers, attempt report with timing/overdue data
+- [x] **6.4** Add UI export actions (download links/buttons) on test detail and attempt pages
 
 ### API Changes
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | `GET` | `/api/pdf/test/:id?variant=blank\|answerKey` | Export test PDF |
-| `GET` | `/api/pdf/attempt/:attemptId?variant=blank\|withKey\|student\|report` | Export attempt PDF |
+| `GET` | `/api/pdf/attempt/:attemptId?variant=student\|report` | Export attempt PDF |
 
 ### Acceptance Criteria
 
-- All 4 PDF variants generate correctly with Japandi styling
-- PDFs include bilingual explanations where configured
-- Timing/overdue data appears in attempt report variant
-- Download triggers cleanly from UI buttons
+- [x] All 4 PDF variants generate correctly with Japandi styling
+- [x] PDFs include bilingual explanations where configured
+- [x] Timing/overdue data appears in attempt report variant
+- [x] Download triggers cleanly from UI buttons
 
 ---
 
 ## Full Acceptance Criteria Snapshot
 
-1. A deployed production instance runs on the home server with Docker Compose and persists data across restarts.
-2. CI runs on every PR and deploys on main with Playwright passing.
-3. Users can find any test quickly using search and Ctrl+P; keyboard shortcut list appears via Ctrl+K.
-4. Sessions are resumable across devices without timer reset via refresh.
-5. Admin can generate, validate, edit, and publish tests; users can privately flag issues.
-6. All PDF export variants render cleanly and match the Japandi design system.
+1. ✅ A deployed production instance runs on the home server with Docker Compose and persists data across restarts.
+2. ✅ CI runs on every PR and deploys on main with Playwright passing.
+3. ✅ Users can find any test quickly using search and Ctrl+P; keyboard shortcut list appears via Ctrl+K.
+4. ✅ Sessions are resumable across devices without timer reset via refresh.
+5. ✅ Admin can generate, validate, edit, and publish tests; users can privately flag issues.
+6. ✅ All PDF export variants render cleanly and match the Japandi design system.
 
 ---
 
@@ -295,5 +298,5 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | Phase 2 | None (React + Mongoose changes) |
 | Phase 3 | None (schema + UI changes) |
 | Phase 4 | None (admin routes + UI) |
-| Phase 5 | `passport`, `passport-google-oauth20`, `cookie-parser` (or similar OAuth lib) |
-| Phase 6 | `puppeteer` or `pdfkit` or `@react-pdf/renderer` (PDF generation) |
+| Phase 5 | `passport`, `passport-google-oauth20`, `cookie-parser` (already installed in Phase 4) |
+| Phase 6 | `pdfkit` (PDF generation) |
