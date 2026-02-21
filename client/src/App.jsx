@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import styled, { ThemeProvider } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import GlobalStyles from './theme/GlobalStyles';
+import { below } from './theme/breakpoints';
 import { ThemeModeProvider, useThemeMode } from './context/ThemeContext';
 import Home from './pages/Home';
 import CreateTest from './pages/CreateTest';
@@ -20,8 +21,11 @@ const AppShell = styled.div`
   margin: 0 auto;
   padding: ${({ theme }) => theme.layout.space[8]}px ${({ theme }) => theme.layout.space[5]}px;
 
-  @media (max-width: 600px) {
-    padding: ${({ theme }) => theme.layout.space[5]}px ${({ theme }) => theme.layout.space[4]}px;
+  ${below.tablet} {
+    padding: ${({ theme }) => theme.layout.space[6]}px ${({ theme }) => theme.layout.space[4]}px;
+  }
+  ${below.mobile} {
+    padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[3]}px;
   }
 `;
 
@@ -32,6 +36,11 @@ const Nav = styled.nav`
   margin-bottom: ${({ theme }) => theme.layout.space[8]}px;
   padding-bottom: ${({ theme }) => theme.layout.space[5]}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
+
+  ${below.mobile} {
+    flex-wrap: wrap;
+    gap: ${({ theme }) => theme.layout.space[3]}px;
+  }
 `;
 
 const Logo = styled(Link)`
@@ -50,6 +59,11 @@ const Logo = styled(Link)`
 const NavLinks = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.layout.space[5]}px;
+
+  ${below.mobile} {
+    flex-wrap: wrap;
+    gap: ${({ theme }) => theme.layout.space[2]}px;
+  }
 `;
 
 const NavLink = styled(Link)`
@@ -90,8 +104,19 @@ const NavSearchTrigger = styled.button`
     background: ${({ theme }) => theme.colors.bg.surface};
   }
 
-  @media (max-width: 600px) {
+  ${below.tablet} {
     min-width: 140px;
+  }
+  ${below.mobile} {
+    min-width: unset;
+    padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+    font-size: 0;
+    gap: 0;
+
+    &::before {
+      content: '\\2315';
+      font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+    }
   }
 `;
 
@@ -99,6 +124,10 @@ const SearchHint = styled.span`
   margin-left: auto;
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   opacity: 0.6;
+
+  ${below.mobile} {
+    display: none;
+  }
 `;
 
 const AuthSection = styled.div`

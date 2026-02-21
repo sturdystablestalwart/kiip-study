@@ -53,6 +53,7 @@ const shared = {
       md: '0 6px 18px rgba(20,20,20,0.10)',
     },
     controlHeights: { button: 44, input: 48 },
+    breakpoints: { mobile: 480, tablet: 768, laptop: 1024 },
   },
 
   motion: {

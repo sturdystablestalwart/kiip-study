@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { below } from '../theme/breakpoints';
 import api from '../utils/api';
 
 const Overlay = styled.div`
@@ -27,6 +28,10 @@ const Panel = styled.div`
   display: flex;
   flex-direction: column;
   align-self: flex-start;
+
+  ${below.mobile} {
+    width: calc(100vw - 32px);
+  }
 `;
 
 const SearchInput = styled.input`

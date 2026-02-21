@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { below } from '../theme/breakpoints';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 
@@ -28,6 +29,10 @@ const HeaderBar = styled.div`
   box-shadow: ${({ theme }) => theme.layout.shadow.sm};
   gap: ${({ theme }) => theme.layout.space[4]}px;
   flex-wrap: wrap;
+
+  ${below.mobile} {
+    padding: ${({ theme }) => theme.layout.space[4]}px;
+  }
 `;
 
 const HeaderLeft = styled.div`
@@ -139,8 +144,11 @@ const QuestionCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   box-shadow: ${({ theme }) => theme.layout.shadow.sm};
 
-  @media (max-width: 600px) {
+  ${below.tablet} {
     padding: ${({ theme }) => theme.layout.space[5]}px;
+  }
+  ${below.mobile} {
+    padding-bottom: ${({ theme }) => theme.layout.space[9]}px;
   }
 `;
 
@@ -162,6 +170,18 @@ const Controls = styled.div`
   justify-content: space-between;
   margin-top: ${({ theme }) => theme.layout.space[6]}px;
   gap: ${({ theme }) => theme.layout.space[3]}px;
+
+  ${below.mobile} {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0;
+    padding: ${({ theme }) => theme.layout.space[3]}px;
+    background: ${({ theme }) => theme.colors.bg.surface};
+    border-top: 1px solid ${({ theme }) => theme.colors.border.subtle};
+    z-index: 100;
+  }
 `;
 
 const NavButton = styled.button`

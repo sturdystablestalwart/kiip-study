@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { below } from '../theme/breakpoints';
 import FilterDropdown from '../components/FilterDropdown';
 
 /* ───────── Styled Components ───────── */
@@ -51,6 +52,11 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: ${({ theme }) => theme.layout.space[5]}px;
+
+  ${below.mobile} {
+    grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.layout.space[3]}px;
+  }
 `;
 
 const Card = styled(Link)`
@@ -443,6 +449,10 @@ const SessionGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: ${({ theme }) => theme.layout.space[3]}px;
+
+  ${below.mobile} {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const SessionCard = styled(Link)`
@@ -501,6 +511,11 @@ const FilterBar = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.layout.space[3]}px;
+
+  ${below.mobile} {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const FilterGroup = styled.div`

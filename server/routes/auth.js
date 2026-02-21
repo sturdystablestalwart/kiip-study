@@ -86,8 +86,26 @@ router.get('/me', requireAuth, (req, res) => {
         _id: req.user._id,
         email: req.user.email,
         displayName: req.user.displayName,
-        isAdmin: req.user.isAdmin
+        isAdmin: req.user.isAdmin,
+        preferences: req.user.preferences
     });
+});
+
+// PATCH /api/auth/preferences
+router.patch('/preferences', requireAuth, async (req, res) => {
+    const { language, theme } = req.body;
+    const updates = {};
+    if (language && ['en', 'ko', 'ru', 'es'].includes(language)) {
+        updates['preferences.language'] = language;
+    }
+    if (theme && ['light', 'dark', 'system'].includes(theme)) {
+        updates['preferences.theme'] = theme;
+    }
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'No valid preferences provided' });
+    }
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+    res.json({ preferences: user.preferences });
 });
 
 // POST /api/auth/logout
