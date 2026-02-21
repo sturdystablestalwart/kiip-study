@@ -3,6 +3,7 @@ node_modules/
 
 # Environment files (contain secrets)
 .env
+.env.*
 .env.local
 .env.*.local
 .env.production
@@ -52,6 +53,7 @@ test-failure.png
 Thumbs.db
 
 # Uploads (user content, not tracked)
+server/uploads/
 server/uploads/images/*
 server/uploads/documents/*
 !server/uploads/.gitkeep

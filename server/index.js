@@ -7,6 +7,9 @@ const path = require('path');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
 
 dotenv.config();
 
@@ -21,6 +24,24 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "https://accounts.google.com"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(mongoSanitize());
+app.use(hpp());
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Ensure upload directories exist
@@ -80,6 +101,14 @@ app.get('/health', (req, res) => {
         mongo: states[mongoState] || 'unknown',
         uptime: process.uptime()
     });
+});
+
+// Production error handler — hide stack traces from clients
+app.use((err, req, res, _next) => {
+  console.error(err);
+  const status = err.status || 500;
+  const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
+  res.status(status).json({ error: message });
 });
 
 app.listen(PORT, () => {
