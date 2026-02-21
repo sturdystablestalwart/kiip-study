@@ -142,6 +142,27 @@ const EditButton = styled(Link)`
   }
 `;
 
+const ExportLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[1]}px;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  text-decoration: none;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  cursor: pointer;
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent.indigo};
+    color: ${({ theme }) => theme.colors.accent.indigo};
+  }
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
@@ -522,6 +543,7 @@ const LoadMoreButton = styled.button`
 function Home() {
   const { user } = useAuth();
   const isAdmin = user?.isAdmin;
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -771,6 +793,17 @@ function Home() {
                 </CardScore>
               ) : (
                 <CardNoAttempt>Not attempted yet</CardNoAttempt>
+              )}
+              {user && (
+                <ExportLink
+                  href={`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`}
+                  target="_blank"
+                  rel="noopener"
+                  title="Download blank PDF"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  PDF
+                </ExportLink>
               )}
             </Card>
           ))}

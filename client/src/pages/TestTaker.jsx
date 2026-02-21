@@ -433,6 +433,36 @@ const FlagSuccessMsg = styled.p`
   margin: ${({ theme }) => theme.layout.space[4]}px 0;
 `;
 
+/* ── Export links ── */
+
+const ExportRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  flex-wrap: wrap;
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const ExportLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[1]}px;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  text-decoration: none;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  cursor: pointer;
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent.indigo};
+    color: ${({ theme }) => theme.colors.accent.indigo};
+  }
+`;
+
 /* ───────── Component ───────── */
 
 function TestTaker() {
@@ -454,7 +484,7 @@ function TestTaker() {
   const [reviewMode, setReviewMode] = useState(false);
 
   const [sessionId, setSessionId] = useState(null);
-  const [attemptId, setAttemptId] = useState(null); // eslint-disable-line no-unused-vars -- used in PDF export buttons
+  const [attemptId, setAttemptId] = useState(null);
 
   const { user } = useAuth();
   const [showFlagModal, setShowFlagModal] = useState(false);
@@ -789,6 +819,7 @@ function TestTaker() {
   const currentAnswer = answers[currentQ];
   const showFeedback = mode === 'Practice' ? (currentAnswer !== undefined) : isSubmitted;
   const percentage = Math.round((score / test.questions.length) * 100);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   return (
     <Page>
@@ -826,6 +857,24 @@ function TestTaker() {
               You went over by {formatTime(overdueSeconds)}.
             </OverdueNote>
           )}
+          <ExportRow>
+            <ExportLink href={`${apiBaseUrl}/api/pdf/test/${id}?variant=blank`} target="_blank" rel="noopener">
+              Blank Test
+            </ExportLink>
+            <ExportLink href={`${apiBaseUrl}/api/pdf/test/${id}?variant=answerKey`} target="_blank" rel="noopener">
+              Answer Key
+            </ExportLink>
+            {attemptId && (
+              <>
+                <ExportLink href={`${apiBaseUrl}/api/pdf/attempt/${attemptId}?variant=student`} target="_blank" rel="noopener">
+                  My Answers
+                </ExportLink>
+                <ExportLink href={`${apiBaseUrl}/api/pdf/attempt/${attemptId}?variant=report`} target="_blank" rel="noopener">
+                  Full Report
+                </ExportLink>
+              </>
+            )}
+          </ExportRow>
           {missedIndices.length > 0 && !reviewMode && (
             <ReviewButton onClick={() => { setReviewMode(true); setCurrentQ(missedIndices[0]); }}>
               Review {missedIndices.length} missed question{missedIndices.length !== 1 ? 's' : ''}
