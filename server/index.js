@@ -19,7 +19,7 @@ app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
@@ -28,7 +28,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
@@ -53,10 +53,24 @@ app.use((req, _res, next) => {
   };
   if (req.body) sanitize(req.body);
   if (req.params) sanitize(req.params);
+  // Express 5: req.query is a getter, so sanitize the parsed values in-place
+  if (req.query && typeof req.query === 'object') {
+    for (const key of Object.keys(req.query)) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete req.query[key];
+      } else if (typeof req.query[key] === 'object') {
+        sanitize(req.query[key]);
+      }
+    }
+  }
   next();
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded images (auth-gated for documents/temp, public for images)
+const { requireAuth } = require('./middleware/auth');
+app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+app.use('/uploads/documents', requireAuth, express.static(path.join(__dirname, 'uploads/documents')));
+// Do NOT serve /uploads/temp — temp files are internal only
 
 // Ensure upload directories exist
 const uploadDir = path.join(__dirname, 'uploads');

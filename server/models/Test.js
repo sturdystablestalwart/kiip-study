@@ -35,7 +35,5 @@ TestSchema.index({ title: 'text', category: 'text', description: 'text' });
 // Compound index for filtering + sorting
 TestSchema.index({ level: 1, unit: 1, createdAt: -1 });
 
-// Unique sparse index for share links
-TestSchema.index({ shareId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Test', TestSchema);

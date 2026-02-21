@@ -104,7 +104,8 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
 
 // POST /bulk-import/confirm
 router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) => {
-  const { previewId } = req.body;
+  const previewId = String(req.body.previewId || '').replace(/[^a-z0-9]/gi, '');
+  if (!previewId) return res.status(400).json({ error: 'Invalid preview ID' });
   const previewPath = path.join(__dirname, `../uploads/temp/preview-${previewId}.json`);
 
   if (!fs.existsSync(previewPath)) {
