@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
@@ -468,6 +469,7 @@ const ExportLink = styled.a`
 function TestTaker() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [test, setTest] = useState(null);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('Test');
@@ -773,16 +775,16 @@ function TestTaker() {
   if (error) {
     return (
       <ErrorScreen>
-        <h2>Couldn't load this test</h2>
+        <h2>{t('common.error')}</h2>
         <p>{error}</p>
-        <NavButton $primary onClick={() => navigate('/')}>Back to tests</NavButton>
+        <NavButton $primary onClick={() => navigate('/')}>{t('test.goHome')}</NavButton>
       </ErrorScreen>
     );
   }
 
   // Loading state
   if (!test) {
-    return <LoadingScreen>Loading your test...</LoadingScreen>;
+    return <LoadingScreen>{t('common.loading')}</LoadingScreen>;
   }
 
   const missedIndices = (isSubmitted && test)
@@ -833,8 +835,8 @@ function TestTaker() {
               onChange={(e) => handleModeChange(e.target.value)}
               disabled={isSubmitted}
             >
-              <option value="Test">Test (submit at end)</option>
-              <option value="Practice">Practice (instant feedback)</option>
+              <option value="Test">{t('test.exam')}</option>
+              <option value="Practice">{t('test.practice')}</option>
             </ModeSelect>
           </ModeRow>
         </HeaderLeft>
@@ -843,50 +845,50 @@ function TestTaker() {
             {timerExpired ? `+${formatTime(overdueSeconds)}` : formatTime(timeLeft)}
           </TimerDisplay>
           <ExitButton onClick={handleExitClick}>
-            Exit
+            {t('test.goHome')}
           </ExitButton>
         </HeaderRight>
       </HeaderBar>
 
       {isSubmitted && (
         <ResultCard>
-          <h2>You got {score} out of {test.questions.length}</h2>
+          <h2>{t('test.score')}: {score}/{test.questions.length}</h2>
           <ScorePercentage>{percentage}%</ScorePercentage>
           {overdueSeconds > 0 && (
             <OverdueNote>
-              You went over by {formatTime(overdueSeconds)}.
+              {t('test.overdue')}: +{formatTime(overdueSeconds)}
             </OverdueNote>
           )}
           <ExportRow>
             <ExportLink href={`${apiBaseUrl}/api/pdf/test/${id}?variant=blank`} target="_blank" rel="noopener">
-              Blank Test
+              {t('test.exportBlank')}
             </ExportLink>
             <ExportLink href={`${apiBaseUrl}/api/pdf/test/${id}?variant=answerKey`} target="_blank" rel="noopener">
-              Answer Key
+              {t('test.exportAnswerKey')}
             </ExportLink>
             {attemptId && (
               <>
                 <ExportLink href={`${apiBaseUrl}/api/pdf/attempt/${attemptId}?variant=student`} target="_blank" rel="noopener">
-                  My Answers
+                  {t('test.exportMyAnswers')}
                 </ExportLink>
                 <ExportLink href={`${apiBaseUrl}/api/pdf/attempt/${attemptId}?variant=report`} target="_blank" rel="noopener">
-                  Full Report
+                  {t('test.exportReport')}
                 </ExportLink>
               </>
             )}
           </ExportRow>
           {missedIndices.length > 0 && !reviewMode && (
             <ReviewButton onClick={() => { setReviewMode(true); setCurrentQ(missedIndices[0]); }}>
-              Review {missedIndices.length} missed question{missedIndices.length !== 1 ? 's' : ''}
+              {t('test.reviewMissed')} ({missedIndices.length})
             </ReviewButton>
           )}
           {reviewMode && (
             <ReviewButton onClick={() => setReviewMode(false)}>
-              Back to results
+              {t('test.results')}
             </ReviewButton>
           )}
           <BackToTestsButton onClick={() => navigate('/')}>
-            Back to tests
+            {t('test.goHome')}
           </BackToTestsButton>
         </ResultCard>
       )}
@@ -915,21 +917,21 @@ function TestTaker() {
 
         {user && !reviewMode && (
           <FlagButton onClick={() => setShowFlagModal(true)}>
-            &#9873; Report issue
+            &#9873; {t('test.flagQuestion')}
           </FlagButton>
         )}
 
         <Controls>
           <NavButton onClick={goPrev} disabled={!canGoPrev}>
-            Previous
+            {t('test.previous')}
           </NavButton>
           {reviewMode ? (
-            <NavButton $primary onClick={goNext} disabled={!canGoNext}>Next</NavButton>
+            <NavButton $primary onClick={goNext} disabled={!canGoNext}>{t('test.next')}</NavButton>
           ) : canGoNext ? (
-            <NavButton $primary onClick={goNext}>Next</NavButton>
+            <NavButton $primary onClick={goNext}>{t('test.next')}</NavButton>
           ) : (
             <SubmitButton onClick={handleSubmit} disabled={isSubmitted}>
-              Submit
+              {t('test.submit')}
             </SubmitButton>
           )}
         </Controls>
@@ -961,11 +963,11 @@ function TestTaker() {
       {showExitModal && (
         <ModalOverlay onClick={cancelExit}>
           <ModalCard onClick={e => e.stopPropagation()}>
-            <h3>Leave this test?</h3>
-            <p>Your answers haven't been saved yet. You'll lose your progress if you leave now.</p>
+            <h3>{t('test.confirmExit')}</h3>
+            <p></p>
             <ModalActions>
-              <ModalBtnSecondary onClick={cancelExit}>Stay</ModalBtnSecondary>
-              <ModalBtnDanger onClick={confirmExit}>Leave</ModalBtnDanger>
+              <ModalBtnSecondary onClick={cancelExit}>{t('common.cancel')}</ModalBtnSecondary>
+              <ModalBtnDanger onClick={confirmExit}>{t('common.confirm')}</ModalBtnDanger>
             </ModalActions>
           </ModalCard>
         </ModalOverlay>
@@ -974,11 +976,11 @@ function TestTaker() {
       {showModeModal && (
         <ModalOverlay onClick={cancelModeChange}>
           <ModalCard onClick={e => e.stopPropagation()}>
-            <h3>Switch mode?</h3>
-            <p>This will clear your current answers so you can start fresh in the new mode.</p>
+            <h3>{t('test.confirmModeSwitch')}</h3>
+            <p></p>
             <ModalActions>
-              <ModalBtnSecondary onClick={cancelModeChange}>Cancel</ModalBtnSecondary>
-              <ModalBtnPrimary onClick={confirmModeChange}>Switch & reset</ModalBtnPrimary>
+              <ModalBtnSecondary onClick={cancelModeChange}>{t('common.cancel')}</ModalBtnSecondary>
+              <ModalBtnPrimary onClick={confirmModeChange}>{t('common.confirm')}</ModalBtnPrimary>
             </ModalActions>
           </ModalCard>
         </ModalOverlay>
@@ -987,36 +989,36 @@ function TestTaker() {
       {showFlagModal && (
         <ModalOverlay onClick={() => setShowFlagModal(false)}>
           <ModalCard onClick={e => e.stopPropagation()}>
-            <h3>Report an issue</h3>
+            <h3>{t('flag.title')}</h3>
             {flagSuccess ? (
-              <FlagSuccessMsg>Thanks for your feedback!</FlagSuccessMsg>
+              <FlagSuccessMsg>{t('flag.success')}</FlagSuccessMsg>
             ) : (
               <>
                 <FlagSelect
                   value={flagReason}
                   onChange={e => setFlagReason(e.target.value)}
                 >
-                  <option value="">Select a reason...</option>
-                  <option value="incorrect-answer">Incorrect answer</option>
-                  <option value="unclear-question">Unclear question</option>
-                  <option value="typo">Typo</option>
-                  <option value="other">Other</option>
+                  <option value="">{t('flag.reason')}...</option>
+                  <option value="incorrect-answer">{t('flag.incorrectAnswer')}</option>
+                  <option value="unclear-question">{t('flag.unclearQuestion')}</option>
+                  <option value="typo">{t('flag.typo')}</option>
+                  <option value="other">{t('flag.other')}</option>
                 </FlagSelect>
                 <FlagTextarea
-                  placeholder="Additional details (optional)"
+                  placeholder={t('flag.note')}
                   value={flagNote}
                   onChange={e => setFlagNote(e.target.value)}
                   maxLength={500}
                 />
                 <ModalActions>
                   <ModalBtnSecondary onClick={() => setShowFlagModal(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </ModalBtnSecondary>
                   <ModalBtnPrimary
                     onClick={handleFlagSubmit}
                     disabled={!flagReason || flagSubmitting}
                   >
-                    {flagSubmitting ? 'Submitting...' : 'Submit'}
+                    {flagSubmitting ? t('common.loading') : t('flag.submit')}
                   </ModalBtnPrimary>
                 </ModalActions>
               </>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import GlobalStyles from './theme/GlobalStyles';
 import { ThemeModeProvider, useThemeMode } from './context/ThemeContext';
 import Home from './pages/Home';
@@ -177,6 +178,34 @@ const ThemeToggle = styled.button`
   }
 `;
 
+const LangToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    background: ${({ theme }) => theme.colors.bg.surface};
+    color: ${({ theme }) => theme.colors.text.primary};
+  }
+`;
+
+const LANG_CYCLE = ['en', 'ko', 'ru', 'es'];
+const LANG_LABELS = { en: 'EN', ko: '한국어', ru: 'РУ', es: 'ES' };
+
 const THEME_ICONS = { light: '\u25CB', dark: '\u25CF', system: '\u25D0' };
 const THEME_LABELS = { light: 'Light mode (click for dark)', dark: 'Dark mode (click for system)', system: 'System mode (click for light)' };
 
@@ -184,6 +213,7 @@ function Navigation({ onSearchClick }) {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
   const { mode, cycleMode } = useThemeMode();
+  const { t, i18n } = useTranslation();
   const [flagCount, setFlagCount] = useState(0);
 
   useEffect(() => {
@@ -194,24 +224,33 @@ function Navigation({ onSearchClick }) {
     }
   }, [user]);
 
+  const cycleLang = () => {
+    const currentIdx = LANG_CYCLE.indexOf(i18n.language);
+    const nextIdx = (currentIdx + 1) % LANG_CYCLE.length;
+    i18n.changeLanguage(LANG_CYCLE[nextIdx]);
+  };
+
   return (
     <Nav>
       <Logo to="/">KIIP Study</Logo>
       <NavSearchTrigger onClick={onSearchClick} aria-label="Search tests">
-        Search tests...
+        {t('nav.search')}
         <SearchHint>Ctrl+P</SearchHint>
       </NavSearchTrigger>
       <NavLinks>
-        <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>Tests</NavLink>
+        <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>{t('nav.home')}</NavLink>
         {user?.isAdmin && (
-          <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>New Test</NavLink>
+          <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>{t('nav.create')}</NavLink>
         )}
         {user?.isAdmin && (
           <NavLink to="/admin/flags" active={location.pathname.startsWith('/admin/flags') ? 1 : 0}>
-            Flags{flagCount > 0 && <Badge>{flagCount}</Badge>}
+            {t('nav.flags')}{flagCount > 0 && <Badge>{flagCount}</Badge>}
           </NavLink>
         )}
       </NavLinks>
+      <LangToggle onClick={cycleLang} aria-label="Change language" title="Change language">
+        {LANG_LABELS[i18n.language] || LANG_LABELS.en}
+      </LangToggle>
       <ThemeToggle onClick={cycleMode} aria-label={THEME_LABELS[mode]} title={THEME_LABELS[mode]}>
         {THEME_ICONS[mode]}
       </ThemeToggle>
@@ -219,11 +258,11 @@ function Navigation({ onSearchClick }) {
         {loading ? null : user ? (
           <>
             <UserName>{user.displayName}</UserName>
-            <SignOutButton onClick={logout}>Sign out</SignOutButton>
+            <SignOutButton onClick={logout}>{t('nav.signOut')}</SignOutButton>
           </>
         ) : (
           <SignInButton href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google/start`}>
-            Sign in
+            {t('nav.signIn')}
           </SignInButton>
         )}
       </AuthSection>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import FilterDropdown from '../components/FilterDropdown';
@@ -542,6 +543,7 @@ const LoadMoreButton = styled.button`
 
 function Home() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const isAdmin = user?.isAdmin;
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const [tests, setTests] = useState([]);
@@ -657,14 +659,14 @@ function Home() {
   return (
     <div>
       <PageHeader>
-        <h1>Your Tests</h1>
-        {isAdmin && <CreateButton to="/create">+ New Test</CreateButton>}
+        <h1>{t('home.title')}</h1>
+        {isAdmin && <CreateButton to="/create">+ {t('nav.create')}</CreateButton>}
       </PageHeader>
 
       {error && (
         <ErrorBanner>
           <span>{error}</span>
-          <RetryButton onClick={() => fetchTests()}>Try again</RetryButton>
+          <RetryButton onClick={() => fetchTests()}>{t('common.retry')}</RetryButton>
         </ErrorBanner>
       )}
 
@@ -685,7 +687,7 @@ function Home() {
 
       {recentAttempts.length > 1 && (
         <DashboardSection>
-          <SectionTitle>Recent Attempts</SectionTitle>
+          <SectionTitle>{t('home.recentAttempts')}</SectionTitle>
           <RecentRow>
             {recentAttempts.map((attempt, i) => (
               <RecentChip key={attempt._id || i} to={`/test/${attempt.testId}`}>
@@ -705,15 +707,15 @@ function Home() {
         <EndlessCard to="/endless">
           <EndlessIcon>&#x221E;</EndlessIcon>
           <EndlessInfo>
-            <EndlessTitle>Endless Practice</EndlessTitle>
-            <EndlessMeta>Random questions from the full library. No timer, no limits.</EndlessMeta>
+            <EndlessTitle>{t('home.endlessPractice')}</EndlessTitle>
+            <EndlessMeta>{t('home.endlessDesc')}</EndlessMeta>
           </EndlessInfo>
         </EndlessCard>
       </DashboardSection>
 
       {activeSessions.length > 0 && (
         <SessionSection>
-          <SessionSectionTitle>Resume In Progress</SessionSectionTitle>
+          <SessionSectionTitle>{t('home.continueSession')}</SessionSectionTitle>
           <SessionGrid>
             {activeSessions.map(session => {
               const mins = Math.floor(session.remainingTime / 60);
@@ -735,30 +737,30 @@ function Home() {
       )}
 
       <FilterBar>
-        <SectionTitle style={{ margin: 0 }}>All Tests</SectionTitle>
+        <SectionTitle style={{ margin: 0 }}>{t('home.allTests')}</SectionTitle>
         <FilterGroup>
           <FilterDropdown
-            label="Level"
+            label={t('home.level')}
             value={levelFilter}
             options={LEVEL_OPTIONS}
             onChange={setLevelFilter}
           />
           <FilterDropdown
-            label="Unit"
+            label={t('home.unit')}
             value={unitFilter}
             options={UNIT_OPTIONS}
             onChange={setUnitFilter}
           />
-          {total > 0 && <TestCount>{total} tests</TestCount>}
+          {total > 0 && <TestCount>{t('home.showing', { count: total })}</TestCount>}
         </FilterGroup>
       </FilterBar>
 
       {!loading && !error && tests.length === 0 && (
         <EmptyState>
-          <h2>No tests found</h2>
-          <p>{levelFilter || unitFilter ? 'Try different filters.' : 'Create one to start practicing!'}</p>
+          <h2>{t('home.noTests')}</h2>
+          <p>{levelFilter || unitFilter ? t('common.retry') : t('home.createFirst')}</p>
           {isAdmin && !levelFilter && !unitFilter && (
-            <CreateButton to="/create">Create a Test</CreateButton>
+            <CreateButton to="/create">{t('home.createFirst')}</CreateButton>
           )}
         </EmptyState>
       )}
@@ -785,14 +787,14 @@ function Home() {
                 </DeleteButton>
               )}
               <CardTitle>{test.title}</CardTitle>
-              <CardMeta>{test.questionCount} questions</CardMeta>
+              <CardMeta>{t('home.questionsCount', { count: test.questionCount })}</CardMeta>
               {test.lastAttempt ? (
                 <CardScore>
-                  Last score: {test.lastAttempt.score}/{test.lastAttempt.totalQuestions}
+                  {t('home.lastScore', { score: Math.round((test.lastAttempt.score / test.lastAttempt.totalQuestions) * 100) })}
                   {' '}({new Date(test.lastAttempt.createdAt).toLocaleDateString()})
                 </CardScore>
               ) : (
-                <CardNoAttempt>Not attempted yet</CardNoAttempt>
+                <CardNoAttempt>{t('home.notAttempted')}</CardNoAttempt>
               )}
               {user && (
                 <ExportLink
@@ -812,7 +814,7 @@ function Home() {
 
       {nextCursor && (
         <LoadMoreButton onClick={handleLoadMore} disabled={loadingMore}>
-          {loadingMore ? 'Loading...' : 'Load more tests'}
+          {loadingMore ? t('common.loading') : t('home.loadMore')}
         </LoadMoreButton>
       )}
 

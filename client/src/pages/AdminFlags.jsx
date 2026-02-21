@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -162,22 +163,31 @@ const EmptyState = styled.div`
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
-const REASON_LABELS = {
-    'incorrect-answer': 'Incorrect answer',
-    'unclear-question': 'Unclear question',
-    'typo': 'Typo',
-    'other': 'Other'
-};
+// REASON_LABELS moved inside component for i18n access
 
 function AdminFlags() {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
+    const { t } = useTranslation();
     const [flags, setFlags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('open');
     const [nextCursor, setNextCursor] = useState(null);
     const [resolutions, setResolutions] = useState({});
     const [updating, setUpdating] = useState({});
+
+    const REASON_LABELS = {
+        'incorrect-answer': t('flag.incorrectAnswer'),
+        'unclear-question': t('flag.unclearQuestion'),
+        'typo': t('flag.typo'),
+        'other': t('flag.other')
+    };
+
+    const STATUS_LABELS = {
+        'open': t('admin.flagsOpen'),
+        'resolved': t('admin.flagsResolved'),
+        'dismissed': t('admin.flagsDismissed')
+    };
 
     const fetchFlags = useCallback(async (cursor = null, append = false) => {
         try {
@@ -224,7 +234,7 @@ function AdminFlags() {
     return (
         <div>
             <PageHeader>
-                <Title>Flags</Title>
+                <Title>{t('admin.flags')}</Title>
             </PageHeader>
 
             <FilterTabs>
@@ -234,15 +244,15 @@ function AdminFlags() {
                         $active={statusFilter === s}
                         onClick={() => setStatusFilter(s)}
                     >
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                        {STATUS_LABELS[s]}
                     </Tab>
                 ))}
             </FilterTabs>
 
             {loading ? (
-                <EmptyState>Loading...</EmptyState>
+                <EmptyState>{t('common.loading')}</EmptyState>
             ) : flags.length === 0 ? (
-                <EmptyState>No {statusFilter} flags</EmptyState>
+                <EmptyState>{STATUS_LABELS[statusFilter]} - 0</EmptyState>
             ) : (
                 <FlagList>
                     {flags.map(flag => (
@@ -268,7 +278,7 @@ function AdminFlags() {
                             {statusFilter === 'open' && (
                                 <FlagActions>
                                     <ResolutionInput
-                                        placeholder="Resolution note (optional)"
+                                        placeholder={t('admin.resolution')}
                                         value={resolutions[flag._id] || ''}
                                         onChange={e => setResolutions(prev => ({
                                             ...prev,
@@ -279,13 +289,13 @@ function AdminFlags() {
                                         onClick={() => handleUpdateFlag(flag._id, 'resolved')}
                                         disabled={updating[flag._id]}
                                     >
-                                        Resolve
+                                        {t('admin.resolve')}
                                     </ResolveBtn>
                                     <ActionBtn
                                         onClick={() => handleUpdateFlag(flag._id, 'dismissed')}
                                         disabled={updating[flag._id]}
                                     >
-                                        Dismiss
+                                        {t('admin.dismiss')}
                                     </ActionBtn>
                                 </FlagActions>
                             )}
@@ -300,7 +310,7 @@ function AdminFlags() {
 
             {nextCursor && (
                 <LoadMoreButton onClick={() => fetchFlags(nextCursor, true)}>
-                    Load more
+                    {t('home.loadMore')}
                 </LoadMoreButton>
             )}
         </div>

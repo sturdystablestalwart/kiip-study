@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -269,6 +270,7 @@ function AdminTestEditor() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
+    const { t } = useTranslation();
 
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
@@ -420,7 +422,7 @@ function AdminTestEditor() {
 
     return (
         <div>
-            <BackLink onClick={() => navigate('/')}>&larr; Back to tests</BackLink>
+            <BackLink onClick={() => navigate('/')}>&larr; {t('test.goHome')}</BackLink>
 
             <TitleInput value={title} onChange={e => setTitle(e.target.value)} placeholder="Test title" />
 
@@ -562,14 +564,14 @@ function AdminTestEditor() {
                         </>
                     )}
 
-                    <ExplanationInput value={q.explanation || ''} onChange={e => updateQuestion(qIdx, { explanation: e.target.value })} placeholder="Explanation (optional)" />
+                    <ExplanationInput value={q.explanation || ''} onChange={e => updateQuestion(qIdx, { explanation: e.target.value })} placeholder={t('admin.explanation')} />
                 </QuestionCard>
             ))}
 
             <BottomBar>
-                <AddBtn onClick={addQuestion}>+ Add question</AddBtn>
+                <AddBtn onClick={addQuestion}>+ {t('admin.addQuestion')}</AddBtn>
                 <SaveBtn onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save changes'}
+                    {saving ? t('common.loading') : t('admin.save')}
                 </SaveBtn>
             </BottomBar>
         </div>

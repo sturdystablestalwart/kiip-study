@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
@@ -335,6 +336,7 @@ function formatDuration(seconds) {
 
 function EndlessMode() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -490,25 +492,25 @@ function EndlessMode() {
     return (
       <Page>
         <StartScreen>
-          <StartTitle>Endless Practice</StartTitle>
+          <StartTitle>{t('endless.title')}</StartTitle>
           <StartDescription>
-            Random questions from the full library. No timer, no limits. Practice at your own pace.
+            {t('home.endlessDesc')}
           </StartDescription>
           <FilterRow>
             <FilterDropdown
-              label="All Levels"
+              label={t('home.allLevels')}
               value={levelFilter}
               options={LEVEL_OPTIONS}
               onChange={setLevelFilter}
             />
             <FilterDropdown
-              label="All Units"
+              label={t('home.allUnits')}
               value={unitFilter}
               options={UNIT_OPTIONS}
               onChange={setUnitFilter}
             />
           </FilterRow>
-          <StartButton onClick={handleStart}>Start</StartButton>
+          <StartButton onClick={handleStart}>{t('endless.start')}</StartButton>
         </StartScreen>
       </Page>
     );
@@ -519,18 +521,18 @@ function EndlessMode() {
     return (
       <Page>
         <EndScreen>
-          <h2>Session Complete</h2>
+          <h2>{t('test.results')}</h2>
           <FinalScore $accuracy={accuracy}>
             {accuracy}%
           </FinalScore>
           <FinalStats>
-            {totalCorrect} correct out of {totalAnswered} questions
+            {t('test.correct')}: {totalCorrect}/{totalAnswered}
             <br />
-            Duration: {formatDuration(sessionDuration)}
+            {t('test.duration')}: {formatDuration(sessionDuration)}
           </FinalStats>
           <EndActions>
-            <PrimaryAction onClick={handleNewSession}>Start New Session</PrimaryAction>
-            <SecondaryAction onClick={() => navigate('/')}>Back to Home</SecondaryAction>
+            <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
+            <SecondaryAction onClick={() => navigate('/')}>{t('test.goHome')}</SecondaryAction>
           </EndActions>
         </EndScreen>
       </Page>
@@ -541,7 +543,7 @@ function EndlessMode() {
   if (loading && questions.length === 0) {
     return (
       <Page>
-        <LoadingScreen>Loading questions...</LoadingScreen>
+        <LoadingScreen>{t('common.loading')}</LoadingScreen>
       </Page>
     );
   }
@@ -551,9 +553,9 @@ function EndlessMode() {
     return (
       <Page>
         <EmptyState>
-          <h3>No questions available</h3>
-          <p>There are no questions matching your filters. Try adjusting the level or unit, or add more tests to the library.</p>
-          <PrimaryAction onClick={handleNewSession}>Back to Start</PrimaryAction>
+          <h3>{t('home.noTests')}</h3>
+          <p>{t('home.endlessDesc')}</p>
+          <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
         </EmptyState>
       </Page>
     );
@@ -568,24 +570,24 @@ function EndlessMode() {
       <SessionHeader>
         <StatsBar>
           <StatBadge>
-            Answered: <StatValue>{totalAnswered}</StatValue>
+            {t('endless.questionsAnswered')}: <StatValue>{totalAnswered}</StatValue>
           </StatBadge>
           <StatBadge>
-            Correct: <StatValue>{totalCorrect}</StatValue>
+            {t('test.correct')}: <StatValue>{totalCorrect}</StatValue>
           </StatBadge>
           <StatBadge>
-            Accuracy:{' '}
+            {t('endless.accuracy')}:{' '}
             <AccuracyValue $totalAnswered={totalAnswered} $accuracy={accuracy}>
               {totalAnswered > 0 ? `${accuracy}%` : '--'}
             </AccuracyValue>
           </StatBadge>
           <StatBadge>
-            Remaining: <StatValue>{remaining}</StatValue>
+            <StatValue>{remaining}</StatValue>
           </StatBadge>
         </StatsBar>
         <HeaderRight>
           <TimerDisplay>{formatDuration(sessionDuration)}</TimerDisplay>
-          <EndButton onClick={handleEnd}>End Session</EndButton>
+          <EndButton onClick={handleEnd}>{t('endless.quit')}</EndButton>
         </HeaderRight>
       </SessionHeader>
 
@@ -607,12 +609,12 @@ function EndlessMode() {
 
         {showFeedback && (
           <Controls>
-            <NextButton onClick={handleNext}>Next</NextButton>
+            <NextButton onClick={handleNext}>{t('test.next')}</NextButton>
           </Controls>
         )}
       </QuestionCard>
 
-      {loading && <LoadingScreen>Loading next batch...</LoadingScreen>}
+      {loading && <LoadingScreen>{t('common.loading')}</LoadingScreen>}
     </Page>
   );
 }

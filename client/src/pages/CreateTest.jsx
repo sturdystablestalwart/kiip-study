@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 
 /* ───────── Styled Components ───────── */
@@ -303,6 +304,7 @@ function CreateTest() {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const timerRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (loading) {
@@ -443,17 +445,17 @@ function CreateTest() {
 
   return (
     <Wrapper>
-      <PageTitle>Create a New Test</PageTitle>
+      <PageTitle>{t('create.title')}</PageTitle>
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
 
       <Section disabled={!!file}>
-        <SectionTitle>Paste your study material</SectionTitle>
+        <SectionTitle>{t('create.textLabel')}</SectionTitle>
         <SectionHint>
-          Korean text, mock test content, or any study notes (min. {MIN_TEXT_LENGTH} characters)
+          {t('create.minChars', { min: MIN_TEXT_LENGTH })}
         </SectionHint>
         <TextArea
-          placeholder="Paste your text here..."
+          placeholder={t('create.textPlaceholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={!!file}
@@ -461,11 +463,11 @@ function CreateTest() {
         />
         <CharCount $hasError={textHasError}>
           {textLength.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()}
-          {textHasError && ` (need ${MIN_TEXT_LENGTH - textLength} more)`}
+          {textHasError && ` (${t('create.minChars', { min: MIN_TEXT_LENGTH - textLength })})`}
         </CharCount>
 
         <UploadZone $hasError={!!uploadError}>
-          <p>Add images for visual questions (up to {MAX_IMAGES})</p>
+          <p>{t('create.imagesHint', { max: MAX_IMAGES })}</p>
           <FileInput
             type="file"
             multiple
@@ -492,9 +494,9 @@ function CreateTest() {
       <Divider><span>or</span></Divider>
 
       <Section disabled={text.trim().length > 0}>
-        <SectionTitle>Upload a document</SectionTitle>
+        <SectionTitle>{t('create.fileLabel')}</SectionTitle>
         <SectionHint>
-          PDF, DOCX, TXT, or Markdown file (max 10 MB)
+          {t('create.fileHint')}
         </SectionHint>
         {file ? (
           <FileDisplay>
@@ -515,7 +517,7 @@ function CreateTest() {
         onClick={handleGenerate}
         disabled={!canSubmit || (text.trim().length > 0 && !isTextValid && !file)}
       >
-        {loading ? 'Preparing your test...' : 'Generate Test'}
+        {loading ? t('create.generating') : t('create.generate')}
       </SubmitButton>
 
       {loading && (
