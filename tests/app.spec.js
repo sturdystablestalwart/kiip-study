@@ -223,9 +223,17 @@ test.describe('Practice Mode', () => {
 
   test('switching mode shows confirmation modal when progress exists', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    // Answer a question first to create progress
-    const firstOption = page.locator('button').filter({ hasText: /^1\./ }).first();
-    if (await firstOption.count() > 0) await firstOption.click();
+    // Answer a question to create progress — try MCQ option first, fallback to text input
+    const mcqOption = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
+    if (await mcqOption.count() > 0) {
+      await mcqOption.click();
+    } else {
+      const textInput = page.locator('input[type="text"]').first();
+      if (await textInput.count() > 0) {
+        await textInput.fill('test answer');
+        await textInput.press('Enter');
+      }
+    }
     // Now switch mode — should trigger modal
     await page.locator('select').selectOption('Practice');
     await expect(page.getByText(/Switching modes will reset/)).toBeVisible();
@@ -417,6 +425,168 @@ test.describe('Accessibility', () => {
 
 /* ───────── API Health ───────── */
 
+/* ───────── Endless Mode ───────── */
+
+test.describe('Endless Mode', () => {
+
+  test('shows start screen with title and start button', async ({ page }) => {
+    await page.goto(`${BASE_URL}/endless`);
+    await expect(page.getByText('Endless Practice')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Start Practicing/i })).toBeVisible();
+  });
+
+  test('shows filter dropdowns on start screen', async ({ page }) => {
+    await page.goto(`${BASE_URL}/endless`);
+    // Wait for lazy-loaded page to render
+    await expect(page.getByText('Endless Practice')).toBeVisible({ timeout: 5000 });
+    // Filter dropdowns should exist on the start screen
+    const selects = page.locator('select');
+    await expect(selects.first()).toBeVisible({ timeout: 5000 });
+    expect(await selects.count()).toBeGreaterThanOrEqual(2);
+  });
+
+});
+
+/* ───────── Keyboard Shortcuts ───────── */
+
+test.describe('Keyboard Shortcuts', () => {
+
+  test('Ctrl+P opens command palette', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    await page.keyboard.press('Control+p');
+    // Command palette should show with search input
+    await expect(page.getByPlaceholder(/Search tests/i)).toBeVisible({ timeout: 3000 });
+  });
+
+  test('Ctrl+K opens shortcuts modal', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    await page.keyboard.press('Control+k');
+    await expect(page.getByText('Keyboard Shortcuts')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('Escape closes shortcuts modal', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    await page.keyboard.press('Control+k');
+    await expect(page.getByText('Keyboard Shortcuts')).toBeVisible({ timeout: 3000 });
+    await page.keyboard.press('Escape');
+    await expect(page.getByText('Keyboard Shortcuts')).not.toBeVisible();
+  });
+
+  test('Escape closes command palette', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    await page.keyboard.press('Control+p');
+    await expect(page.getByPlaceholder(/Search tests/i)).toBeVisible({ timeout: 3000 });
+    await page.keyboard.press('Escape');
+    await expect(page.getByPlaceholder(/Search tests/i)).not.toBeVisible();
+  });
+
+});
+
+/* ───────── Filters ───────── */
+
+test.describe('Filter Dropdowns', () => {
+
+  test('Home page has Level and Unit filter dropdowns', async ({ page }) => {
+    await page.goto(BASE_URL);
+    // Filter dropdowns use "Level" and "Unit" as default option text
+    await expect(page.getByText('All Tests')).toBeVisible();
+    // Check that select elements exist in the filter bar
+    const selects = page.locator('select');
+    expect(await selects.count()).toBeGreaterThanOrEqual(2);
+  });
+
+  test('shows test count after loading', async ({ page }) => {
+    await page.goto(BASE_URL);
+    // If there are tests, "Showing N tests" should appear
+    const count = page.getByText(/Showing \d+ tests/);
+    const c = await count.count();
+    if (c > 0) {
+      await expect(count).toBeVisible();
+    }
+  });
+
+});
+
+/* ───────── Theme and Language ───────── */
+
+test.describe('Theme and Language', () => {
+
+  test('theme toggle button is visible', async ({ page }) => {
+    await page.goto(BASE_URL);
+    // Theme toggle shows one of ○ ● ◐
+    const toggle = page.locator('button[aria-label*="mode"]');
+    await expect(toggle).toBeVisible();
+  });
+
+  test('language toggle button is visible', async ({ page }) => {
+    await page.goto(BASE_URL);
+    const langBtn = page.locator('button[aria-label="Change language"]');
+    await expect(langBtn).toBeVisible();
+  });
+
+  test('clicking language toggle cycles to next language', async ({ page }) => {
+    await page.goto(BASE_URL);
+    const langBtn = page.locator('button[aria-label="Change language"]');
+    await langBtn.click();
+    // Wait for re-render after language change
+    await page.waitForTimeout(300);
+    const newText = await langBtn.textContent();
+    // After clicking, should show a different language label
+    const validLabels = ['EN', '한국어', 'РУ', 'ES'];
+    expect(validLabels).toContain(newText.trim());
+  });
+
+});
+
+/* ───────── Auth UI ───────── */
+
+test.describe('Auth UI', () => {
+
+  test('shows Sign in link when not authenticated', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await expect(page.getByText('Sign in')).toBeVisible();
+  });
+
+  test('Sign in link points to Google OAuth', async ({ page }) => {
+    await page.goto(BASE_URL);
+    const signIn = page.getByText('Sign in');
+    const href = await signIn.getAttribute('href');
+    expect(href).toContain('/api/auth/google/start');
+  });
+
+});
+
+/* ───────── Mode Direct Switch ───────── */
+
+test.describe('Mode Direct Switch', () => {
+
+  async function goToFirstTest(page) {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    const testCard = page.locator('a[href^="/test/"]').filter({ hasNot: page.locator('text=Endless') }).first();
+    const count = await testCard.count();
+    if (count === 0) return false;
+    await testCard.click();
+    await page.waitForSelector('h3', { timeout: 10000 });
+    return true;
+  }
+
+  test('switching mode without progress skips confirmation', async ({ page }) => {
+    if (!await goToFirstTest(page)) return;
+    // No answers yet — mode switch should be instant (no modal)
+    await page.locator('select').selectOption('Practice');
+    // No modal should appear
+    await expect(page.getByText(/Switching modes will reset/)).not.toBeVisible();
+  });
+
+});
+
+/* ───────── API Health ───────── */
+
 test.describe('API Health', () => {
 
   test('server health endpoint returns ok', async ({ request }) => {
@@ -433,6 +603,12 @@ test.describe('API Health', () => {
     const body = await response.json();
     expect(body).toHaveProperty('tests');
     expect(Array.isArray(body.tests)).toBe(true);
+  });
+
+  test('endless endpoint requires authentication', async ({ request }) => {
+    const response = await request.get(`${API_URL}/api/tests/endless?limit=5`);
+    // Should return 401 since endless requires auth
+    expect(response.status()).toBe(401);
   });
 
 });

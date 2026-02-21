@@ -51,4 +51,4 @@ function checkAgainstExisting(newQuestions, existingQuestions, threshold = 0.75)
   }).filter(r => r.duplicates.length > 0);
 }
 
-module.exports = { findDuplicates, checkAgainstExisting, normalize };
+module.exports = { findDuplicates, checkAgainstExisting };
