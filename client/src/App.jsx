@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
-import tokens from './theme/tokens';
 import GlobalStyles from './theme/GlobalStyles';
+import { ThemeModeProvider, useThemeMode } from './context/ThemeContext';
 import Home from './pages/Home';
 import CreateTest from './pages/CreateTest';
 import TestTaker from './pages/TestTaker';
@@ -154,9 +154,36 @@ const Badge = styled.span`
   margin-left: ${({ theme }) => theme.layout.space[1]}px;
 `;
 
+const ThemeToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    background: ${({ theme }) => theme.colors.bg.surface};
+    color: ${({ theme }) => theme.colors.text.primary};
+  }
+`;
+
+const THEME_ICONS = { light: '\u25CB', dark: '\u25CF', system: '\u25D0' };
+const THEME_LABELS = { light: 'Light mode (click for dark)', dark: 'Dark mode (click for system)', system: 'System mode (click for light)' };
+
 function Navigation({ onSearchClick }) {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
+  const { mode, cycleMode } = useThemeMode();
   const [flagCount, setFlagCount] = useState(0);
 
   useEffect(() => {
@@ -185,6 +212,9 @@ function Navigation({ onSearchClick }) {
           </NavLink>
         )}
       </NavLinks>
+      <ThemeToggle onClick={cycleMode} aria-label={THEME_LABELS[mode]} title={THEME_LABELS[mode]}>
+        {THEME_ICONS[mode]}
+      </ThemeToggle>
       <AuthSection>
         {loading ? null : user ? (
           <>
@@ -201,7 +231,8 @@ function Navigation({ onSearchClick }) {
   );
 }
 
-function App() {
+function AppInner() {
+  const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -223,7 +254,7 @@ function App() {
   }, [handleGlobalKeyDown]);
 
   return (
-    <ThemeProvider theme={tokens}>
+    <ThemeProvider theme={theme}>
       <GlobalStyles />
       <AuthProvider>
         <Router>
@@ -243,6 +274,14 @@ function App() {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeModeProvider>
+      <AppInner />
+    </ThemeModeProvider>
   );
 }
 
