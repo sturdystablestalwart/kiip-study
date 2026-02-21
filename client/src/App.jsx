@@ -11,6 +11,8 @@ import TestTaker from './pages/TestTaker';
 import EndlessMode from './pages/EndlessMode';
 import AdminTestEditor from './pages/AdminTestEditor';
 import AdminFlags from './pages/AdminFlags';
+import AdminBulkImport from './pages/AdminBulkImport';
+import AdminDuplicates from './pages/AdminDuplicates';
 import SharedTest from './pages/SharedTest';
 import CommandPalette from './components/CommandPalette';
 import ShortcutsModal from './components/ShortcutsModal';
@@ -282,6 +284,16 @@ function Navigation({ onSearchClick }) {
             {t('nav.flags')}{flagCount > 0 && <Badge>{flagCount}</Badge>}
           </NavLink>
         )}
+        {user?.isAdmin && (
+          <NavLink to="/admin/import" active={location.pathname === '/admin/import' ? 1 : 0}>
+            {t('nav.import')}
+          </NavLink>
+        )}
+        {user?.isAdmin && (
+          <NavLink to="/admin/duplicates" active={location.pathname === '/admin/duplicates' ? 1 : 0}>
+            {t('nav.duplicates')}
+          </NavLink>
+        )}
       </NavLinks>
       <LangToggle onClick={cycleLang} aria-label="Change language" title="Change language">
         {LANG_LABELS[i18n.language] || LANG_LABELS.en}
@@ -342,6 +354,8 @@ function AppInner() {
               <Route path="/endless" element={<EndlessMode />} />
               <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
               <Route path="/admin/flags" element={<AdminFlags />} />
+              <Route path="/admin/import" element={<AdminBulkImport />} />
+              <Route path="/admin/duplicates" element={<AdminDuplicates />} />
               <Route path="/shared/:shareId" element={<SharedTest />} />
             </Routes>
           </AppShell>

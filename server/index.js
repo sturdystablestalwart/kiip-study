@@ -96,6 +96,11 @@ const shareRoutes = require('./routes/share');
 app.use('/api/shared', shareRoutes);   // GET /api/shared/:shareId (public)
 app.use('/api/tests', shareRoutes);    // POST /api/tests/:id/share
 
+const bulkImportRoutes = require('./routes/bulkImport');
+const duplicatesRoutes = require('./routes/duplicates');
+app.use('/api/admin/tests', bulkImportRoutes);
+app.use('/api/admin/duplicates', duplicatesRoutes);
+
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });
