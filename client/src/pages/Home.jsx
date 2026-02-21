@@ -406,6 +406,72 @@ const EndlessMeta = styled.div`
   color: ${({ theme }) => theme.colors.text.muted};
 `;
 
+const SessionSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
+`;
+
+const SessionSectionTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.scale.h3.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
+`;
+
+const SessionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const SessionCard = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  padding: ${({ theme }) => theme.layout.space[4]}px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border: 1px solid ${({ theme }) => theme.colors.accent.indigo}33;
+  border-left: 3px solid ${({ theme }) => theme.colors.accent.indigo};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  text-decoration: none;
+  color: ${({ theme }) => theme.colors.text.primary};
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent.indigo};
+    box-shadow: ${({ theme }) => theme.layout.shadow.md};
+  }
+`;
+
+const SessionInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const SessionTitle = styled.p`
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+`;
+
+const SessionMeta = styled.p`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  margin: 2px 0 0 0;
+`;
+
+const SessionBadge = styled.span`
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+  background: ${({ theme }) => theme.colors.accent.indigo}15;
+  color: ${({ theme }) => theme.colors.accent.indigo};
+`;
+
 const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
@@ -465,6 +531,7 @@ function Home() {
   const [levelFilter, setLevelFilter] = useState('');
   const [unitFilter, setUnitFilter] = useState('');
   const [recentAttempts, setRecentAttempts] = useState([]);
+  const [activeSessions, setActiveSessions] = useState([]);
   const [deleteModal, setDeleteModal] = useState({ show: false, testId: null, testTitle: '' });
   const [deleting, setDeleting] = useState(false);
 
@@ -519,7 +586,13 @@ function Home() {
       }
     };
     fetchRecent();
-  }, []);
+
+    if (user) {
+      api.get('/api/sessions/active')
+        .then(res => setActiveSessions(res.data.sessions || []))
+        .catch(() => {});
+    }
+  }, [user]);
 
   const handleLoadMore = () => {
     if (nextCursor) {
@@ -615,6 +688,29 @@ function Home() {
           </EndlessInfo>
         </EndlessCard>
       </DashboardSection>
+
+      {activeSessions.length > 0 && (
+        <SessionSection>
+          <SessionSectionTitle>Resume In Progress</SessionSectionTitle>
+          <SessionGrid>
+            {activeSessions.map(session => {
+              const mins = Math.floor(session.remainingTime / 60);
+              const secs = session.remainingTime % 60;
+              return (
+                <SessionCard key={session._id} to={`/test/${session.testId._id || session.testId}`}>
+                  <SessionInfo>
+                    <SessionTitle>{session.testId.title || 'Test'}</SessionTitle>
+                    <SessionMeta>
+                      {session.mode} mode &mdash; {mins}:{String(secs).padStart(2, '0')} remaining
+                    </SessionMeta>
+                  </SessionInfo>
+                  <SessionBadge>Continue</SessionBadge>
+                </SessionCard>
+              );
+            })}
+          </SessionGrid>
+        </SessionSection>
+      )}
 
       <FilterBar>
         <SectionTitle style={{ margin: 0 }}>All Tests</SectionTitle>

@@ -453,6 +453,9 @@ function TestTaker() {
   const [pendingMode, setPendingMode] = useState(null);
   const [reviewMode, setReviewMode] = useState(false);
 
+  const [sessionId, setSessionId] = useState(null);
+  const [attemptId, setAttemptId] = useState(null);
+
   const { user } = useAuth();
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState('');
@@ -467,12 +470,44 @@ function TestTaker() {
           timeout: 10000
         });
         setTest(res.data);
+
+        if (user) {
+          try {
+            const sessionRes = await api.post('/api/sessions/start', { testId: id, mode });
+            const session = sessionRes.data.session;
+            setSessionId(session._id);
+
+            if (sessionRes.data.resumed && session.answers && session.answers.length > 0) {
+              // Restore answers from session array format to object keyed by questionIndex
+              const restoredAnswers = {};
+              session.answers.forEach(ans => {
+                restoredAnswers[ans.questionIndex] = {
+                  selectedOptions: ans.selectedOptions || [],
+                  textAnswer: ans.textAnswer || '',
+                  orderedItems: ans.orderedItems || [],
+                  blankAnswers: ans.blankAnswers || []
+                };
+              });
+              setAnswers(restoredAnswers);
+              if (session.currentQuestion != null) {
+                setCurrentQ(session.currentQuestion);
+              }
+              if (session.remainingTime != null) {
+                setTimeLeft(session.remainingTime);
+              }
+            }
+          } catch (sessionErr) {
+            console.error('Failed to start/resume session', sessionErr);
+            // Non-fatal — continue without session
+          }
+        }
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.message || 'Could not load this test. It may have been removed or the server is unavailable.');
       }
     };
     fetchTest();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -491,6 +526,26 @@ function TestTaker() {
 
     return () => clearInterval(timer);
   }, [isSubmitted, test]);
+
+  // Auto-save session progress every 30 seconds for authenticated users
+  useEffect(() => {
+    if (!sessionId || isSubmitted) return;
+    const interval = setInterval(() => {
+      const answerArray = Object.entries(answers).map(([idx, ans]) => ({
+        questionIndex: parseInt(idx),
+        selectedOptions: ans.selectedOptions || [],
+        textAnswer: ans.textAnswer || '',
+        orderedItems: ans.orderedItems || [],
+        blankAnswers: ans.blankAnswers || []
+      }));
+      api.patch(`/api/sessions/${sessionId}`, {
+        answers: answerArray,
+        currentQuestion: currentQ,
+        remainingTime: timeLeft
+      }).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [sessionId, answers, currentQ, timeLeft, isSubmitted]);
 
   const hasProgress = Object.keys(answers).length > 0;
 
@@ -605,17 +660,42 @@ function TestTaker() {
     setScore(correctCount);
     setIsSubmitted(true);
 
-    try {
-      await api.post(`/api/tests/${id}/attempt`, {
-        score: correctCount,
-        totalQuestions: test.questions.length,
-        duration: (30 * 60) - timeLeft,
-        overdueTime: overdueSeconds,
-        answers: submissionAnswers,
-        mode
-      });
-    } catch (err) {
-      console.error("Failed to save attempt", err);
+    if (sessionId) {
+      // Authenticated user — save final state then submit via session endpoint
+      try {
+        const finalAnswerArray = submissionAnswers.map(ans => ({
+          questionIndex: ans.questionIndex,
+          selectedOptions: ans.selectedOptions || [],
+          textAnswer: ans.textAnswer || '',
+          orderedItems: ans.orderedItems || [],
+          blankAnswers: ans.blankAnswers || []
+        }));
+        await api.patch(`/api/sessions/${sessionId}`, {
+          answers: finalAnswerArray,
+          currentQuestion: currentQ,
+          remainingTime: timeLeft
+        });
+        const submitRes = await api.post(`/api/sessions/${sessionId}/submit`);
+        if (submitRes.data.attempt?._id) {
+          setAttemptId(submitRes.data.attempt._id);
+        }
+      } catch (err) {
+        console.error('Failed to submit session', err);
+      }
+    } else {
+      // Anonymous user — use legacy attempt endpoint
+      try {
+        await api.post(`/api/tests/${id}/attempt`, {
+          score: correctCount,
+          totalQuestions: test.questions.length,
+          duration: (30 * 60) - timeLeft,
+          overdueTime: overdueSeconds,
+          answers: submissionAnswers,
+          mode
+        });
+      } catch (err) {
+        console.error('Failed to save attempt', err);
+      }
     }
   };
 
