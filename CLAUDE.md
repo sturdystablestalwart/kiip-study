@@ -4,7 +4,7 @@
 
 KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress (attempts + resumable sessions). Test generation is admin-only. The UX prioritizes fast access to a large library via a dashboard plus keyboard-first navigation (Ctrl+P palette, Ctrl+K shortcuts). The app deploys on a home server via Docker Compose with a CI pipeline.
 
-**Current state:** All six implementation phases are complete. The app supports admin-only test generation (text and file upload), five question types, Practice/Test/Endless modes, Google OAuth with JWT auth, resumable sessions persisted server-side, admin test editor and flags moderation, server-side audit logging, and PDF exports (blank, answer key, student answers, attempt report). See `IMPLEMENTATION_PLAN.md` for the full phase-by-phase breakdown.
+**Current state:** All seven implementation phases are complete. The app supports admin-only test generation, five question types, Practice/Test/Endless modes, Google OAuth with JWT auth, resumable sessions, admin test editor and flags moderation, audit logging, PDF exports, dark/light/system theme toggle, 4-language UI (EN/KO/RU/ES), analytics dashboard (AnyChart), mobile-responsive layout, test sharing via public links, spreadsheet bulk import (XLSX/CSV), question deduplication, and OWASP security hardening. See `IMPLEMENTATION_PLAN.md` for the full breakdown.
 
 **Design aesthetic:** Japanese Warm Minimalism (Japandi) — warm off-white canvas, muted earth accents, minimal clutter, calm feedback. See design tokens in `client/src/theme/tokens.js`.
 
@@ -18,23 +18,42 @@ KIIP Study is a desktop-first MERN-stack KIIP exam practice platform with a publ
 kiip_test_app/
 ├── client/                     # React 19 frontend (Vite)
 │   ├── src/
-│   │   ├── pages/              # Route pages (Home, CreateTest, TestTaker)
-│   │   ├── components/         # Reusable UI components
-│   │   ├── theme/              # Design tokens & global styles
-│   │   ├── config/api.js       # API base URL config
-│   │   ├── App.jsx             # Router, ThemeProvider, AppShell
-│   │   ├── main.jsx            # Entry point
+│   │   ├── pages/              # Route pages (Home, CreateTest, TestTaker, Dashboard, etc.)
+│   │   ├── components/         # Reusable UI (CommandPalette, ShortcutsModal, FilterDropdown, etc.)
+│   │   ├── context/            # AuthContext, ThemeContext
+│   │   ├── i18n/               # i18next config + locales (en, ko, ru, es)
+│   │   ├── theme/              # Design tokens (light/dark), GlobalStyles, breakpoints
+│   │   ├── utils/              # api.js (axios), scoring.js
+│   │   ├── App.jsx             # Router, ThemeProvider, AuthProvider, AppShell
+│   │   ├── main.jsx            # Entry point (imports i18n)
 │   │   └── index.css           # Minimal CSS reset
 │   ├── package.json
 │   └── vite.config.js
 ├── server/                     # Express 5 backend
 │   ├── models/
-│   │   ├── Test.js             # Mongoose: Test + Question + Option schemas
-│   │   └── Attempt.js          # Mongoose: Attempt + Answer schemas
-│   ├── routes/tests.js         # All API endpoints
-│   ├── utils/autoImporter.js   # Auto-loads .md/.txt from additionalContext/tests/
-│   ├── uploads/                # Local file storage (images, documents)
-│   └── index.js                # Server entry point
+│   │   ├── Test.js             # Mongoose: Test + Question + Option + shareId
+│   │   ├── Attempt.js          # Mongoose: Attempt + Answer schemas
+│   │   ├── User.js             # Mongoose: User + preferences
+│   │   ├── TestSession.js      # Mongoose: Resumable sessions
+│   │   ├── Flag.js             # Mongoose: Question flags
+│   │   └── AuditLog.js         # Mongoose: Admin audit trail
+│   ├── routes/
+│   │   ├── tests.js            # Test CRUD + generation endpoints
+│   │   ├── auth.js             # Google OAuth + JWT + preferences
+│   │   ├── admin.js            # Admin CRUD (edit, delete, import)
+│   │   ├── sessions.js         # Resumable test sessions
+│   │   ├── flags.js            # Flag submission + admin moderation
+│   │   ├── stats.js            # Analytics aggregation API
+│   │   ├── share.js            # Test sharing (public links)
+│   │   ├── pdf.js              # PDF export (blank, answerKey, student, report)
+│   │   ├── bulkImport.js       # XLSX/CSV import with dedup
+│   │   └── duplicates.js       # Question deduplication scan
+│   ├── middleware/auth.js      # requireAuth, requireAdmin, JWT verification
+│   ├── utils/
+│   │   ├── autoImporter.js     # Auto-loads .md/.txt from additionalContext/tests/
+│   │   └── dedup.js            # Text normalization + Dice coefficient similarity
+│   ├── uploads/                # Local file storage (images, documents, temp)
+│   └── index.js                # Server entry (security middleware, routes, error handler)
 ├── additionalContext/          # Project docs & sample test data
 │   ├── project_context.md      # Project vision, decisions, requirements, data model
 │   ├── SETUP_AND_USAGE.md      # Setup guide, Docker, env vars, troubleshooting
@@ -57,7 +76,7 @@ kiip_test_app/
 | `additionalContext/KIIP_Study_Requirements_Roadmap_Checklist.docx` | **Source of truth** — full requirements, product principles, data model, API spec, 6-phase roadmap |
 | `additionalContext/project_context.md` | Project vision, product decisions, functional requirements, data model (current + planned) |
 | `additionalContext/SETUP_AND_USAGE.md` | Setup (Docker & manual), usage guide, env vars, API reference, troubleshooting |
-| `IMPLEMENTATION_PLAN.md` | Phased roadmap: Phase 0 (stabilization) + Phases 1–6 (features), PR-sized checklist |
+| `IMPLEMENTATION_PLAN.md` | Phased roadmap: Phase 0 (stabilization) + Phases 1–7 (features), PR-sized checklist |
 | `additionalContext/tests/` | 5 sample KIIP Level 2 test files auto-imported on server startup |
 
 ---
@@ -69,7 +88,9 @@ kiip_test_app/
 - **Vite** (rolldown-vite 7.2.5) — `npm run dev` on port 5173
 - **styled-components 6** — All styling is CSS-in-JS, scoped per component
 - **axios** — HTTP client for API calls
-- No external state management (React hooks only)
+- **react-i18next** / **i18next** — Multi-language UI (EN, KO, RU, ES)
+- **AnyChart** / **anychart-react** — Analytics dashboard charts
+- No external state management (React hooks only, ThemeContext + AuthContext)
 
 ### Backend (`server/`)
 - **Express 5** on port 5000
@@ -82,6 +103,10 @@ kiip_test_app/
 - **jsonwebtoken** / **cookie-parser** — JWT auth via httpOnly cookies
 - **bcryptjs** — Password hashing utility
 - **pdfkit** — Server-side PDF generation (Japandi-styled exports)
+- **helmet** — HTTP security headers (CSP, HSTS, etc.)
+- **ExcelJS** / **papaparse** — XLSX/CSV parsing for bulk import
+- **string-similarity** — Dice coefficient for question deduplication
+- **nanoid** — Short unique IDs for share links (ESM-only, dynamic import)
 
 ### Testing & Tooling
 - **Playwright** (`@playwright/test`) — E2E tests in `tests/`
@@ -138,6 +163,7 @@ npx playwright test
 | `GET` | `/api/auth/google/start` | Initiate Google OAuth |
 | `GET` | `/api/auth/google/callback` | OAuth callback |
 | `POST` | `/api/auth/logout` | Clear session cookie |
+| `PATCH` | `/api/auth/preferences` | Update user preferences (language, theme) |
 
 ### Sessions
 
@@ -174,6 +200,24 @@ npx playwright test
 
 Rate-limited: generate endpoints (10 req/min).
 
+### Stats & Sharing
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/stats?period=` | Dashboard KPIs + accuracy trend + unit breakdown |
+| `GET` | `/api/stats/question-types` | Per-question-type accuracy |
+| `POST` | `/api/tests/:id/share` | Generate share link (nanoid) |
+| `GET` | `/api/shared/:shareId` | Public test metadata (no auth) |
+
+### Bulk Import & Deduplication
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/admin/tests/import-template` | Download XLSX import template |
+| `POST` | `/api/admin/tests/bulk-import` | Upload + parse + validate spreadsheet |
+| `POST` | `/api/admin/tests/bulk-import/confirm` | Confirm and create tests from preview |
+| `GET` | `/api/admin/duplicates?level=&threshold=` | Scan for duplicate questions |
+
 ### PDF Exports
 
 | Method | Endpoint | Purpose |
@@ -187,11 +231,11 @@ Rate-limited: generate endpoints (10 req/min).
 
 ### Current Collections
 
-**Test** — `{ title, category, description, questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type, acceptedAnswers?, correctOrder?, blanks? }], createdAt }`
+**Test** — `{ title, category, description, level?, unit?, shareId? (unique sparse), questions: [{ text, image?, options: [{ text, isCorrect }], explanation?, type, acceptedAnswers?, correctOrder?, blanks? }], createdAt }`
 
 **Attempt** — `{ testId (ref→Test, optional for Endless), userId (ref→User), score, totalQuestions, duration, overdueTime, answers: [{ questionIndex, selectedOptions, textAnswer, orderedItems, blankAnswers, isCorrect, isOverdue }], mode ('Practice'|'Test'|'Endless'), sourceQuestions?, createdAt }`
 
-**User** — `{ email, googleId, isAdmin, createdAt }`
+**User** — `{ email, googleId, isAdmin, preferences: { language?, theme? }, createdAt }`
 
 **TestSession** — `{ userId (ref→User), testId (ref→Test, optional), mode, answers, remainingSeconds, sourceQuestions?, createdAt, updatedAt }`
 

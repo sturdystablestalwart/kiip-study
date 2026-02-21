@@ -278,6 +278,96 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 ---
 
+## Phase 7 — Expansion (Advanced Features + Security) ✅ COMPLETE
+
+> Dark theme, i18n, analytics, mobile responsive, test sharing, bulk import, deduplication, security hardening.
+
+**Goal:** Expand the platform with quality-of-life features: dark theme toggle, 4-language UI (EN/KO/RU/ES), analytics dashboard with AnyChart, mobile-responsive layout, public test sharing, spreadsheet-based bulk import, question deduplication, and OWASP security hardening.
+
+### 7.1 Security Hardening ✅
+
+- [x] Helmet with Content Security Policy (script-src, style-src, font-src, img-src, connect-src)
+- [x] Custom NoSQL injection sanitizer for body, params, and query (Express 5 compatible)
+- [x] JSON body size limit (1mb)
+- [x] JWT secret: crash on startup if not set (no insecure fallback)
+- [x] Auth-gated file serving (documents behind requireAuth, temp files not served)
+- [x] Path traversal protection on bulk import confirm (previewId sanitization)
+- [x] Docker Compose passes all required auth env vars with NODE_ENV=production
+- [x] Removed isAdmin from JWT payload (checked from DB on each request)
+
+### 7.2 Dark Theme ✅
+
+- [x] Dual token sets: lightColors + darkColors in tokens.js
+- [x] ThemeContext with system/light/dark mode cycling, localStorage persistence
+- [x] Theme toggle button in nav (unicode glyphs: ○/●/◐)
+- [x] prefers-color-scheme media query listener for system mode
+
+### 7.3 Multi-Language UI (i18n) ✅
+
+- [x] react-i18next + i18next with LanguageDetector
+- [x] 4 languages: English, Korean (한국어), Russian (РУ), Spanish (ES)
+- [x] ~170 translation keys across all namespaces
+- [x] Language cycling button in nav
+- [x] All pages, modals, command palette, shortcuts modal localized
+
+### 7.4 Mobile Responsive ✅
+
+- [x] Breakpoints: mobile (480px), tablet (768px), laptop (1024px)
+- [x] Responsive grid layouts (Home, TestTaker, CommandPalette)
+- [x] Sticky bottom controls on mobile TestTaker
+- [x] Compressed nav bar on mobile
+
+### 7.5 Analytics Dashboard ✅
+
+- [x] AnyChart charts: accuracy over time (line), score by unit (bar), question type (radar)
+- [x] 4 KPI cards: total attempts, average score, current streak, weakest unit
+- [x] Period filter (7d/30d/90d/all)
+- [x] Code-split via React.lazy (AnyChart ~2.5MB chunk)
+- [x] Stats API with MongoDB aggregation pipelines
+- [x] User preferences API (language, theme)
+
+### 7.6 Test Sharing ✅
+
+- [x] shareId field on Test schema (nanoid, unique sparse)
+- [x] POST /:id/share generates share link
+- [x] GET /shared/:shareId public test view (no auth required)
+- [x] SharedTest page with "Start Practice" button
+
+### 7.7 Bulk Import ✅
+
+- [x] Template download (XLSX with ExcelJS)
+- [x] Upload + parse XLSX/CSV with validation
+- [x] Preview table with error/duplicate warnings
+- [x] Confirm import creates Test documents
+- [x] Dedup check against existing DB questions
+
+### 7.8 Question Deduplication ✅
+
+- [x] Dice coefficient similarity (string-similarity)
+- [x] Korean text normalization (preserves Hangul Unicode)
+- [x] Admin scan UI with threshold slider and cluster cards
+- [x] "Keep Both" dismiss per cluster
+
+### 7.9 404 Page + Error Handling ✅
+
+- [x] Catch-all route with translated "Page not found" message
+- [x] User-friendly error messages (no raw Mongoose errors)
+- [x] Admin pages properly redirect unauthenticated users via useEffect
+- [x] Auth-gated API calls don't fire for unauthenticated users
+
+### Dependencies Added
+
+| Package | Purpose |
+|---------|---------|
+| `react-i18next`, `i18next`, `i18next-browser-languagedetector` | Multi-language UI |
+| `anychart`, `anychart-react` | Analytics charts |
+| `exceljs`, `papaparse` | Bulk import (XLSX/CSV) |
+| `string-similarity` | Question deduplication |
+| `nanoid` | Share link IDs |
+| `helmet` | HTTP security headers |
+
+---
+
 ## Full Acceptance Criteria Snapshot
 
 1. ✅ A deployed production instance runs on the home server with Docker Compose and persists data across restarts.
@@ -286,6 +376,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 4. ✅ Sessions are resumable across devices without timer reset via refresh.
 5. ✅ Admin can generate, validate, edit, and publish tests; users can privately flag issues.
 6. ✅ All PDF export variants render cleanly and match the Japandi design system.
+7. ✅ Dark/light/system theme toggle works; 4-language UI cycles correctly; analytics dashboard loads with AnyChart; tests can be shared via public links; admin can bulk import from XLSX/CSV; duplicate questions are detectable; security hardening passes audit.
 
 ---
 
@@ -300,3 +391,4 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | Phase 4 | None (admin routes + UI) |
 | Phase 5 | `passport`, `passport-google-oauth20`, `cookie-parser` (already installed in Phase 4) |
 | Phase 6 | `pdfkit` (PDF generation) |
+| Phase 7 | `react-i18next`, `i18next`, `i18next-browser-languagedetector`, `anychart`, `anychart-react`, `exceljs`, `papaparse`, `string-similarity`, `nanoid`, `helmet` |
