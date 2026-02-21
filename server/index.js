@@ -65,6 +65,9 @@ app.use('/api/flags', flagRoutes);
 const sessionRoutes = require('./routes/sessions');
 app.use('/api/sessions', sessionRoutes);
 
+const pdfRoutes = require('./routes/pdf');
+app.use('/api/pdf', pdfRoutes);
+
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });
