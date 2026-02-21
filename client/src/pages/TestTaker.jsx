@@ -454,7 +454,7 @@ function TestTaker() {
   const [reviewMode, setReviewMode] = useState(false);
 
   const [sessionId, setSessionId] = useState(null);
-  const [attemptId, setAttemptId] = useState(null);
+  const [attemptId, setAttemptId] = useState(null); // eslint-disable-line no-unused-vars -- used in PDF export buttons
 
   const { user } = useAuth();
   const [showFlagModal, setShowFlagModal] = useState(false);
