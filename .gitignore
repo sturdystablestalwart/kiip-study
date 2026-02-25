@@ -38,6 +38,14 @@ test-failure.png
 .claude/
 .gemini/
 .playwright-mcp/
+CLAUDE.md
+docs/AGENTS.md
+
+# Project context (local reference only)
+additionalContext/
+
+# Manual test documentation
+test-docs/
 
 # IDE and editor files
 .vscode/
