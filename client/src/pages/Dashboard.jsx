@@ -653,11 +653,11 @@ function Dashboard() {
       {/* Attempt History */}
       {attempts.length > 0 && (
         <ChartSection>
-          <ChartTitle>{t('common.recentAttempts', 'Recent Attempts')}</ChartTitle>
+          <ChartTitle>{t('dashboard.recentAttempts')}</ChartTitle>
           <AttemptList>
             {attempts.map(a => (
               <AttemptRow key={a._id}>
-                <AttemptTitle>{a.test?.title || 'Unknown'}</AttemptTitle>
+                <AttemptTitle>{a.test?.title || t('common.unknown')}</AttemptTitle>
                 <AttemptScore>{a.score}/{a.totalQuestions}</AttemptScore>
                 <AttemptMeta>{a.mode}</AttemptMeta>
                 <AttemptMeta>{new Date(a.createdAt).toLocaleDateString()}</AttemptMeta>
@@ -669,7 +669,7 @@ function Dashboard() {
               onClick={() => fetchAttempts(attemptsNextCursor)}
               disabled={loadingAttempts}
             >
-              {loadingAttempts ? t('common.loading') : t('common.loadMore', 'Load more')}
+              {loadingAttempts ? t('common.loading') : t('dashboard.loadMore')}
             </LoadMoreButton>
           )}
         </ChartSection>

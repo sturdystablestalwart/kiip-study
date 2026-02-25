@@ -75,7 +75,27 @@
     "generating": "Preparando tu prueba...",
     "charCount": "{{count}} caracteres",
     "minChars": "Mínimo {{min}} caracteres",
-    "maxChars": "Máximo {{max}} caracteres"
+    "maxChars": "Máximo {{max}} caracteres",
+    "noInput": "Pega un texto o sube un documento para comenzar.",
+    "textTooShort": "Se necesita más texto — mínimo {{min}} caracteres (actualmente {{count}}).",
+    "textTooLong": "El texto es demasiado largo — máximo {{max}} caracteres.",
+    "generateError": "Error al generar la prueba. Inténtalo de nuevo.",
+    "fileTooLarge": "El archivo es demasiado grande (máximo 10 MB).",
+    "imageTooLarge": "\"{{name}}\" es demasiado grande (máximo 10 MB).",
+    "imageMaxReached": "Puedes agregar {{count}} imágenes más.",
+    "uploadFailed": "No se pudo subir \"{{name}}\".",
+    "rateLimit": "Límite de solicitudes alcanzado — podrás generar de nuevo en {{seconds}}s",
+    "loadingPhrases": [
+      "La IA está leyendo tu material y creando preguntas...",
+      "Analizando conceptos clave y vocabulario...",
+      "Construyendo opciones de respuesta que realmente evalúan comprensión...",
+      "Casi como estudiar, pero la IA hace la parte difícil...",
+      "Buen material — será una prueba de práctica sólida...",
+      "Formateando preguntas y verificando respuestas...",
+      "Convirtiendo tus notas en una experiencia de examen real...",
+      "Una buena prueba vale más que mil tarjetas...",
+      "Puliendo los últimos detalles — un momento..."
+    ]
   },
   "admin": {
     "editor": "Editor de prueba",
@@ -135,7 +155,9 @@
     "days30": "Últimos 30 días",
     "days90": "Últimos 90 días",
     "allTime": "Todo el tiempo",
-    "noData": "Haz pruebas para ver tu progreso aquí."
+    "noData": "Haz pruebas para ver tu progreso aquí.",
+    "recentAttempts": "Intentos recientes",
+    "loadMore": "Cargar más"
   },
   "endless": {
     "title": "Práctica infinita",
@@ -158,7 +180,13 @@
     "no": "No",
     "notFound": "Pagina no encontrada",
     "notFoundDesc": "La pagina que buscas no existe o fue movida.",
-    "loginRequired": "Inicia sesion para usar esta funcion."
+    "loginRequired": "Inicia sesion para usar esta funcion.",
+    "reload": "Recargar página",
+    "errorDesc": "Ocurrió un error inesperado. Recargar la página suele solucionarlo.",
+    "sessionExpired": "La sesión expiró — inicia sesión de nuevo",
+    "networkError": "No se puede conectar al servidor. Revisa tu conexión.",
+    "loadMore": "Cargar más",
+    "unknown": "Desconocido"
   },
   "shared": {
     "notFound": "Prueba no encontrada",

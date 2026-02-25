@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import i18n from '../i18n';
 
 const ErrorWrapper = styled.div`
   display: flex;
@@ -58,12 +59,12 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <ErrorWrapper>
-          <ErrorTitle>Something went wrong</ErrorTitle>
+          <ErrorTitle>{i18n.t('common.error')}</ErrorTitle>
           <ErrorMessage>
-            An unexpected error occurred. Reloading the page will usually fix this.
+            {i18n.t('common.errorDesc')}
           </ErrorMessage>
           <ReloadButton onClick={() => window.location.reload()}>
-            Reload page
+            {i18n.t('common.reload')}
           </ReloadButton>
         </ErrorWrapper>
       );

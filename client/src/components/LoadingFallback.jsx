@@ -1,4 +1,5 @@
 import styled, { keyframes } from 'styled-components';
+import i18n from '../i18n';
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -38,7 +39,7 @@ export default function LoadingFallback() {
   return (
     <Wrapper>
       <Spinner />
-      <Label>Loading...</Label>
+      <Label>{i18n.t('common.loading')}</Label>
     </Wrapper>
   );
 }

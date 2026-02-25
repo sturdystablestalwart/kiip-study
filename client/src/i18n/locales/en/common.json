@@ -75,7 +75,27 @@
     "generating": "Preparing your test...",
     "charCount": "{{count}} characters",
     "minChars": "Minimum {{min}} characters required",
-    "maxChars": "Maximum {{max}} characters"
+    "maxChars": "Maximum {{max}} characters",
+    "noInput": "Please paste some text or upload a document to get started.",
+    "textTooShort": "A bit more text is needed — at least {{min}} characters (currently {{count}}).",
+    "textTooLong": "The text is too long — please keep it under {{max}} characters.",
+    "generateError": "Something went wrong while generating the test. Please try again.",
+    "fileTooLarge": "This document is too large (max 10 MB).",
+    "imageTooLarge": "\"{{name}}\" is too large (max 10 MB).",
+    "imageMaxReached": "You can add up to {{count}} more images.",
+    "uploadFailed": "Could not upload \"{{name}}\".",
+    "rateLimit": "Rate limit reached — you can generate again in {{seconds}}s",
+    "loadingPhrases": [
+      "The AI is reading your material and crafting questions...",
+      "Analyzing key concepts and vocabulary...",
+      "Building answer choices that really test understanding...",
+      "Almost like studying, but the AI does the hard part...",
+      "Great material — this will make a solid practice test...",
+      "Formatting questions and double-checking answers...",
+      "Turning your notes into a real exam experience...",
+      "A well-made test is worth a thousand flashcards...",
+      "Polishing the final details — hang tight..."
+    ]
   },
   "admin": {
     "editor": "Edit Test",
@@ -135,7 +155,9 @@
     "days30": "Last 30 days",
     "days90": "Last 90 days",
     "allTime": "All time",
-    "noData": "Take some tests to see your progress here."
+    "noData": "Take some tests to see your progress here.",
+    "recentAttempts": "Recent Attempts",
+    "loadMore": "Load more"
   },
   "endless": {
     "title": "Endless Practice",
@@ -158,7 +180,13 @@
     "no": "No",
     "notFound": "Page not found",
     "notFoundDesc": "The page you're looking for doesn't exist or has been moved.",
-    "loginRequired": "Please sign in to use this feature."
+    "loginRequired": "Please sign in to use this feature.",
+    "reload": "Reload page",
+    "errorDesc": "An unexpected error occurred. Reloading the page will usually fix this.",
+    "sessionExpired": "Session expired — please sign in again",
+    "networkError": "Cannot reach the server. Check your connection.",
+    "loadMore": "Load more",
+    "unknown": "Unknown"
   },
   "shared": {
     "notFound": "Test not found",

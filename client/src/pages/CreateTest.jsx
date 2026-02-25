@@ -291,16 +291,8 @@ const MIN_TEXT_LENGTH = 200;
 const MAX_TEXT_LENGTH = 50000;
 const MAX_IMAGES = 20;
 
-const LOADING_PHRASES = [
-  'The AI is reading your material and crafting questions...',
-  'Analyzing key concepts and vocabulary...',
-  'Building answer choices that really test understanding...',
-  'Almost like studying, but the AI does the hard part...',
-  'Great material — this will make a solid practice test...',
-  'Formatting questions and double-checking answers...',
-  'Turning your notes into a real exam experience...',
-  'A well-made test is worth a thousand flashcards...',
-  'Polishing the final details — hang tight...',
+const LOADING_PHRASES_FALLBACK = [
+  'Preparing your test...',
 ];
 
 function CreateTest() {
@@ -327,7 +319,7 @@ function CreateTest() {
         setElapsedSeconds(prev => {
           const next = prev + 1;
           if (next % 20 === 0) {
-            setPhraseIndex(pi => (pi + 1) % LOADING_PHRASES.length);
+            setPhraseIndex(pi => (pi + 1) % (t('create.loadingPhrases', { returnObjects: true })?.length || 1));
           }
           return next;
         });
@@ -336,7 +328,7 @@ function CreateTest() {
       clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [loading]);
+  }, [loading, t]);
 
   useEffect(() => {
     if (retryCountdown <= 0) return;
@@ -357,7 +349,7 @@ function CreateTest() {
     const files = Array.from(e.target.files);
 
     if (images.length + files.length > MAX_IMAGES) {
-      setUploadError(`You can add up to ${MAX_IMAGES - images.length} more images.`);
+      setUploadError(t('create.imageMaxReached', { count: MAX_IMAGES - images.length }));
       return;
     }
 
@@ -367,7 +359,7 @@ function CreateTest() {
 
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
-        setUploadError(`"${file.name}" is too large (max 10 MB).`);
+        setUploadError(t('create.imageTooLarge', { name: file.name }));
         continue;
       }
 
@@ -381,7 +373,7 @@ function CreateTest() {
         uploadedUrls.push(res.data.imageUrl);
       } catch (err) {
         console.error("Upload failed", err);
-        setUploadError(err.response?.data?.message || `Could not upload "${file.name}".`);
+        setUploadError(err.response?.data?.message || t('create.uploadFailed', { name: file.name }));
       }
     }
 
@@ -398,17 +390,17 @@ function CreateTest() {
 
   const validateInput = () => {
     if (!text.trim() && !file) {
-      setError('Please paste some text or upload a document to get started.');
+      setError(t('create.noInput'));
       return false;
     }
 
     if (text.trim() && !file) {
       if (textLength < MIN_TEXT_LENGTH) {
-        setError(`A bit more text is needed — at least ${MIN_TEXT_LENGTH} characters (currently ${textLength}).`);
+        setError(t('create.textTooShort', { min: MIN_TEXT_LENGTH, count: textLength }));
         return false;
       }
       if (textLength > MAX_TEXT_LENGTH) {
-        setError(`The text is too long — please keep it under ${MAX_TEXT_LENGTH.toLocaleString()} characters.`);
+        setError(t('create.textTooLong', { max: MAX_TEXT_LENGTH.toLocaleString() }));
         return false;
       }
     }
@@ -447,7 +439,7 @@ function CreateTest() {
         setError(null);
       } else {
         console.error(err);
-        setError(err.response?.data?.message || 'Something went wrong while generating the test. Please try again.');
+        setError(err.response?.data?.message || t('create.generateError'));
       }
     } finally {
       setLoading(false);
@@ -458,7 +450,7 @@ function CreateTest() {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('This document is too large (max 10 MB).');
+        setError(t('create.fileTooLarge'));
         e.target.value = '';
         return;
       }
@@ -480,7 +472,7 @@ function CreateTest() {
       {error && <ErrorBanner>{error}</ErrorBanner>}
       {retryCountdown > 0 && (
         <RateLimitBanner>
-          Rate limit reached — you can generate again in {retryCountdown}s
+          {t('create.rateLimit', { seconds: retryCountdown })}
         </RateLimitBanner>
       )}
 
@@ -560,7 +552,7 @@ function CreateTest() {
           <LoadingTimer>
             {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
           </LoadingTimer>
-          <LoadingPhrase>{LOADING_PHRASES[phraseIndex]}</LoadingPhrase>
+          <LoadingPhrase>{(t('create.loadingPhrases', { returnObjects: true }) || LOADING_PHRASES_FALLBACK)[phraseIndex]}</LoadingPhrase>
         </LoadingBox>
       )}
     </Wrapper>

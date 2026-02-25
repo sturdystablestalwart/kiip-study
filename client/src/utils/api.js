@@ -1,6 +1,7 @@
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import { showToast } from '../components/Toast';
+import i18n from '../i18n';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -17,9 +18,9 @@ api.interceptors.response.use(
 
         if (status === 401 && !url.includes('/api/auth/me')) {
             window.dispatchEvent(new CustomEvent('auth:expired'));
-            showToast('Session expired \u2014 please sign in again', 'warning', 6000);
+            showToast(i18n.t('common.sessionExpired'), 'warning', 6000);
         } else if (!error.response && error.code !== 'ECONNABORTED') {
-            showToast('Cannot reach the server. Check your connection.', 'error', 8000);
+            showToast(i18n.t('common.networkError'), 'error', 8000);
         }
 
         return Promise.reject(error);
