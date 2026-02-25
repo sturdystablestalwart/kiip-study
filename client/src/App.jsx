@@ -9,6 +9,9 @@ import Home from './pages/Home';
 import TestTaker from './pages/TestTaker';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import api from './utils/api';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingFallback from './components/LoadingFallback';
+import Toast from './components/Toast';
 
 // Lazy-load routes that aren't needed on initial page load
 const CreateTest = React.lazy(() => import('./pages/CreateTest'));
@@ -381,27 +384,30 @@ function AppInner() {
       <GlobalStyles />
       <AuthProvider>
         <Router>
-          <AppShell>
-            <Navigation onSearchClick={() => setShowPalette(true)} />
-            <Suspense fallback={null}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/create" element={<CreateTest />} />
-                <Route path="/test/:id" element={<TestTaker />} />
-                <Route path="/endless" element={<EndlessMode />} />
-                <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
-                <Route path="/admin/flags" element={<AdminFlags />} />
-                <Route path="/admin/import" element={<AdminBulkImport />} />
-                <Route path="/admin/duplicates" element={<AdminDuplicates />} />
-                <Route path="/shared/:shareId" element={<SharedTest />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AppShell>
-          {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
-          {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
+          <ErrorBoundary>
+            <AppShell>
+              <Navigation onSearchClick={() => setShowPalette(true)} />
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/create" element={<CreateTest />} />
+                  <Route path="/test/:id" element={<TestTaker />} />
+                  <Route path="/endless" element={<EndlessMode />} />
+                  <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
+                  <Route path="/admin/flags" element={<AdminFlags />} />
+                  <Route path="/admin/import" element={<AdminBulkImport />} />
+                  <Route path="/admin/duplicates" element={<AdminDuplicates />} />
+                  <Route path="/shared/:shareId" element={<SharedTest />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AppShell>
+            {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
+            {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
+          </ErrorBoundary>
         </Router>
+        <Toast />
       </AuthProvider>
     </ThemeProvider>
   );

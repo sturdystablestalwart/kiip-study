@@ -8,6 +8,7 @@ const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const helmet = require('helmet');
+const morgan = require('morgan');
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true
 }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
@@ -133,7 +135,7 @@ app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });
 
-app.get('/health', (req, res) => {
+const healthHandler = (req, res) => {
     const mongoState = mongoose.connection.readyState;
     const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
     res.json({
@@ -141,7 +143,9 @@ app.get('/health', (req, res) => {
         mongo: states[mongoState] || 'unknown',
         uptime: process.uptime()
     });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // Production error handler — hide stack traces from clients
 app.use((err, req, res, _next) => {

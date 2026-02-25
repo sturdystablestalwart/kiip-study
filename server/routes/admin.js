@@ -13,6 +13,7 @@ const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
+const sharp = require('sharp');
 const AuditLog = require('../models/AuditLog');
 
 // All admin routes require auth + admin
@@ -155,32 +156,72 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
 });
 
 // POST /api/admin/tests/upload
-router.post('/tests/upload', imageUpload.single('image'), (req, res) => {
+router.post('/tests/upload', imageUpload.single('image'), async (req, res) => {
     if (req.fileValidationError) {
         return res.status(400).json({ message: req.fileValidationError });
     }
     if (!req.file) {
         return res.status(400).json({ message: 'No image file uploaded' });
     }
-    res.json({
-        imageUrl: '/uploads/images/' + req.file.filename,
-        filename: req.file.filename,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-    });
+
+    const originalPath = req.file.path;
+    const baseName = path.basename(req.file.filename, path.extname(req.file.filename));
+    const optimizedFilename = `${baseName}-opt.webp`;
+    const optimizedPath = path.join(path.dirname(originalPath), optimizedFilename);
+
+    try {
+        await sharp(originalPath)
+            .resize({ width: 1200, withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toFile(optimizedPath);
+
+        res.json({
+            imageUrl: '/uploads/images/' + optimizedFilename,
+            filename: optimizedFilename,
+            originalSize: req.file.size,
+            mimetype: 'image/webp'
+        });
+    } catch (sharpErr) {
+        console.error('[sharp] Optimization failed, serving original:', sharpErr.message);
+        res.json({
+            imageUrl: '/uploads/images/' + req.file.filename,
+            filename: req.file.filename,
+            size: req.file.size,
+            mimetype: req.file.mimetype
+        });
+    }
 });
 
 // POST /api/admin/tests/upload-multiple
-router.post('/tests/upload-multiple', imageUpload.array('images', 20), (req, res) => {
+router.post('/tests/upload-multiple', imageUpload.array('images', 20), async (req, res) => {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'No image files uploaded' });
     }
-    const uploadedFiles = req.files.map(file => ({
-        imageUrl: '/uploads/images/' + file.filename,
-        filename: file.filename,
-        size: file.size,
-        mimetype: file.mimetype
-    }));
+    const uploadedFiles = [];
+    for (const file of req.files) {
+        const baseName = path.basename(file.filename, path.extname(file.filename));
+        const optimizedFilename = `${baseName}-opt.webp`;
+        const optimizedPath = path.join(path.dirname(file.path), optimizedFilename);
+        try {
+            await sharp(file.path)
+                .resize({ width: 1200, withoutEnlargement: true })
+                .webp({ quality: 82 })
+                .toFile(optimizedPath);
+            uploadedFiles.push({
+                imageUrl: '/uploads/images/' + optimizedFilename,
+                filename: optimizedFilename,
+                originalSize: file.size,
+                mimetype: 'image/webp'
+            });
+        } catch {
+            uploadedFiles.push({
+                imageUrl: '/uploads/images/' + file.filename,
+                filename: file.filename,
+                size: file.size,
+                mimetype: file.mimetype
+            });
+        }
+    }
     res.json({ images: uploadedFiles });
 });
 

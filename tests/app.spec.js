@@ -612,3 +612,41 @@ test.describe('API Health', () => {
   });
 
 });
+
+/* ───────── Accessibility — axe-core ───────── */
+
+const AxeBuilder = require('@axe-core/playwright').default;
+
+test.describe('Accessibility', () => {
+
+  test('Home page has no critical a11y violations', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('h1');
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .analyze();
+    const critical = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    expect(critical).toEqual([]);
+  });
+
+  test('Create Test page has no critical a11y violations', async ({ page }) => {
+    await page.goto(`${BASE_URL}/create`);
+    await page.waitForTimeout(1000);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .analyze();
+    const critical = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    expect(critical).toEqual([]);
+  });
+
+  test('404 page has no critical a11y violations', async ({ page }) => {
+    await page.goto(`${BASE_URL}/nonexistent-page`);
+    await page.waitForTimeout(500);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .analyze();
+    const critical = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+    expect(critical).toEqual([]);
+  });
+
+});

@@ -68,6 +68,12 @@ server/uploads/documents/*
 !server/uploads/images/.gitkeep
 !server/uploads/documents/.gitkeep
 
+# Backups
+backups/
+
+# Bundle analysis
+dist/bundle-report.html
+
 # Temporary files
 *.tmp
 *.temp

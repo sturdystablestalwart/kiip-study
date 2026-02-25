@@ -15,6 +15,12 @@ export function AuthProvider({ children }) {
             .finally(() => setLoading(false));
     }, []);
 
+    useEffect(() => {
+        const handleExpiry = () => setUser(null);
+        window.addEventListener('auth:expired', handleExpiry);
+        return () => window.removeEventListener('auth:expired', handleExpiry);
+    }, []);
+
     const logout = async () => {
         try {
             await api.post('/api/auth/logout');

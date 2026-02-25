@@ -1,0 +1,30 @@
+{
+	email {$CADDY_EMAIL:admin@example.com}
+}
+
+{$CADDY_HOST:localhost} {
+	# API and uploads → backend
+	handle /api/* {
+		reverse_proxy server:5000
+	}
+
+	handle /uploads/* {
+		reverse_proxy server:5000
+	}
+
+	handle /health {
+		reverse_proxy server:5000
+	}
+
+	# Everything else → SPA frontend
+	handle {
+		reverse_proxy client:80
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

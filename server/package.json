@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "mammoth": "^1.11.0",
     "mongoose": "^9.1.6",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nanoid": "^5.1.6",
     "papaparse": "^5.5.3",
@@ -30,6 +31,7 @@
     "passport-google-oauth20": "^2.0.0",
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.17.2",
+    "sharp": "^0.34.5",
     "string-similarity": "^4.0.4"
   }
 }

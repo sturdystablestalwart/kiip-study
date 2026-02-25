@@ -250,6 +250,17 @@ const ErrorBanner = styled.div`
   line-height: ${({ theme }) => theme.typography.scale.small.line}px;
 `;
 
+const RateLimitBanner = styled.div`
+  background: ${({ theme }) => theme.colors.state.infoBg};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  color: ${({ theme }) => theme.colors.state.warning};
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  line-height: ${({ theme }) => theme.typography.scale.small.line}px;
+`;
+
 const LoadingBox = styled.div`
   text-align: center;
   margin-top: ${({ theme }) => theme.layout.space[5]}px;
@@ -302,7 +313,9 @@ function CreateTest() {
   const [uploadError, setUploadError] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [phraseIndex, setPhraseIndex] = useState(0);
+  const [retryCountdown, setRetryCountdown] = useState(0);
   const timerRef = useRef(null);
+  const retryTimerRef = useRef(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -325,9 +338,20 @@ function CreateTest() {
     return () => clearInterval(timerRef.current);
   }, [loading]);
 
+  useEffect(() => {
+    if (retryCountdown <= 0) return;
+    retryTimerRef.current = setInterval(() => {
+      setRetryCountdown(prev => {
+        if (prev <= 1) { clearInterval(retryTimerRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(retryTimerRef.current);
+  }, [retryCountdown > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const textLength = text.trim().length;
   const isTextValid = textLength >= MIN_TEXT_LENGTH && textLength <= MAX_TEXT_LENGTH;
-  const canSubmit = (text.trim().length > 0 || file) && !loading && !uploadingImages;
+  const canSubmit = (text.trim().length > 0 || file) && !loading && !uploadingImages && retryCountdown === 0;
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -417,8 +441,14 @@ function CreateTest() {
       }
       navigate('/');
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Something went wrong while generating the test. Please try again.');
+      if (err.response?.status === 429) {
+        const retryAfter = parseInt(err.response.headers?.['retry-after']) || 60;
+        setRetryCountdown(retryAfter);
+        setError(null);
+      } else {
+        console.error(err);
+        setError(err.response?.data?.message || 'Something went wrong while generating the test. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -448,6 +478,11 @@ function CreateTest() {
       <PageTitle>{t('create.title')}</PageTitle>
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
+      {retryCountdown > 0 && (
+        <RateLimitBanner>
+          Rate limit reached — you can generate again in {retryCountdown}s
+        </RateLimitBanner>
+      )}
 
       <Section disabled={!!file}>
         <SectionTitle>{t('create.textLabel')}</SectionTitle>

@@ -82,6 +82,41 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET paginated attempt history
+router.get('/attempts', requireAuth, async (req, res) => {
+    try {
+        const { cursor, limit: rawLimit } = req.query;
+        const limit = Math.min(Math.max(parseInt(rawLimit) || 10, 1), 50);
+
+        const match = { userId: req.user._id };
+        if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
+            match._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+        }
+
+        const attempts = await Attempt.find(match)
+            .sort({ createdAt: -1 })
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = attempts.length > limit;
+        const page = hasMore ? attempts.slice(0, limit) : attempts;
+        const nextCursor = hasMore ? page[page.length - 1]._id : null;
+
+        const testIds = [...new Set(page.filter(a => a.testId).map(a => a.testId.toString()))];
+        const tests = await Test.find({ _id: { $in: testIds } }, { title: 1, level: 1, unit: 1 }).lean();
+        const testMap = Object.fromEntries(tests.map(t => [t._id.toString(), t]));
+
+        const enriched = page.map(a => ({
+            ...a,
+            test: a.testId ? (testMap[a.testId.toString()] || { title: 'Deleted test' }) : { title: 'Endless Mode' }
+        }));
+
+        res.json({ attempts: enriched, nextCursor });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch attempts: ' + err.message });
+    }
+});
+
 // GET recent attempts for dashboard
 router.get('/recent-attempts', requireAuth, async (req, res) => {
     try {

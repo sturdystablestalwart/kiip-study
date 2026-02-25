@@ -338,7 +338,7 @@ function formatDuration(seconds) {
 function EndlessMode() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user: _User } = useAuth();
 
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);

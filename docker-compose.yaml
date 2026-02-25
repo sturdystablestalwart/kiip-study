@@ -54,8 +54,8 @@ services:
       dockerfile: Dockerfile
     container_name: kiip-client
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       server:
         condition: service_healthy
@@ -68,10 +68,35 @@ services:
       retries: 3
       start_period: 10s
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: kiip-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - CADDY_HOST=${CADDY_HOST:-localhost}
+      - CADDY_EMAIL=${CADDY_EMAIL:-admin@example.com}
+    depends_on:
+      - client
+      - server
+    networks:
+      - kiip-network
+
 volumes:
   mongo_data:
     driver: local
   server_uploads:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local
 
 networks:

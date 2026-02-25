@@ -20,7 +20,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "@playwright/mcp": "^0.0.64"
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/mcp": "^0.0.64",
+    "@playwright/test": "^1.58.2"
   }
 }

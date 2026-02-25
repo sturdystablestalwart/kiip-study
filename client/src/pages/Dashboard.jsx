@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -181,6 +181,68 @@ const SignInPrompt = styled.div`
   }
 `;
 
+const AttemptList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const AttemptRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[4]}px;
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+
+  ${below.mobile} {
+    flex-wrap: wrap;
+    gap: ${({ theme }) => theme.layout.space[2]}px;
+  }
+`;
+
+const AttemptTitle = styled.span`
+  flex: 1;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const AttemptMeta = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  white-space: nowrap;
+`;
+
+const AttemptScore = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.accent.moss};
+  white-space: nowrap;
+`;
+
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: ${({ theme }) => theme.layout.space[4]}px auto 0;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover { border-color: ${({ theme }) => theme.colors.focus.ring}; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
 /* ───────── Helpers ───────── */
 
 const QUESTION_TYPE_LABELS = {
@@ -228,6 +290,9 @@ function Dashboard() {
   const [typeStats, setTypeStats] = useState(null);
   const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(true);
+  const [attempts, setAttempts] = useState([]);
+  const [attemptsNextCursor, setAttemptsNextCursor] = useState(null);
+  const [loadingAttempts, setLoadingAttempts] = useState(false);
 
   const lineRef = useRef(null);
   const barRef = useRef(null);
@@ -262,6 +327,30 @@ function Dashboard() {
     fetchStats();
     return () => controller.abort();
   }, [period, user]);
+
+  const fetchAttempts = useCallback(async (cursor = null) => {
+    setLoadingAttempts(true);
+    try {
+      const params = new URLSearchParams({ limit: '10' });
+      if (cursor) params.set('cursor', cursor);
+      const res = await api.get(`/api/tests/attempts?${params}`);
+      if (cursor) {
+        setAttempts(prev => [...prev, ...res.data.attempts]);
+      } else {
+        setAttempts(res.data.attempts);
+      }
+      setAttemptsNextCursor(res.data.nextCursor);
+    } catch (err) {
+      if (err.name === 'CanceledError') return;
+      console.error('Failed to fetch attempts', err);
+    } finally {
+      setLoadingAttempts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) fetchAttempts();
+  }, [user, fetchAttempts]);
 
   // Line chart: Accuracy Over Time
   useEffect(() => {
@@ -560,6 +649,31 @@ function Dashboard() {
           </div>
         )}
       </TwoChartGrid>
+
+      {/* Attempt History */}
+      {attempts.length > 0 && (
+        <ChartSection>
+          <ChartTitle>{t('common.recentAttempts', 'Recent Attempts')}</ChartTitle>
+          <AttemptList>
+            {attempts.map(a => (
+              <AttemptRow key={a._id}>
+                <AttemptTitle>{a.test?.title || 'Unknown'}</AttemptTitle>
+                <AttemptScore>{a.score}/{a.totalQuestions}</AttemptScore>
+                <AttemptMeta>{a.mode}</AttemptMeta>
+                <AttemptMeta>{new Date(a.createdAt).toLocaleDateString()}</AttemptMeta>
+              </AttemptRow>
+            ))}
+          </AttemptList>
+          {attemptsNextCursor && (
+            <LoadMoreButton
+              onClick={() => fetchAttempts(attemptsNextCursor)}
+              disabled={loadingAttempts}
+            >
+              {loadingAttempts ? t('common.loading') : t('common.loadMore', 'Load more')}
+            </LoadMoreButton>
+          )}
+        </ChartSection>
+      )}
     </div>
   );
 }
