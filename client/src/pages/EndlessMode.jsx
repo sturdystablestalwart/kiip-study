@@ -357,6 +357,7 @@ function EndlessMode() {
 
   const timerRef = useRef(null);
   const sessionDurationRef = useRef(0);
+  const fetchControllerRef = useRef(null);
 
   // Keep ref in sync for use in submitChunk
   useEffect(() => {
@@ -379,6 +380,11 @@ function EndlessMode() {
   }, [started, ended]);
 
   const fetchBatch = useCallback(async (excludeList) => {
+    // Abort any in-flight fetch before starting a new one
+    if (fetchControllerRef.current) fetchControllerRef.current.abort();
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -388,15 +394,19 @@ function EndlessMode() {
       if (keysToExclude.length) params.set('exclude', keysToExclude.join(','));
       params.set('limit', '10');
 
-      const res = await api.get(`/api/tests/endless?${params}`, { timeout: 10000 });
+      const res = await api.get(`/api/tests/endless?${params}`, {
+        timeout: 10000, signal: controller.signal
+      });
       setQuestions(res.data.questions);
       setRemaining(res.data.remaining);
       setCurrentIdx(0);
       setAnswers({});
     } catch (err) {
-      console.error('Failed to fetch endless batch:', err);
+      if (err.name === 'CanceledError') return;
       if (err.response?.status === 401) {
         setAuthError(true);
+      } else {
+        console.error('Failed to fetch endless batch:', err);
       }
       setQuestions([]);
     } finally {
@@ -490,6 +500,13 @@ function EndlessMode() {
     setEnded(false);
     setRemaining(0);
   };
+
+  // Cleanup in-flight fetch on unmount
+  useEffect(() => {
+    return () => {
+      if (fetchControllerRef.current) fetchControllerRef.current.abort();
+    };
+  }, []);
 
   const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 

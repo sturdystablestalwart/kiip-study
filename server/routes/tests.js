@@ -203,6 +203,9 @@ router.get('/:id', async (req, res) => {
         if (!test) return res.status(404).json({ message: 'Test not found' });
         res.json(test);
     } catch (err) {
+        if (err.name === 'CastError') {
+            return res.status(404).json({ message: 'Test not found' });
+        }
         res.status(500).json({ message: 'Failed to fetch test: ' + err.message });
     }
 });

@@ -189,15 +189,16 @@ function AdminFlags() {
         'dismissed': t('admin.flagsDismissed')
     };
 
-    const fetchFlags = useCallback(async (cursor = null, append = false) => {
+    const fetchFlags = useCallback(async (cursor = null, append = false, signal) => {
         try {
             if (!append) setLoading(true);
             const params = new URLSearchParams({ status: statusFilter, limit: '20' });
             if (cursor) params.set('cursor', cursor);
-            const res = await api.get(`/api/admin/flags?${params}`);
+            const res = await api.get(`/api/admin/flags?${params}`, { signal });
             setFlags(prev => append ? [...prev, ...res.data.flags] : res.data.flags);
             setNextCursor(res.data.nextCursor);
         } catch (err) {
+            if (err.name === 'CanceledError') return;
             console.error('Failed to fetch flags:', err);
         } finally {
             setLoading(false);
@@ -210,7 +211,9 @@ function AdminFlags() {
             return;
         }
         if (!authLoading && user?.isAdmin) {
-            fetchFlags();
+            const controller = new AbortController();
+            fetchFlags(null, false, controller.signal);
+            return () => controller.abort();
         }
     }, [authLoading, user, fetchFlags, navigate]);
 

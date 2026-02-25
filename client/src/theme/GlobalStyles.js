@@ -1,9 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyles = createGlobalStyle`
-  /* --- Font imports --- */
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650;700&family=BIZ+UDPGothic:wght@400;700&display=swap');
-
   /* --- Reset --- */
   *, *::before, *::after {
     box-sizing: border-box;

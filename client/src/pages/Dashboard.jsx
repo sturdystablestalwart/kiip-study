@@ -242,22 +242,25 @@ function Dashboard() {
       setLoading(false);
       return;
     }
+    const controller = new AbortController();
     const fetchStats = async () => {
       setLoading(true);
       try {
         const [statsRes, typesRes] = await Promise.all([
-          api.get(`/api/stats?period=${period}`),
-          api.get('/api/stats/question-types'),
+          api.get(`/api/stats?period=${period}`, { signal: controller.signal }),
+          api.get('/api/stats/question-types', { signal: controller.signal }),
         ]);
         setStats(statsRes.data);
         setTypeStats(typesRes.data);
       } catch (err) {
+        if (err.name === 'CanceledError') return;
         console.error('Failed to load stats', err);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
+    return () => controller.abort();
   }, [period, user]);
 
   // Line chart: Accuracy Over Time

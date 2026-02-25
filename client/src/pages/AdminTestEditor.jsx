@@ -290,7 +290,8 @@ function AdminTestEditor() {
         }
 
         if (!authLoading && user?.isAdmin) {
-            api.get(`/api/tests/${id}`)
+            const controller = new AbortController();
+            api.get(`/api/tests/${id}`, { signal: controller.signal })
                 .then(res => {
                     const t = res.data;
                     setTitle(t.title || '');
@@ -300,8 +301,12 @@ function AdminTestEditor() {
                     setUnit(t.unit || '');
                     setQuestions(t.questions || []);
                 })
-                .catch(() => setError('Failed to load test'))
+                .catch(err => {
+                    if (err.name === 'CanceledError') return;
+                    setError('Failed to load test');
+                })
                 .finally(() => setLoading(false));
+            return () => controller.abort();
         }
     }, [id, authLoading, user, navigate]);
 

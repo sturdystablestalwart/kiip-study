@@ -614,7 +614,7 @@ function Home() {
   const [copiedTestId, setCopiedTestId] = useState(null);
   const [sharingTestId, setSharingTestId] = useState(null);
 
-  const fetchTests = useCallback(async (cursor = null, append = false) => {
+  const fetchTests = useCallback(async (cursor = null, append = false, signal) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -630,7 +630,7 @@ function Home() {
       params.set('limit', '20');
 
       const res = await api.get(`/api/tests?${params}`, {
-        timeout: 10000
+        timeout: 10000, signal
       });
 
       if (append) {
@@ -641,6 +641,7 @@ function Home() {
       setNextCursor(res.data.nextCursor);
       setTotal(res.data.total);
     } catch (err) {
+      if (err.name === 'CanceledError') return;
       console.error(err);
       setError(err.response?.data?.message || err.message || 'Could not reach the server');
     } finally {
@@ -650,27 +651,28 @@ function Home() {
   }, [levelFilter, unitFilter]);
 
   useEffect(() => {
-    fetchTests();
+    const controller = new AbortController();
+    fetchTests(null, false, controller.signal);
+    return () => controller.abort();
   }, [fetchTests]);
 
   useEffect(() => {
     if (!user) return;
+    const controller = new AbortController();
 
-    const fetchRecent = async () => {
-      try {
-        const res = await api.get(`/api/tests/recent-attempts?limit=5`, {
-          timeout: 10000
-        });
-        setRecentAttempts(res.data);
-      } catch (err) {
-        console.error('Failed to fetch recent attempts:', err);
-      }
-    };
-    fetchRecent();
+    // Fetch recent attempts and active sessions in parallel
+    Promise.all([
+      api.get('/api/tests/recent-attempts?limit=5', { timeout: 10000, signal: controller.signal }),
+      api.get('/api/sessions/active', { signal: controller.signal })
+    ]).then(([recentRes, sessionsRes]) => {
+      setRecentAttempts(recentRes.data);
+      setActiveSessions(sessionsRes.data.sessions || []);
+    }).catch(err => {
+      if (err.name === 'CanceledError') return;
+      console.error('Failed to fetch user data:', err);
+    });
 
-    api.get('/api/sessions/active')
-      .then(res => setActiveSessions(res.data.sessions || []))
-      .catch(() => {});
+    return () => controller.abort();
   }, [user]);
 
   const handleLoadMore = () => {

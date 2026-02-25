@@ -110,6 +110,7 @@ function CommandPalette({ onClose }) {
   const inputRef = useRef(null);
   const navigate = useNavigate();
   const debounceRef = useRef(null);
+  const searchControllerRef = useRef(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -117,6 +118,7 @@ function CommandPalette({ onClose }) {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (searchControllerRef.current) searchControllerRef.current.abort();
 
     if (!query.trim()) {
       setResults([]);
@@ -125,15 +127,18 @@ function CommandPalette({ onClose }) {
     }
 
     debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      searchControllerRef.current = controller;
       setLoading(true);
       try {
         const res = await api.get(
           `/api/tests?q=${encodeURIComponent(query.trim())}&limit=10`,
-          { timeout: 5000 }
+          { timeout: 5000, signal: controller.signal }
         );
         setResults(res.data.tests || []);
         setActiveIndex(0);
       } catch (err) {
+        if (err.name === 'CanceledError') return;
         console.error('Command palette search error:', err);
         setResults([]);
       } finally {
@@ -143,6 +148,7 @@ function CommandPalette({ onClose }) {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (searchControllerRef.current) searchControllerRef.current.abort();
     };
   }, [query]);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -516,21 +516,23 @@ function TestTaker() {
   const [flagSuccess, setFlagSuccess] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchTest = async () => {
       try {
         const res = await api.get(`/api/tests/${id}`, {
-          timeout: 10000
+          timeout: 10000, signal: controller.signal
         });
         setTest(res.data);
 
         if (user) {
           try {
-            const sessionRes = await api.post('/api/sessions/start', { testId: id, mode });
+            const sessionRes = await api.post('/api/sessions/start', { testId: id, mode }, {
+              signal: controller.signal
+            });
             const session = sessionRes.data.session;
             setSessionId(session._id);
 
             if (sessionRes.data.resumed && session.answers && session.answers.length > 0) {
-              // Restore answers from session array format to object keyed by questionIndex
               const restoredAnswers = {};
               session.answers.forEach(ans => {
                 restoredAnswers[ans.questionIndex] = {
@@ -541,24 +543,24 @@ function TestTaker() {
                 };
               });
               setAnswers(restoredAnswers);
-              if (session.currentQuestion != null) {
-                setCurrentQ(session.currentQuestion);
-              }
-              if (session.remainingTime != null) {
-                setTimeLeft(session.remainingTime);
-              }
+              if (session.currentQuestion != null) setCurrentQ(session.currentQuestion);
+              if (session.remainingTime != null) setTimeLeft(session.remainingTime);
             }
           } catch (sessionErr) {
+            if (sessionErr.name === 'CanceledError') return;
             console.error('Failed to start/resume session', sessionErr);
-            // Non-fatal — continue without session
           }
         }
       } catch (err) {
-        console.error(err);
-        setError(t('common.error'));
+        if (err.name === 'CanceledError') return;
+        if (!err.response || err.response.status >= 500) {
+          console.error(err);
+        }
+        setError(err.response?.status === 404 ? t('common.notFound', 'Test not found') : t('common.error'));
       }
     };
     fetchTest();
+    return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -580,8 +582,10 @@ function TestTaker() {
   }, [isSubmitted, test]);
 
   // Auto-save session progress every 30 seconds for authenticated users
+  const autoSaveFailCount = useRef(0);
   useEffect(() => {
     if (!sessionId || isSubmitted) return;
+    const controller = new AbortController();
     const interval = setInterval(() => {
       const answerArray = Object.entries(answers).map(([idx, ans]) => ({
         questionIndex: parseInt(idx),
@@ -594,9 +598,17 @@ function TestTaker() {
         answers: answerArray,
         currentQuestion: currentQ,
         remainingTime: timeLeft
-      }).catch(() => {});
+      }, { signal: controller.signal }).then(() => {
+        autoSaveFailCount.current = 0;
+      }).catch(err => {
+        if (err.name === 'CanceledError') return;
+        autoSaveFailCount.current++;
+        if (autoSaveFailCount.current >= 3) {
+          console.warn('Auto-save failed repeatedly — progress may not be saved');
+        }
+      });
     }, 30000);
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); controller.abort(); };
   }, [sessionId, answers, currentQ, timeLeft, isSubmitted]);
 
   const hasProgress = Object.keys(answers).length > 0;
