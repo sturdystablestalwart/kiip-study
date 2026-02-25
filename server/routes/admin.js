@@ -15,6 +15,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
 const sharp = require('sharp');
 const AuditLog = require('../models/AuditLog');
+const safeError = require('../utils/safeError');
 
 // All admin routes require auth + admin
 router.use(requireAuth, requireAdmin);
@@ -151,7 +152,7 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
         res.status(201).json(savedTest);
     } catch (err) {
         console.error("Text Generation Error:", err);
-        res.status(400).json({ message: err.message });
+        res.status(400).json({ message: safeError('Failed to generate test', err) });
     }
 });
 
@@ -286,7 +287,7 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
             fs.unlinkSync(filePath);
         }
         console.error("File Generation Error:", err);
-        res.status(400).json({ message: 'Failed to process document: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to process document', err) });
     }
 });
 
@@ -318,7 +319,7 @@ router.post('/tests/import', async (req, res) => {
         }).catch(() => {});
         res.status(201).json(savedTest);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to import test: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to import test', err) });
     }
 });
 
@@ -348,7 +349,7 @@ router.patch('/tests/:id', async (req, res) => {
         }).catch(() => {});
         res.json(savedTest);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to update test: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to update test', err) });
     }
 });
 
@@ -373,7 +374,7 @@ router.delete('/tests/:id', async (req, res) => {
 
         res.json({ message: 'Test deleted successfully' });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to delete test: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to delete test', err) });
     }
 });
 
@@ -410,7 +411,7 @@ router.get('/flags', async (req, res) => {
 
         res.json({ flags: results, nextCursor, openCount });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch flags: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch flags', err) });
     }
 });
 
@@ -420,7 +421,7 @@ router.get('/flags/count', async (req, res) => {
         const openCount = await Flag.countDocuments({ status: 'open' });
         res.json({ openCount });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to count flags: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to count flags', err) });
     }
 });
 
@@ -452,7 +453,7 @@ router.patch('/flags/:id', async (req, res) => {
 
         res.json(flag);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to update flag: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to update flag', err) });
     }
 });
 
@@ -472,7 +473,7 @@ router.get('/audit', async (req, res) => {
         const nextCursor = hasMore ? logs[logs.length - 1]._id : null;
         res.json({ logs, nextCursor });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch audit log: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch audit log', err) });
     }
 });
 
@@ -485,9 +486,9 @@ router.use((err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_COUNT') {
             return res.status(400).json({ message: 'Too many files. Maximum is 20 images.' });
         }
-        return res.status(400).json({ message: 'File upload error: ' + err.message });
+        return res.status(400).json({ message: safeError('File upload error', err) });
     } else if (err) {
-        return res.status(400).json({ message: err.message });
+        return res.status(400).json({ message: safeError('Upload error', err) });
     }
     next();
 });

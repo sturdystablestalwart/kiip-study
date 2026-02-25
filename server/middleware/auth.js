@@ -11,7 +11,7 @@ const requireAuth = async (req, res, next) => {
             return res.status(401).json({ message: 'Authentication required' });
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'kiip-study', audience: 'kiip-study-api' });
         const user = await User.findById(decoded.userId);
         if (!user) {
             return res.status(401).json({ message: 'User not found' });

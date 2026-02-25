@@ -9,6 +9,8 @@ const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
@@ -16,6 +18,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(compression());
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true
@@ -25,12 +28,21 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
+// Global rate limiter — 100 requests per minute per IP
+app.use('/api', rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests, please try again later.' },
+}));
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
@@ -140,8 +152,6 @@ const healthHandler = (req, res) => {
     const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
     res.json({
         status: mongoState === 1 ? 'ok' : 'degraded',
-        mongo: states[mongoState] || 'unknown',
-        uptime: process.uptime()
     });
 };
 app.get('/health', healthHandler);

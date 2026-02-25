@@ -5,6 +5,7 @@ const Attempt = require('../models/Attempt');
 const Test = require('../models/Test');
 const { requireAuth } = require('../middleware/auth');
 const { scoreQuestion } = require('../utils/scoring');
+const safeError = require('../utils/safeError');
 
 // POST /api/sessions/start
 // Body: { testId, mode }
@@ -50,7 +51,7 @@ router.post('/start', requireAuth, async (req, res) => {
 
         return res.status(201).json({ session, resumed: false });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to start session: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to start session', err) });
     }
 });
 
@@ -79,7 +80,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
         return res.status(200).json({ session });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to update session: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to update session', err) });
     }
 });
 
@@ -150,7 +151,7 @@ router.post('/:id/submit', requireAuth, async (req, res) => {
 
         return res.status(200).json({ attempt, score, total, percentage });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to submit session: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to submit session', err) });
     }
 });
 
@@ -168,7 +169,7 @@ router.get('/active', requireAuth, async (req, res) => {
 
         return res.status(200).json({ sessions });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch active sessions: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch active sessions', err) });
     }
 });
 
@@ -192,7 +193,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
         return res.status(200).json({ message: 'Session abandoned' });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to abandon session: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to abandon session', err) });
     }
 });
 

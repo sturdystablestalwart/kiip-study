@@ -9,7 +9,16 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const Test = require('../models/Test');
 const { checkAgainstExisting } = require('../utils/dedup');
 
-const upload = multer({ dest: path.join(__dirname, '../uploads/temp/') });
+const crypto = require('crypto');
+const upload = multer({
+  dest: path.join(__dirname, '../uploads/temp/'),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.xlsx', '.xls', '.csv'].includes(ext)) cb(null, true);
+    else cb(new Error('Only XLSX and CSV files are allowed'), false);
+  },
+});
 
 // GET /import-template
 router.get('/import-template', requireAuth, requireAdmin, async (req, res) => {
@@ -87,7 +96,7 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
     }
 
     // Store preview
-    const previewId = Date.now().toString(36);
+    const previewId = crypto.randomUUID().replace(/-/g, '');
     const tempDir = path.join(__dirname, '../uploads/temp/');
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
     const previewPath = path.join(tempDir, `preview-${previewId}.json`);

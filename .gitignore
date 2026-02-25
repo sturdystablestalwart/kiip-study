@@ -39,7 +39,7 @@ test-failure.png
 .gemini/
 .playwright-mcp/
 CLAUDE.md
-docs/AGENTS.md
+docs/
 
 # Project context (local reference only)
 additionalContext/

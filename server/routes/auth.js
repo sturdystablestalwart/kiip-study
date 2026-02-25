@@ -4,7 +4,16 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const rateLimit = require('express-rate-limit');
 const { requireAuth, JWT_SECRET } = require('../middleware/auth');
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many auth requests, please try again later.' },
+});
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
@@ -59,18 +68,18 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // GET /api/auth/google/start
-router.get('/google/start',
+router.get('/google/start', authLimiter,
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
 // GET /api/auth/google/callback
-router.get('/google/callback',
+router.get('/google/callback', authLimiter,
     passport.authenticate('google', { session: false, failureRedirect: '/login?error=auth_failed' }),
     (req, res) => {
         const token = jwt.sign(
             { userId: req.user._id },
             JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '7d', issuer: 'kiip-study', audience: 'kiip-study-api' }
         );
 
         res.cookie('jwt', token, COOKIE_OPTIONS);

@@ -19,6 +19,7 @@ const PDFDocument = require('pdfkit');
 const mongoose  = require('mongoose');
 
 const router  = express.Router();
+const safeError = require('../utils/safeError');
 const Test    = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const { requireAuth } = require('../middleware/auth');
@@ -112,7 +113,7 @@ router.get('/test/:id', async (req, res) => {
     } catch (err) {
         console.error('[PDF] /test/:id error:', err);
         if (!res.headersSent) {
-            res.status(500).json({ message: 'Failed to generate PDF: ' + err.message });
+            res.status(500).json({ message: safeError('Failed to generate PDF', err) });
         }
     }
 });
@@ -171,7 +172,7 @@ router.get('/attempt/:attemptId', async (req, res) => {
     } catch (err) {
         console.error('[PDF] /attempt/:attemptId error:', err);
         if (!res.headersSent) {
-            res.status(500).json({ message: 'Failed to generate PDF: ' + err.message });
+            res.status(500).json({ message: safeError('Failed to generate PDF', err) });
         }
     }
 });

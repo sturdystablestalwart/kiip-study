@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import GlobalStyles from './theme/GlobalStyles';
 import { below } from './theme/breakpoints';
 import { ThemeModeProvider, useThemeMode } from './context/ThemeContext';
-import Home from './pages/Home';
-import TestTaker from './pages/TestTaker';
+const Home = React.lazy(() => import('./pages/Home'));
+const TestTaker = React.lazy(() => import('./pages/TestTaker'));
 import { AuthProvider, useAuth } from './context/AuthContext';
 import api from './utils/api';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -299,7 +299,8 @@ function Navigation({ onSearchClick }) {
   }, [user]);
 
   const cycleLang = () => {
-    const currentIdx = LANG_CYCLE.indexOf(i18n.language);
+    const baseLang = i18n.language.split('-')[0]; // 'en-US' -> 'en'
+    const currentIdx = LANG_CYCLE.indexOf(baseLang);
     const nextIdx = (currentIdx + 1) % LANG_CYCLE.length;
     i18n.changeLanguage(LANG_CYCLE[nextIdx]);
   };

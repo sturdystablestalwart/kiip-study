@@ -16,7 +16,7 @@ const autoImportTests = async (parseFunction) => {
         const fileName = path.parse(file).name;
 
         // Check if test already exists in DB
-        const existing = await Test.findOne({ title: { $regex: new RegExp(fileName, 'i') } });
+        const existing = await Test.findOne({ title: { $regex: new RegExp(fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } });
         if (existing) continue;
 
         console.log(`Auto-importing test: ${fileName}`);

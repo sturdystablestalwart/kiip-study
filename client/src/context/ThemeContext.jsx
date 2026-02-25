@@ -32,8 +32,10 @@ export function ThemeModeProvider({ children }) {
     });
   }, []);
 
+  const value = useMemo(() => ({ mode, isDark, cycleMode, theme }), [mode, isDark, cycleMode, theme]);
+
   return (
-    <ThemeContext.Provider value={{ mode, isDark, cycleMode, theme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

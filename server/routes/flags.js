@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Flag = require('../models/Flag');
 const { requireAuth } = require('../middleware/auth');
+const safeError = require('../utils/safeError');
 
 // POST /api/flags — Submit or update a flag
 router.post('/', requireAuth, async (req, res) => {
@@ -36,7 +37,7 @@ router.post('/', requireAuth, async (req, res) => {
 
         res.status(201).json(flag);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to submit flag: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to submit flag', err) });
     }
 });
 

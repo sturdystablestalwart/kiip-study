@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import jwt from 'jsonwebtoken';
 
 const TEST_SECRET = 'vitest-auth-secret-12345';
+const JWT_OPTS = { issuer: 'kiip-study', audience: 'kiip-study-api' };
 process.env.JWT_SECRET = TEST_SECRET;
 
 // Import the real User model, then spy on findById
@@ -52,7 +53,7 @@ describe('requireAuth', () => {
   });
 
   it('returns 401 for expired token', async () => {
-    const expiredToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { expiresIn: '-1s' });
+    const expiredToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { ...JWT_OPTS, expiresIn: '-1s' });
 
     const req = { cookies: { jwt: expiredToken } };
     const res = mockRes();
@@ -92,7 +93,7 @@ describe('requireAuth', () => {
   });
 
   it('returns 401 when user not found in database', async () => {
-    const validToken = jwt.sign({ userId: '507f1f77bcf86cd799439011' }, TEST_SECRET, { expiresIn: '1h' });
+    const validToken = jwt.sign({ userId: '507f1f77bcf86cd799439011' }, TEST_SECRET, { ...JWT_OPTS, expiresIn: '1h' });
     findByIdSpy.mockResolvedValue(null);
 
     const req = { cookies: { jwt: validToken } };
@@ -109,7 +110,7 @@ describe('requireAuth', () => {
 
   it('calls next and sets req.user when token is valid', async () => {
     const fakeUser = { _id: 'user123', email: 'test@test.com', isAdmin: false };
-    const validToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { expiresIn: '1h' });
+    const validToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { ...JWT_OPTS, expiresIn: '1h' });
     findByIdSpy.mockResolvedValue(fakeUser);
 
     const req = { cookies: { jwt: validToken } };

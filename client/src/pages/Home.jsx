@@ -592,6 +592,9 @@ const LoadMoreButton = styled.button`
   }
 `;
 
+const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
+const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
+
 /* ───────── Component ───────── */
 
 function Home() {
@@ -725,9 +728,6 @@ function Home() {
   const scorePercent = lastAttempt
     ? Math.round((lastAttempt.score / lastAttempt.totalQuestions) * 100)
     : 0;
-
-  const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
-  const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 
   return (
     <div>

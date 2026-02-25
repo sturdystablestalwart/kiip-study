@@ -6,6 +6,7 @@ const Attempt = require('../models/Attempt');
 const { scoreQuestion } = require('../utils/scoring');
 const { parseTextWithLLM } = require('../utils/llm');
 const { requireAuth } = require('../middleware/auth');
+const safeError = require('../utils/safeError');
 
 // ============================================
 // ROUTES
@@ -78,7 +79,7 @@ router.get('/', async (req, res) => {
 
         res.json({ tests, nextCursor, total });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch tests: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch tests', err) });
     }
 });
 
@@ -113,7 +114,7 @@ router.get('/attempts', requireAuth, async (req, res) => {
 
         res.json({ attempts: enriched, nextCursor });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch attempts: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch attempts', err) });
     }
 });
 
@@ -145,7 +146,7 @@ router.get('/recent-attempts', requireAuth, async (req, res) => {
 
         res.json(enriched);
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch recent attempts: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch recent attempts', err) });
     }
 });
 
@@ -195,22 +196,35 @@ router.get('/endless', requireAuth, async (req, res) => {
             remaining: pool.length - selected.length
         });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch endless questions: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch endless questions', err) });
     }
 });
 
-// POST save endless mode chunk attempt
+// POST save endless mode chunk attempt (server-side score verification)
 router.post('/endless/attempt', requireAuth, async (req, res) => {
     try {
         const { answers, duration, sourceQuestions } = req.body;
         if (!answers || !answers.length) {
             return res.status(400).json({ message: 'No answers provided' });
         }
+        if (!sourceQuestions || sourceQuestions.length !== answers.length) {
+            return res.status(400).json({ message: 'sourceQuestions must match answers length' });
+        }
 
+        // Collect unique test IDs and fetch actual questions from DB
+        const testIds = [...new Set(sourceQuestions.map(sq => sq?._sourceTestId).filter(Boolean))];
+        const tests = await Test.find({ _id: { $in: testIds } }).lean();
+        const testMap = Object.fromEntries(tests.map(t => [t._id.toString(), t]));
+
+        // Server-side score verification
         let score = 0;
-        const verifiedAnswers = answers.map(ans => {
-            if (ans.isCorrect) score++;
-            return ans;
+        const verifiedAnswers = answers.map((ans, i) => {
+            const sq = sourceQuestions[i];
+            const test = testMap[sq?._sourceTestId?.toString()];
+            const question = test?.questions?.[sq?._sourceIndex];
+            const isCorrect = question ? scoreQuestion(question, ans) : false;
+            if (isCorrect) score++;
+            return { ...ans, isCorrect };
         });
 
         const attempt = new Attempt({
@@ -227,7 +241,7 @@ router.post('/endless/attempt', requireAuth, async (req, res) => {
         const savedAttempt = await attempt.save();
         res.status(201).json(savedAttempt);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to save endless attempt: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to save endless attempt', err) });
     }
 });
 
@@ -241,7 +255,7 @@ router.get('/:id', async (req, res) => {
         if (err.name === 'CastError') {
             return res.status(404).json({ message: 'Test not found' });
         }
-        res.status(500).json({ message: 'Failed to fetch test: ' + err.message });
+        res.status(500).json({ message: safeError('Failed to fetch test', err) });
     }
 });
 
@@ -274,7 +288,7 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
         const savedAttempt = await attempt.save();
         res.status(201).json(savedAttempt);
     } catch (err) {
-        res.status(400).json({ message: 'Failed to save attempt: ' + err.message });
+        res.status(400).json({ message: safeError('Failed to save attempt', err) });
     }
 });
 
