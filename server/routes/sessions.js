@@ -34,7 +34,7 @@ router.post('/start', requireAuth, async (req, res) => {
         }
 
         // Verify the test exists before creating a session
-        const test = await Test.findById(testId).select('_id');
+        const test = await Test.findById(testId).select('_id').lean();
         if (!test) {
             return res.status(404).json({ message: 'Test not found' });
         }

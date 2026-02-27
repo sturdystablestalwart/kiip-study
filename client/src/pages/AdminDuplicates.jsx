@@ -74,7 +74,7 @@ const ScanButton = styled.button`
   height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[5]}px;
   background: ${({ theme }) => theme.colors.accent.indigo};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.onAccent};
   border: none;
   border-radius: ${({ theme }) => theme.layout.radius.md}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;

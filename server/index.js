@@ -53,13 +53,25 @@ app.use(helmet({
 }));
 
 // Custom NoSQL injection sanitizer (express-mongo-sanitize is incompatible with Express 5)
+// Recursively strips keys starting with '$' or containing '.' AND
+// removes values that are objects containing MongoDB operator keys
 app.use((req, _res, next) => {
+  const MONGO_OPS = new Set(['$gt','$gte','$lt','$lte','$ne','$in','$nin','$regex','$exists','$or','$and','$not','$nor','$where','$elemMatch','$size','$type','$mod','$text','$all']);
   const sanitize = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) { obj.forEach(sanitize); return obj; }
     for (const key of Object.keys(obj)) {
       if (key.startsWith('$') || key.includes('.')) {
         delete obj[key];
-      } else if (typeof obj[key] === 'object') {
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        // Check if the value itself contains MongoDB operators
+        if (!Array.isArray(obj[key])) {
+          const valueKeys = Object.keys(obj[key]);
+          if (valueKeys.some(k => MONGO_OPS.has(k))) {
+            delete obj[key];
+            continue;
+          }
+        }
         sanitize(obj[key]);
       }
     }
@@ -72,7 +84,14 @@ app.use((req, _res, next) => {
     for (const key of Object.keys(req.query)) {
       if (key.startsWith('$') || key.includes('.')) {
         delete req.query[key];
-      } else if (typeof req.query[key] === 'object') {
+      } else if (typeof req.query[key] === 'object' && req.query[key] !== null) {
+        if (!Array.isArray(req.query[key])) {
+          const valueKeys = Object.keys(req.query[key]);
+          if (valueKeys.some(k => MONGO_OPS.has(k))) {
+            delete req.query[key];
+            continue;
+          }
+        }
         sanitize(req.query[key]);
       }
     }

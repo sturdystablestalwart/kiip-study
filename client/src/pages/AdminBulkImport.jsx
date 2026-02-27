@@ -44,7 +44,7 @@ const TemplateButton = styled.button`
 
   &:hover {
     background: ${({ theme }) => theme.colors.accent.indigo};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.onAccent};
   }
 `;
 
@@ -151,7 +151,7 @@ const ConfirmButton = styled.button`
               transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
     transform: translateY(-1px);
   }
 

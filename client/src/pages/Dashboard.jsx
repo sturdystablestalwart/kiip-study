@@ -150,7 +150,7 @@ const HomeLink = styled(Link)`
   transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
     color: ${({ theme }) => theme.colors.bg.surface};
   }
 `;

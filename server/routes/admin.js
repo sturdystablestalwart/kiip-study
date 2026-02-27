@@ -148,7 +148,7 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
             targetType: 'Test',
             targetId: savedTest._id,
             details: { title: savedTest.title }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
         res.status(201).json(savedTest);
     } catch (err) {
         console.error("Text Generation Error:", err);
@@ -280,12 +280,11 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
             targetType: 'Test',
             targetId: savedTest._id,
             details: { title: savedTest.title }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
         res.status(201).json(savedTest);
     } catch (err) {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); }
+        catch (delErr) { console.error('File cleanup failed:', delErr.message); }
         console.error("File Generation Error:", err);
         res.status(400).json({ message: safeError('Failed to process document', err) });
     }
@@ -316,7 +315,7 @@ router.post('/tests/import', async (req, res) => {
             targetType: 'Test',
             targetId: savedTest._id,
             details: { title: savedTest.title }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
         res.status(201).json(savedTest);
     } catch (err) {
         res.status(400).json({ message: safeError('Failed to import test', err) });
@@ -346,7 +345,7 @@ router.patch('/tests/:id', async (req, res) => {
             targetType: 'Test',
             targetId: savedTest._id,
             details: { title: savedTest.title }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
         res.json(savedTest);
     } catch (err) {
         res.status(400).json({ message: safeError('Failed to update test', err) });
@@ -370,7 +369,7 @@ router.delete('/tests/:id', async (req, res) => {
             targetType: 'Test',
             targetId: req.params.id,
             details: { title: deletedTitle }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
 
         res.json({ message: 'Test deleted successfully' });
     } catch (err) {
@@ -449,7 +448,7 @@ router.patch('/flags/:id', async (req, res) => {
             targetType: 'Flag',
             targetId: flag._id,
             details: { resolution: resolution || '' }
-        }).catch(() => {});
+        }).catch(e => console.error('Audit log failed:', e.message));
 
         res.json(flag);
     } catch (err) {

@@ -29,7 +29,7 @@ const Tab = styled.button`
   border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent.indigo : theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.pill}px;
   background: ${({ $active, theme }) => $active ? theme.colors.accent.indigo : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.text.muted};
+  color: ${({ $active, theme }) => $active ? theme.colors.onAccent : theme.colors.text.muted};
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-family: inherit;
   cursor: pointer;
@@ -124,10 +124,10 @@ const ActionBtn = styled.button`
 
 const ResolveBtn = styled(ActionBtn)`
   background: ${({ theme }) => theme.colors.state.success};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.onAccent};
   border-color: ${({ theme }) => theme.colors.state.success};
 
-  &:hover { opacity: 0.85; border-color: ${({ theme }) => theme.colors.state.success}; color: #fff; }
+  &:hover { opacity: 0.85; border-color: ${({ theme }) => theme.colors.state.success}; color: ${({ theme }) => theme.colors.onAccent}; }
 `;
 
 const ResolutionInput = styled.input`

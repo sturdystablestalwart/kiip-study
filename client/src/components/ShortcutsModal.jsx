@@ -8,7 +8,7 @@ const Overlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(31, 35, 40, 0.45);
+  background: ${({ theme }) => theme.colors.scrim};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -49,10 +49,10 @@ const ShortcutLabel = styled.span`
 
 const Kbd = styled.kbd`
   display: inline-block;
-  padding: 2px ${({ theme }) => theme.layout.space[2]}px;
+  padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[2]}px;
   background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: 4px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-family: inherit;
   color: ${({ theme }) => theme.colors.text.muted};

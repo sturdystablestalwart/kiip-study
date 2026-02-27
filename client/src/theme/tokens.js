@@ -4,26 +4,30 @@ const lightColors = {
   bg: { canvas: '#F7F2E8', surface: '#FFFFFF', surfaceAlt: '#FAF7F1' },
   border: { subtle: '#E6DDCF' },
   text: { primary: '#1F2328', muted: '#5B5F64', faint: '#6B6F74' },
-  accent: { clay: '#A0634A', moss: '#657655', indigo: '#2A536D' },
+  accent: { clay: '#A0634A', clayHover: '#8B5340', moss: '#657655', indigo: '#2A536D' },
   state: {
     success: '#2F6B4F', warning: '#B07A2A', danger: '#B43A3A',
     infoBg: '#EEF3F5', correctBg: '#EEF5EF', wrongBg: '#F7EEEE',
   },
   focus: { ring: '#2A536D' },
   selection: { bg: '#F1E6D8' },
+  scrim: 'rgba(31, 35, 40, 0.45)',
+  onAccent: '#FFFFFF',
 };
 
 const darkColors = {
   bg: { canvas: '#1A1A1A', surface: '#242424', surfaceAlt: '#2C2C2C' },
   border: { subtle: '#3A3A3A' },
   text: { primary: '#E8E4DC', muted: '#9A9A9A', faint: '#6A6A6A' },
-  accent: { clay: '#C47A5E', moss: '#8A9B74', indigo: '#4A8BB0' },
+  accent: { clay: '#C47A5E', clayHover: '#A8654A', moss: '#8A9B74', indigo: '#4A8BB0' },
   state: {
     success: '#4A9B6F', warning: '#D4A03A', danger: '#D45A5A',
     infoBg: '#1E2A2F', correctBg: '#1E2F1E', wrongBg: '#2F1E1E',
   },
   focus: { ring: '#4A8BB0' },
   selection: { bg: '#3A2E20' },
+  scrim: 'rgba(0, 0, 0, 0.6)',
+  onAccent: '#FFFFFF',
 };
 
 /* ─── Shared (theme-agnostic) ─── */

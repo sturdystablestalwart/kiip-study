@@ -64,7 +64,7 @@ const StartButton = styled.button`
               transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover:not(:disabled) {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
     transform: translateY(-1px);
   }
 

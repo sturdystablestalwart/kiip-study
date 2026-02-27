@@ -1,7 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
 const { requireAuth } = require('../middleware/auth');
+
+// Rate limit public share endpoint to prevent brute-force enumeration
+const shareLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
+});
 
 // POST /api/tests/:id/share — generate share ID (requires auth)
 router.post('/:id/share', requireAuth, async (req, res) => {
@@ -24,7 +34,7 @@ router.post('/:id/share', requireAuth, async (req, res) => {
 });
 
 // GET /api/shared/:shareId — public test view (no auth required)
-router.get('/:shareId', async (req, res) => {
+router.get('/:shareId', shareLimiter, async (req, res) => {
   try {
     const test = await Test.findOne({ shareId: req.params.shareId });
     if (!test) return res.status(404).json({ error: 'Test not found' });

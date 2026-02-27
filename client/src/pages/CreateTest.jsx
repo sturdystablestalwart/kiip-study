@@ -128,7 +128,7 @@ const RemoveImageButton = styled.button`
   position: absolute;
   top: 4px;
   right: 4px;
-  background: rgba(31, 35, 40, 0.55);
+  background: ${({ theme }) => theme.colors.scrim};
   color: ${({ theme }) => theme.colors.bg.surface};
   border: none;
   border-radius: 50%;
@@ -224,7 +224,7 @@ const SubmitButton = styled.button`
               transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover:not(:disabled) {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
     transform: translateY(-1px);
   }
 

@@ -69,7 +69,7 @@ const StartButton = styled(Link)`
               transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
     color: ${({ theme }) => theme.colors.bg.surface};
     transform: translateY(-1px);
   }

@@ -11,7 +11,7 @@ const Overlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(31, 35, 40, 0.45);
+  background: ${({ theme }) => theme.colors.scrim};
   display: flex;
   justify-content: center;
   padding-top: 15vh;

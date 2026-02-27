@@ -95,7 +95,7 @@ const NavSearchTrigger = styled.button`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[2]}px;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[4]}px;
   background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
@@ -117,7 +117,7 @@ const NavSearchTrigger = styled.button`
     min-width: 140px;
   }
   ${below.mobile} {
-    min-width: unset;
+    min-width: ${({ theme }) => theme.layout.controlHeights.button}px;
     padding: 0 ${({ theme }) => theme.layout.space[3]}px;
     font-size: 0;
     gap: 0;
@@ -151,7 +151,7 @@ const SignInButton = styled.a`
   height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[5]}px;
   background: ${({ theme }) => theme.colors.accent.indigo};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.onAccent};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-weight: 550;
@@ -184,11 +184,11 @@ const Badge = styled.span`
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 ${({ theme }) => theme.layout.space[1]}px;
   border-radius: ${({ theme }) => theme.layout.radius.pill}px;
   background: ${({ theme }) => theme.colors.state.warning};
-  color: #fff;
-  font-size: 11px;
+  color: ${({ theme }) => theme.colors.onAccent};
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   font-weight: 600;
   margin-left: ${({ theme }) => theme.layout.space[1]}px;
 `;
@@ -197,13 +197,13 @@ const ThemeToggle = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: ${({ theme }) => theme.layout.controlHeights.button}px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 16px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
   cursor: pointer;
   transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
               background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
@@ -220,7 +220,7 @@ const LangToggle = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;

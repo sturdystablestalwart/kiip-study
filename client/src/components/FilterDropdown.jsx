@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Select = styled.select`
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;

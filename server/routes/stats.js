@@ -82,7 +82,10 @@ router.get('/', requireAuth, async (req, res) => {
     // Unit breakdown
     const unitBreakdown = await Attempt.aggregate([
         { $match: { ...matchStage, testId: { $exists: true, $ne: null } } },
-        { $lookup: { from: 'tests', localField: 'testId', foreignField: '_id', as: 'test' } },
+        { $lookup: {
+            from: 'tests', localField: 'testId', foreignField: '_id', as: 'test',
+            pipeline: [{ $project: { unit: 1, level: 1 } }]
+        } },
         { $unwind: '$test' },
         ...(level ? [{ $match: { 'test.level': level } }] : []),
         {

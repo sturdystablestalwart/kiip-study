@@ -91,7 +91,7 @@ const GlobalStyles = createGlobalStyle`
   :focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   }
 
   :focus:not(:focus-visible) {

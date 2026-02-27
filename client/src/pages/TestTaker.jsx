@@ -219,7 +219,7 @@ const SubmitButton = styled(NavButton)`
   border: none;
 
   &:hover:not(:disabled) {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
   }
 `;
 
@@ -233,7 +233,7 @@ const BackToTestsButton = styled(NavButton)`
   justify-content: center;
 
   &:hover:not(:disabled) {
-    background: #8B5340;
+    background: ${({ theme }) => theme.colors.accent.clayHover};
   }
 `;
 
@@ -333,7 +333,7 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(31, 35, 40, 0.45);
+  background: ${({ theme }) => theme.colors.scrim};
   display: flex;
   align-items: center;
   justify-content: center;
