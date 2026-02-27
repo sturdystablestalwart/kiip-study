@@ -132,7 +132,7 @@ const NavSearchTrigger = styled.button`
 const SearchHint = styled.span`
   margin-left: auto;
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
-  opacity: 0.6;
+  color: ${({ theme }) => theme.colors.text.muted};
 
   ${below.mobile} {
     display: none;

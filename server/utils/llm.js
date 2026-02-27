@@ -1,6 +1,10 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+    console.error('WARNING: GEMINI_API_KEY is not set — AI generation will fail');
+}
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || 'missing');
 
 const parseTextWithLLM = async (text) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });

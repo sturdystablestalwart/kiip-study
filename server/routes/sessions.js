@@ -165,7 +165,8 @@ router.get('/active', requireAuth, async (req, res) => {
         })
             .populate('testId', 'title category level unit')
             .sort({ lastSavedAt: -1 })
-            .limit(5);
+            .limit(5)
+            .lean();
 
         return res.status(200).json({ sessions });
     } catch (err) {

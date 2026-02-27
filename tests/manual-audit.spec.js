@@ -221,14 +221,14 @@ test.describe('Theme & Language — Full Audit', () => {
     await page.goto(BASE_URL);
     await page.waitForTimeout(500);
 
-    const validLangs = ['EN', 'KO', 'RU', 'ES'];
+    const validLangs = ['EN', '한국어', 'РУ', 'ES'];
 
     // Use aria-label since button text changes on each click
     const langBtn = page.getByRole('button', { name: /change language/i }).first();
     let found = await langBtn.count() > 0;
     if (!found) {
       // Fallback: find by text
-      const fallback = page.locator('button').filter({ hasText: /^(EN|KO|RU|ES)$/ }).first();
+      const fallback = page.locator('button').filter({ hasText: /^(EN|한국어|РУ|ES)$/ }).first();
       found = await fallback.count() > 0;
     }
 

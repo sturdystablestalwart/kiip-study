@@ -17,7 +17,7 @@ const ToastContainer = styled.div`
   bottom: ${({ theme }) => theme.layout.space[6]}px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 9999;
+  z-index: ${({ theme }) => theme.zIndex.toast};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.layout.space[3]}px;
@@ -50,14 +50,19 @@ const DismissButton = styled.button`
   border: none;
   color: ${({ theme }) => theme.colors.text.faint};
   cursor: pointer;
-  padding: 2px;
-  font-size: 16px;
+  padding: ${({ theme }) => theme.layout.space[2]}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
   line-height: 1;
   flex-shrink: 0;
   font-family: inherit;
   transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
+    outline-offset: 2px;
+  }
 `;
 
 let toastIdCounter = 0;

@@ -79,7 +79,7 @@ router.get('/google/callback', authLimiter,
         const token = jwt.sign(
             { userId: req.user._id },
             JWT_SECRET,
-            { expiresIn: '7d', issuer: 'kiip-study', audience: 'kiip-study-api' }
+            { expiresIn: '7d', issuer: 'kiip-study', audience: 'kiip-study-api', algorithm: 'HS256' }
         );
 
         res.cookie('jwt', token, COOKIE_OPTIONS);

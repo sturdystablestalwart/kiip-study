@@ -54,7 +54,7 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ $hasError, theme }) => $hasError ? theme.colors.state.danger : theme.colors.accent.indigo};
-    box-shadow: 0 0 0 3px ${({ $hasError }) => $hasError ? 'rgba(180,58,58,0.12)' : 'rgba(42,83,109,0.12)'};
+    box-shadow: 0 0 0 3px ${({ $hasError, theme }) => $hasError ? theme.colors.focusDanger.shadow : theme.colors.focus.shadow};
   }
 `;
 
@@ -86,7 +86,7 @@ const FileInput = styled.input`
   color: ${({ theme }) => theme.colors.text.muted};
 
   &::file-selector-button {
-    height: 36px;
+    height: ${({ theme }) => theme.layout.controlHeights.button}px;
     padding: 0 ${({ theme }) => theme.layout.space[4]}px;
     border: 1px solid ${({ theme }) => theme.colors.border.subtle};
     border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -126,24 +126,29 @@ const PreviewImage = styled.img`
 
 const RemoveImageButton = styled.button`
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: ${({ theme }) => theme.layout.space[1]}px;
+  right: ${({ theme }) => theme.layout.space[1]}px;
   background: ${({ theme }) => theme.colors.scrim};
   color: ${({ theme }) => theme.colors.bg.surface};
   border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   line-height: 1;
   transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
     background: ${({ theme }) => theme.colors.state.danger};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
+    outline-offset: 2px;
   }
 `;
 
@@ -200,13 +205,18 @@ const ClearFileButton = styled.button`
   border: none;
   color: ${({ theme }) => theme.colors.text.faint};
   cursor: pointer;
-  font-size: 1.2rem;
-  padding: 4px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  padding: ${({ theme }) => theme.layout.space[2]}px;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
     color: ${({ theme }) => theme.colors.state.danger};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
+    outline-offset: 2px;
   }
 `;
 
@@ -501,9 +511,10 @@ function CreateTest() {
             onChange={handleImageUpload}
             accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff"
             disabled={!!file || uploadingImages || images.length >= MAX_IMAGES}
+            aria-label="Upload images"
           />
           {uploadingImages && <UploadProgress>Uploading...</UploadProgress>}
-          {uploadError && <ErrorBanner style={{ marginTop: '8px' }}>{uploadError}</ErrorBanner>}
+          {uploadError && <ErrorBanner>{uploadError}</ErrorBanner>}
           <ImagePreviewGrid>
             {images.map((url, i) => (
               <PreviewImageContainer key={i}>
@@ -536,6 +547,7 @@ function CreateTest() {
             onChange={handleFileChange}
             accept=".pdf,.docx,.txt,.md"
             disabled={text.trim().length > 0}
+            aria-label="Upload document"
           />
         )}
       </Section>

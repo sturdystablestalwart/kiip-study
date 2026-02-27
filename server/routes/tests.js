@@ -94,7 +94,9 @@ router.get('/attempts', requireAuth, async (req, res) => {
             match._id = { $lt: new mongoose.Types.ObjectId(cursor) };
         }
 
-        const attempts = await Attempt.find(match)
+        const attempts = await Attempt.find(match, {
+            score: 1, totalQuestions: 1, mode: 1, createdAt: 1, testId: 1, userId: 1, duration: 1
+        })
             .sort({ createdAt: -1 })
             .limit(limit + 1)
             .lean();

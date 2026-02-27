@@ -105,10 +105,10 @@ const CardNoAttempt = styled.div`
 
 const DeleteButton = styled.button`
   position: absolute;
-  top: ${({ theme }) => theme.layout.space[3]}px;
-  right: ${({ theme }) => theme.layout.space[3]}px;
-  width: 32px;
-  height: 32px;
+  top: ${({ theme }) => theme.layout.space[2]}px;
+  right: ${({ theme }) => theme.layout.space[2]}px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,7 +117,7 @@ const DeleteButton = styled.button`
   color: ${({ theme }) => theme.colors.text.faint};
   cursor: pointer;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: 1.1rem;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
   transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
               background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
@@ -125,20 +125,25 @@ const DeleteButton = styled.button`
     color: ${({ theme }) => theme.colors.state.danger};
     background: ${({ theme }) => theme.colors.state.wrongBg};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
+    outline-offset: 2px;
+  }
 `;
 
 const EditButton = styled(Link)`
   position: absolute;
-  top: ${({ theme }) => theme.layout.space[3]}px;
+  top: ${({ theme }) => theme.layout.space[2]}px;
   right: ${({ theme }) => theme.layout.space[8]}px;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   color: ${({ theme }) => theme.colors.text.faint};
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   text-decoration: none;
   transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
               background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
@@ -147,13 +152,18 @@ const EditButton = styled(Link)`
     color: ${({ theme }) => theme.colors.accent.indigo};
     background: ${({ theme }) => theme.colors.selection.bg};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.focus.ring};
+    outline-offset: 2px;
+  }
 `;
 
 const ExportLink = styled.a`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[1]}px;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -174,7 +184,7 @@ const ShareButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[1]}px;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -244,7 +254,7 @@ const RetryButton = styled.button`
   background: ${({ theme }) => theme.colors.state.danger};
   color: ${({ theme }) => theme.colors.bg.surface};
   border: none;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[4]}px;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   cursor: pointer;
@@ -276,7 +286,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: ${({ theme }) => theme.zIndex.modal};
 `;
 
 const ModalCard = styled.div`
@@ -427,7 +437,7 @@ const RecentScore = styled.span`
 const RecentLabel = styled.span`
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   color: ${({ theme }) => theme.colors.text.faint};
-  margin-top: 2px;
+  margin-top: ${({ theme }) => theme.layout.space[1]}px;
 `;
 
 const EndlessCard = styled(Link)`
@@ -529,12 +539,12 @@ const SessionTitle = styled.p`
 const SessionMeta = styled.p`
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   color: ${({ theme }) => theme.colors.text.faint};
-  margin: 2px 0 0 0;
+  margin: ${({ theme }) => theme.layout.space[1]}px 0 0 0;
 `;
 
 const SessionBadge = styled.span`
   flex-shrink: 0;
-  padding: 2px 8px;
+  padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[2]}px;
   border-radius: ${({ theme }) => theme.layout.radius.pill}px;
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};

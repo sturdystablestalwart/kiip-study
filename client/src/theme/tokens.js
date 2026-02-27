@@ -9,7 +9,8 @@ const lightColors = {
     success: '#2F6B4F', warning: '#B07A2A', danger: '#B43A3A',
     infoBg: '#EEF3F5', correctBg: '#EEF5EF', wrongBg: '#F7EEEE',
   },
-  focus: { ring: '#2A536D' },
+  focus: { ring: '#2A536D', shadow: 'rgba(42,83,109,0.12)' },
+  focusDanger: { shadow: 'rgba(180,58,58,0.12)' },
   selection: { bg: '#F1E6D8' },
   scrim: 'rgba(31, 35, 40, 0.45)',
   onAccent: '#FFFFFF',
@@ -24,7 +25,8 @@ const darkColors = {
     success: '#4A9B6F', warning: '#D4A03A', danger: '#D45A5A',
     infoBg: '#1E2A2F', correctBg: '#1E2F1E', wrongBg: '#2F1E1E',
   },
-  focus: { ring: '#4A8BB0' },
+  focus: { ring: '#4A8BB0', shadow: 'rgba(74,139,176,0.18)' },
+  focusDanger: { shadow: 'rgba(212,90,90,0.18)' },
   selection: { bg: '#3A2E20' },
   scrim: 'rgba(0, 0, 0, 0.6)',
   onAccent: '#FFFFFF',
@@ -64,6 +66,15 @@ const shared = {
     fastMs: 120,
     baseMs: 160,
     ease: 'ease-out',
+  },
+
+  zIndex: {
+    dropdown: 100,
+    sticky: 500,
+    modal: 1000,
+    overlay: 1500,
+    palette: 2000,
+    toast: 9999,
   },
 };
 

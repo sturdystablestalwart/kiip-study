@@ -66,13 +66,15 @@ function streamPdf(res, filename, contentFn) {
 
     try {
         contentFn(doc);
-    } catch (err) {
-        // If content generation throws, end the stream cleanly and propagate
         doc.end();
-        throw err;
+    } catch (err) {
+        // If content generation throws mid-stream, end gracefully
+        if (!res.headersSent) {
+            doc.end();
+            throw err;
+        }
+        doc.end();
     }
-
-    doc.end();
 }
 
 // ---------------------------------------------------------------------------
@@ -139,12 +141,9 @@ router.get('/attempt/:attemptId', async (req, res) => {
             return res.status(404).json({ message: 'Attempt not found' });
         }
 
-        // Ownership check — users may only download their own attempts
-        // (admins bypass this check because req.user.isAdmin is set)
+        // Ownership check — users may only download their own attempts (admins bypass)
         if (!req.user.isAdmin) {
-            const attemptUserId = attempt.userId ? attempt.userId.toString() : null;
-            const requestUserId = req.user._id ? req.user._id.toString() : null;
-            if (attemptUserId && requestUserId && attemptUserId !== requestUserId) {
+            if (!attempt.userId || attempt.userId.toString() !== req.user._id.toString()) {
                 return res.status(403).json({ message: 'Access denied' });
             }
         }

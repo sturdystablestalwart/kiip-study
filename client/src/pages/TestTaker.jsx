@@ -180,7 +180,7 @@ const Controls = styled.div`
     padding: ${({ theme }) => theme.layout.space[3]}px;
     background: ${({ theme }) => theme.colors.bg.surface};
     border-top: 1px solid ${({ theme }) => theme.colors.border.subtle};
-    z-index: 100;
+    z-index: ${({ theme }) => theme.zIndex.dropdown};
   }
 `;
 
@@ -337,7 +337,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: ${({ theme }) => theme.zIndex.modal};
 `;
 
 const ModalCard = styled.div`

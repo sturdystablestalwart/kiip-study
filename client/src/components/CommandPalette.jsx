@@ -15,7 +15,7 @@ const Overlay = styled.div`
   display: flex;
   justify-content: center;
   padding-top: 15vh;
-  z-index: 2000;
+  z-index: ${({ theme }) => theme.zIndex.palette};
 `;
 
 const Panel = styled.div`

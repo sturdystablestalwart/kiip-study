@@ -461,7 +461,9 @@ router.get('/audit', async (req, res) => {
     try {
         const { cursor, limit: rawLimit } = req.query;
         const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 50);
-        const query = cursor ? { _id: { $lt: cursor } } : {};
+        const query = cursor && mongoose.Types.ObjectId.isValid(cursor)
+            ? { _id: { $lt: new mongoose.Types.ObjectId(cursor) } }
+            : {};
         const logs = await AuditLog.find(query)
             .sort({ _id: -1 })
             .limit(limit + 1)

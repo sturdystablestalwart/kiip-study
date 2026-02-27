@@ -164,7 +164,7 @@ const QuestionCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   box-shadow: ${({ theme }) => theme.layout.shadow.sm};
 
-  @media (max-width: 600px) {
+  @media (max-width: ${({ theme }) => theme.layout.breakpoints.tablet}px) {
     padding: ${({ theme }) => theme.layout.space[5]}px;
   }
 `;
