@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Flag = require('../models/Flag');
 const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
@@ -11,6 +12,10 @@ router.post('/', requireAuth, async (req, res) => {
 
         if (!testId || !reason) {
             return res.status(400).json({ message: 'testId and reason are required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(testId)) {
+            return res.status(400).json({ message: 'Invalid testId' });
         }
 
         const validReasons = ['incorrect-answer', 'unclear-question', 'typo', 'other'];

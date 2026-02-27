@@ -80,7 +80,7 @@ function ShortcutsModal({ onClose }) {
   }, [onClose]);
 
   return (
-    <Overlay onClick={onClose}>
+    <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
       <Panel ref={panelRef} onClick={e => e.stopPropagation()}>
         <Title>{t('shortcuts.title')}</Title>
         {shortcuts.map(({ keys, labelKey }) => (

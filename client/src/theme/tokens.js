@@ -58,7 +58,7 @@ const shared = {
       sm: '0 1px 2px rgba(20,20,20,0.06)',
       md: '0 6px 18px rgba(20,20,20,0.10)',
     },
-    controlHeights: { button: 44, input: 48 },
+    controlHeights: { button: 44, input: 48, compact: 36 },
     breakpoints: { mobile: 480, tablet: 768, laptop: 1024 },
   },
 

@@ -917,7 +917,7 @@ function Home() {
       )}
 
       {deleteModal.show && (
-        <ModalOverlay onClick={cancelDelete}>
+        <ModalOverlay onClick={cancelDelete} role="dialog" aria-modal="true" aria-label="Delete confirmation">
           <ModalCard onClick={e => e.stopPropagation()}>
             <h3>Remove this test?</h3>
             <p>

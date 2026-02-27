@@ -36,18 +36,19 @@ router.post('/:id/share', requireAuth, async (req, res) => {
 // GET /api/shared/:shareId — public test view (no auth required)
 router.get('/:shareId', shareLimiter, async (req, res) => {
   try {
-    const test = await Test.findOne({ shareId: req.params.shareId });
+    const results = await Test.aggregate([
+      { $match: { shareId: req.params.shareId } },
+      { $limit: 1 },
+      { $project: {
+        title: 1, description: 1, level: 1, unit: 1, shareId: 1,
+        questionCount: { $size: '$questions' }
+      }},
+    ]);
+    const test = results[0];
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    res.json({
-      _id: test._id,
-      title: test.title,
-      description: test.description,
-      level: test.level,
-      unit: test.unit,
-      questionCount: test.questions.length,
-      shareId: test.shareId,
-    });
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(test);
   } catch (err) {
     console.error('Error fetching shared test:', err);
     res.status(500).json({ error: 'Failed to fetch shared test' });

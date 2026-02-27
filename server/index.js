@@ -61,13 +61,14 @@ app.use(helmet({
 // Custom NoSQL injection sanitizer (express-mongo-sanitize is incompatible with Express 5)
 // Recursively strips keys starting with '$' or containing '.' AND
 // removes values that are objects containing MongoDB operator keys
-app.use((req, _res, next) => {
+app.use('/api', (req, _res, next) => {
   const MONGO_OPS = new Set(['$gt','$gte','$lt','$lte','$ne','$in','$nin','$regex','$exists','$or','$and','$not','$nor','$where','$elemMatch','$size','$type','$mod','$text','$all']);
+  const PROTO_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   const sanitize = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
     if (Array.isArray(obj)) { obj.forEach(sanitize); return obj; }
     for (const key of Object.keys(obj)) {
-      if (key.startsWith('$') || key.includes('.')) {
+      if (PROTO_KEYS.has(key) || key.startsWith('$') || key.includes('.')) {
         delete obj[key];
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
         // Check if the value itself contains MongoDB operators
@@ -107,7 +108,10 @@ app.use((req, _res, next) => {
 
 // Serve uploaded images (auth-gated for documents/temp, public for images)
 const { requireAuth } = require('./middleware/auth');
-app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images'), {
+    maxAge: '7d',
+    immutable: true,
+}));
 app.use('/uploads/documents', requireAuth, express.static(path.join(__dirname, 'uploads/documents')));
 // Do NOT serve /uploads/temp — temp files are internal only
 

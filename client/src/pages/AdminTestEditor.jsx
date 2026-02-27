@@ -14,6 +14,7 @@ const BackLink = styled.button`
   cursor: pointer;
   padding: 0;
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
   &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
 `;
 
@@ -52,6 +53,12 @@ const MetaInput = styled.input`
   font-family: inherit;
   color: ${({ theme }) => theme.colors.text.primary};
   background: ${({ theme }) => theme.colors.bg.surface};
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const DescTextarea = styled.textarea`
@@ -66,6 +73,12 @@ const DescTextarea = styled.textarea`
   background: ${({ theme }) => theme.colors.bg.surface};
   resize: vertical;
   margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const QuestionCard = styled.div`
@@ -85,12 +98,12 @@ const QuestionHeader = styled.div`
 
 const QuestionNum = styled.span`
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-weight: 600;
+  font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
 const TypeSelect = styled.select`
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.compact}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -104,9 +117,10 @@ const DeleteQBtn = styled.button`
   background: none;
   border: none;
   color: ${({ theme }) => theme.colors.text.faint};
-  font-size: 18px;
+  font-size: ${({ theme }) => theme.typography.scale.h3.size}px;
   cursor: pointer;
   padding: ${({ theme }) => theme.layout.space[1]}px;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
   &:hover { color: ${({ theme }) => theme.colors.state.danger}; }
 `;
 
@@ -122,6 +136,12 @@ const QTextarea = styled.textarea`
   background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   resize: vertical;
   margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const OptionRow = styled.div`
@@ -135,17 +155,25 @@ const OptionCheck = styled.input`
   width: 18px;
   height: 18px;
   cursor: pointer;
+  accent-color: ${({ theme }) => theme.colors.accent.indigo};
 `;
 
 const OptionInput = styled.input`
   flex: 1;
-  height: 36px;
+  height: ${({ theme }) => theme.layout.controlHeights.compact}px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-family: inherit;
   color: ${({ theme }) => theme.colors.text.primary};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const SmallBtn = styled.button`
@@ -195,10 +223,11 @@ const ChipRemove = styled.button`
   background: none;
   border: none;
   color: inherit;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
   &:hover { opacity: 0.7; }
 `;
 
@@ -214,6 +243,12 @@ const ExplanationInput = styled.textarea`
   background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   resize: vertical;
   margin-top: ${({ theme }) => theme.layout.space[3]}px;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const BottomBar = styled.div`
@@ -238,7 +273,7 @@ const SaveBtn = styled.button`
   cursor: pointer;
   transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
   &:hover { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: default; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 const ErrorMsg = styled.p`
@@ -256,6 +291,12 @@ const SectionLabel = styled.label`
 
 const BlankSection = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const OrderNum = styled.span`
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  min-width: 20px;
 `;
 
 const QUESTION_TYPES = [
@@ -429,15 +470,15 @@ function AdminTestEditor() {
         <div>
             <BackLink onClick={() => navigate('/')}>&larr; {t('test.goHome')}</BackLink>
 
-            <TitleInput value={title} onChange={e => setTitle(e.target.value)} placeholder="Test title" />
+            <TitleInput value={title} onChange={e => setTitle(e.target.value)} placeholder="Test title" aria-label="Test title" />
 
             <MetaRow>
-                <MetaInput value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" />
-                <MetaInput value={level} onChange={e => setLevel(e.target.value)} placeholder="Level (e.g. Level 2)" />
-                <MetaInput value={unit} onChange={e => setUnit(e.target.value)} placeholder="Unit (e.g. Unit 5)" />
+                <MetaInput value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" aria-label="Category" />
+                <MetaInput value={level} onChange={e => setLevel(e.target.value)} placeholder="Level (e.g. Level 2)" aria-label="Level" />
+                <MetaInput value={unit} onChange={e => setUnit(e.target.value)} placeholder="Unit (e.g. Unit 5)" aria-label="Unit" />
             </MetaRow>
 
-            <DescTextarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" />
+            <DescTextarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" aria-label="Description" />
 
             {error && <ErrorMsg>{error}</ErrorMsg>}
 
@@ -445,7 +486,7 @@ function AdminTestEditor() {
                 <QuestionCard key={qIdx}>
                     <QuestionHeader>
                         <QuestionNum>Q{qIdx + 1}</QuestionNum>
-                        <TypeSelect value={q.type || 'mcq-single'} onChange={e => changeType(qIdx, e.target.value)}>
+                        <TypeSelect value={q.type || 'mcq-single'} onChange={e => changeType(qIdx, e.target.value)} aria-label={`Question ${qIdx + 1} type`}>
                             {QUESTION_TYPES.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
                             ))}
@@ -455,7 +496,7 @@ function AdminTestEditor() {
                         </DeleteQBtn>
                     </QuestionHeader>
 
-                    <QTextarea value={q.text} onChange={e => updateQuestion(qIdx, { text: e.target.value })} placeholder="Question text" />
+                    <QTextarea value={q.text} onChange={e => updateQuestion(qIdx, { text: e.target.value })} placeholder="Question text" aria-label={`Question ${qIdx + 1} text`} />
 
                     {(q.type === 'mcq-single' || q.type === 'mcq-multiple') && (
                         <>
@@ -504,7 +545,7 @@ function AdminTestEditor() {
                             <SectionLabel>Items (in correct order)</SectionLabel>
                             {(q.options || []).map((opt, oIdx) => (
                                 <OptionRow key={oIdx}>
-                                    <span style={{ color: '#7B8086', fontSize: 12, minWidth: 20 }}>{oIdx + 1}.</span>
+                                    <OrderNum>{oIdx + 1}.</OrderNum>
                                     <OptionInput value={opt.text} onChange={e => updateOption(qIdx, oIdx, { text: e.target.value })} placeholder={`Item ${oIdx + 1}`} />
                                     <SmallBtn onClick={() => removeOption(qIdx, oIdx)}>&times;</SmallBtn>
                                 </OptionRow>

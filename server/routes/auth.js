@@ -50,6 +50,13 @@ passport.use(new GoogleStrategy({
                 });
             }
 
+            // Sync admin status on every login (allows revoking/granting via env var)
+            const shouldBeAdmin = email === process.env.ADMIN_EMAIL;
+            if (user.isAdmin !== shouldBeAdmin) {
+                user.isAdmin = shouldBeAdmin;
+                await user.save();
+            }
+
             return done(null, user);
         } catch (err) {
             return done(err);
@@ -119,7 +126,12 @@ router.patch('/preferences', requireAuth, async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-    res.clearCookie('jwt', { path: '/' });
+    res.clearCookie('jwt', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+    });
     res.json({ message: 'Logged out' });
 });
 

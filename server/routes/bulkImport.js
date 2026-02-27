@@ -82,7 +82,7 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
     const preview = validateAndGroup(rows);
 
     // Check duplicates against existing tests
-    const existingTests = await Test.find({}).lean();
+    const existingTests = await Test.find({}, { title: 1, 'questions.text': 1 }).lean();
     const existingQuestions = [];
     for (const t of existingTests) {
       for (const q of t.questions) {

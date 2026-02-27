@@ -993,7 +993,7 @@ function TestTaker() {
       </QuestionCard>
 
       {showExitModal && (
-        <ModalOverlay onClick={cancelExit}>
+        <ModalOverlay onClick={cancelExit} role="dialog" aria-modal="true" aria-label={t('test.confirmExit')}>
           <ModalCard onClick={e => e.stopPropagation()}>
             <h3>{t('test.confirmExit')}</h3>
             <p></p>
@@ -1006,7 +1006,7 @@ function TestTaker() {
       )}
 
       {showModeModal && (
-        <ModalOverlay onClick={cancelModeChange}>
+        <ModalOverlay onClick={cancelModeChange} role="dialog" aria-modal="true" aria-label={t('test.confirmModeSwitch')}>
           <ModalCard onClick={e => e.stopPropagation()}>
             <h3>{t('test.confirmModeSwitch')}</h3>
             <p></p>
@@ -1019,7 +1019,7 @@ function TestTaker() {
       )}
 
       {showFlagModal && (
-        <ModalOverlay onClick={() => setShowFlagModal(false)}>
+        <ModalOverlay onClick={() => setShowFlagModal(false)} role="dialog" aria-modal="true" aria-label={t('flag.title')}>
           <ModalCard onClick={e => e.stopPropagation()}>
             <h3>{t('flag.title')}</h3>
             {flagSuccess ? (

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TestSession = require('../models/TestSession');
 const Attempt = require('../models/Attempt');
 const Test = require('../models/Test');
@@ -16,6 +17,10 @@ router.post('/start', requireAuth, async (req, res) => {
 
         if (!testId || !mode) {
             return res.status(400).json({ message: 'testId and mode are required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(testId)) {
+            return res.status(400).json({ message: 'Invalid testId' });
         }
 
         if (!['Test', 'Practice'].includes(mode)) {

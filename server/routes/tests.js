@@ -23,8 +23,8 @@ router.get('/', async (req, res) => {
         if (q && q.trim()) {
             match.$text = { $search: q.trim() };
         }
-        if (level) match.level = level;
-        if (unit) match.unit = unit;
+        if (level && typeof level === 'string') match.level = level;
+        if (unit && typeof unit === 'string') match.unit = unit;
 
         // Cursor pagination: fetch items older than cursor
         if (cursor) {
@@ -124,7 +124,10 @@ router.get('/attempts', requireAuth, async (req, res) => {
 router.get('/recent-attempts', requireAuth, async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 5, 20);
-        const attempts = await Attempt.find({ userId: req.user._id })
+        const attempts = await Attempt.find(
+            { userId: req.user._id },
+            { score: 1, totalQuestions: 1, mode: 1, createdAt: 1, testId: 1, duration: 1 }
+        )
             .sort({ createdAt: -1 })
             .limit(limit)
             .lean();
@@ -163,8 +166,8 @@ router.get('/endless', requireAuth, async (req, res) => {
 
         // Build match for tests
         const match = {};
-        if (level) match.level = level;
-        if (unit) match.unit = unit;
+        if (level && typeof level === 'string') match.level = level;
+        if (unit && typeof unit === 'string') match.unit = unit;
 
         // Fetch matching tests with their questions
         const tests = await Test.find(match, { questions: 1, title: 1 }).lean();
@@ -250,7 +253,7 @@ router.post('/endless/attempt', requireAuth, async (req, res) => {
 // GET specific test
 router.get('/:id', async (req, res) => {
     try {
-        const test = await Test.findById(req.params.id);
+        const test = await Test.findById(req.params.id).lean();
         if (!test) return res.status(404).json({ message: 'Test not found' });
         res.json(test);
     } catch (err) {

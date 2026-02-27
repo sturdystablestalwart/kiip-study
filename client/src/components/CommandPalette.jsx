@@ -174,7 +174,7 @@ function CommandPalette({ onClose }) {
   };
 
   return (
-    <Overlay onClick={onClose}>
+    <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label="Command palette">
       <Panel onClick={e => e.stopPropagation()}>
         <SearchInput
           ref={inputRef}
