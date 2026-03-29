@@ -6,6 +6,26 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const rateLimit = require('express-rate-limit');
 const { requireAuth, JWT_SECRET } = require('../middleware/auth');
+const crypto = require('crypto');
+const MagicLink = require('../models/MagicLink');
+const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
+
+const magicLinkLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests, please try again later.' },
+});
+
+const magicLinkEmailLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 3,
+    keyGenerator: (req) => req.body?.email || req.ip,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests for this email, please try again later.' },
+});
 
 const authLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -46,7 +66,8 @@ passport.use(new GoogleStrategy({
                     googleId: profile.id,
                     email,
                     displayName: profile.displayName || email.split('@')[0],
-                    isAdmin
+                    isAdmin,
+                    authMethods: ['google'],
                 });
             }
 
@@ -54,6 +75,13 @@ passport.use(new GoogleStrategy({
             const shouldBeAdmin = email === process.env.ADMIN_EMAIL;
             if (user.isAdmin !== shouldBeAdmin) {
                 user.isAdmin = shouldBeAdmin;
+                await user.save();
+            }
+
+            // Ensure google is in authMethods
+            if (!user.authMethods || !user.authMethods.includes('google')) {
+                user.authMethods = user.authMethods || [];
+                user.authMethods.push('google');
                 await user.save();
             }
 
@@ -122,6 +150,110 @@ router.patch('/preferences', requireAuth, async (req, res) => {
     }
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
     res.json({ preferences: user.preferences });
+});
+
+// POST /api/auth/magic/send
+router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, res) => {
+    try {
+        const { email, lang } = req.body;
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            return res.status(400).json({ message: 'Valid email is required' });
+        }
+        const normalizedEmail = email.trim().toLowerCase();
+        const validLang = ['en', 'ko', 'ru', 'es'].includes(lang) ? lang : 'en';
+
+        // Invalidate all pending tokens for this email
+        await MagicLink.updateMany(
+            { email: normalizedEmail, used: false },
+            { $set: { used: true, usedAt: new Date() } }
+        );
+
+        // Generate token
+        const rawToken = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        await MagicLink.create({
+            tokenHash,
+            email: normalizedEmail,
+            lang: validLang,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+            requestedIp: req.ip,
+            requestedUA: req.headers['user-agent'],
+        });
+
+        await sendMagicLinkEmail(normalizedEmail, rawToken, validLang);
+
+        res.json({ message: 'If this email is valid, a sign-in link has been sent.' });
+    } catch (err) {
+        console.error('Magic link send error:', err);
+        res.status(500).json({ message: 'Failed to send sign-in link' });
+    }
+});
+
+// GET /api/auth/magic/verify
+router.get('/magic/verify', async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/verify?error=TOKEN_INVALID`);
+        }
+
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const record = await MagicLink.findOneAndUpdate(
+            { tokenHash, used: false, expiresAt: { $gt: new Date() } },
+            { $set: { used: true, usedAt: new Date() } },
+            { new: true }
+        );
+
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+        if (!record) {
+            const existing = await MagicLink.findOne({ tokenHash });
+            if (existing && existing.used) {
+                return res.redirect(`${clientUrl}/auth/verify?error=TOKEN_USED`);
+            }
+            if (existing && existing.expiresAt < new Date()) {
+                return res.redirect(`${clientUrl}/auth/verify?error=TOKEN_EXPIRED`);
+            }
+            return res.redirect(`${clientUrl}/auth/verify?error=TOKEN_INVALID`);
+        }
+
+        let user = await User.findOne({ email: record.email });
+        if (user) {
+            if (!user.authMethods.includes('magic')) {
+                user.authMethods.push('magic');
+                await user.save();
+            }
+        } else {
+            const isAdmin = record.email === process.env.ADMIN_EMAIL;
+            user = await User.create({
+                email: record.email,
+                displayName: record.email.split('@')[0],
+                isAdmin,
+                authMethods: ['magic'],
+            });
+        }
+
+        const shouldBeAdmin = record.email === process.env.ADMIN_EMAIL;
+        if (user.isAdmin !== shouldBeAdmin) {
+            user.isAdmin = shouldBeAdmin;
+            await user.save();
+        }
+
+        const jwtToken = jwt.sign(
+            { userId: user._id },
+            JWT_SECRET,
+            { expiresIn: '7d', issuer: 'kiip-study', audience: 'kiip-study-api', algorithm: 'HS256' }
+        );
+
+        res.cookie('jwt', jwtToken, COOKIE_OPTIONS);
+        res.redirect(clientUrl);
+    } catch (err) {
+        console.error('Magic link verify error:', err);
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        res.redirect(`${clientUrl}/auth/verify?error=TOKEN_INVALID`);
+    }
 });
 
 // POST /api/auth/logout
