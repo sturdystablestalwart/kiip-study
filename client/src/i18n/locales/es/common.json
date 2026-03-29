@@ -212,5 +212,23 @@
     "note": "Detalles adicionales (opcional)",
     "submit": "Enviar reporte",
     "success": "Reporte enviado. ¡Gracias!"
+  },
+  "auth": {
+    "signInTitle": "Iniciar sesion en KIIP Study",
+    "emailPlaceholder": "tu@email.com",
+    "sendMagicLink": "Enviar enlace de inicio",
+    "or": "o",
+    "signInWithGoogle": "Iniciar sesion con Google",
+    "checkEmail": "Revisa tu correo",
+    "checkEmailDesc": "Enviamos un enlace de inicio de sesion a",
+    "resend": "Reenviar",
+    "resendIn": "Reenviar en {{seconds}}s",
+    "wrongEmail": "Email incorrecto? Intentar de nuevo",
+    "verifying": "Iniciando sesion...",
+    "verifyExpired": "Este enlace ha expirado.",
+    "verifyUsed": "Este enlace ya fue utilizado.",
+    "verifyInvalid": "Este enlace no es valido.",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "goHome": "Ir al inicio"
   }
 }

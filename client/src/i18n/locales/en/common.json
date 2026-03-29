@@ -212,5 +212,23 @@
     "note": "Additional details (optional)",
     "submit": "Submit Flag",
     "success": "Flag submitted. Thank you!"
+  },
+  "auth": {
+    "signInTitle": "Sign in to KIIP Study",
+    "emailPlaceholder": "your@email.com",
+    "sendMagicLink": "Send magic link",
+    "or": "or",
+    "signInWithGoogle": "Sign in with Google",
+    "checkEmail": "Check your email",
+    "checkEmailDesc": "We sent a sign-in link to",
+    "resend": "Resend",
+    "resendIn": "Resend in {{seconds}}s",
+    "wrongEmail": "Wrong email? Try again",
+    "verifying": "Signing you in...",
+    "verifyExpired": "This link has expired.",
+    "verifyUsed": "This link has already been used.",
+    "verifyInvalid": "This link is invalid.",
+    "requestNewLink": "Request a new link",
+    "goHome": "Go to home"
   }
 }

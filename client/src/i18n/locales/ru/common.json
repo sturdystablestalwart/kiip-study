@@ -212,5 +212,23 @@
     "note": "Дополнительно (необязательно)",
     "submit": "Отправить жалобу",
     "success": "Жалоба отправлена. Спасибо!"
+  },
+  "auth": {
+    "signInTitle": "Вход в KIIP Study",
+    "emailPlaceholder": "your@email.com",
+    "sendMagicLink": "Отправить ссылку для входа",
+    "or": "или",
+    "signInWithGoogle": "Войти через Google",
+    "checkEmail": "Проверьте почту",
+    "checkEmailDesc": "Мы отправили ссылку для входа на",
+    "resend": "Отправить снова",
+    "resendIn": "Отправить снова через {{seconds}}с",
+    "wrongEmail": "Неверный email? Попробовать снова",
+    "verifying": "Входим...",
+    "verifyExpired": "Ссылка истекла.",
+    "verifyUsed": "Ссылка уже была использована.",
+    "verifyInvalid": "Ссылка недействительна.",
+    "requestNewLink": "Запросить новую ссылку",
+    "goHome": "На главную"
   }
 }

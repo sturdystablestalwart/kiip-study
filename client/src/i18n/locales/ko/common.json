@@ -212,5 +212,23 @@
     "note": "추가 설명 (선택사항)",
     "submit": "신고 제출",
     "success": "신고가 제출되었습니다. 감사합니다!"
+  },
+  "auth": {
+    "signInTitle": "KIIP Study 로그인",
+    "emailPlaceholder": "your@email.com",
+    "sendMagicLink": "로그인 링크 보내기",
+    "or": "또는",
+    "signInWithGoogle": "Google로 로그인",
+    "checkEmail": "이메일을 확인하세요",
+    "checkEmailDesc": "로그인 링크를 보냈습니다:",
+    "resend": "다시 보내기",
+    "resendIn": "{{seconds}}초 후 다시 보내기",
+    "wrongEmail": "이메일이 틀렸나요? 다시 시도",
+    "verifying": "로그인 중...",
+    "verifyExpired": "이 링크는 만료되었습니다.",
+    "verifyUsed": "이 링크는 이미 사용되었습니다.",
+    "verifyInvalid": "이 링크는 유효하지 않습니다.",
+    "requestNewLink": "새 링크 요청",
+    "goHome": "홈으로 이동"
   }
 }
