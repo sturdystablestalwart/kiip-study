@@ -6,6 +6,15 @@ import ko from './locales/ko/common.json';
 import ru from './locales/ru/common.json';
 import es from './locales/es/common.json';
 
+// Suppress i18next promo message in production
+if (import.meta.env.PROD) {
+  const origInfo = console.info;
+  console.info = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('i18next is maintained')) return;
+    origInfo.apply(console, args);
+  };
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

@@ -13,7 +13,7 @@ async function fetchUser() {
 async function migrateAttempts() {
     if (!hasAnonymousAttempts()) return;
     const attempts = getAnonymousAttempts();
-    await api.post('/api/attempts/migrate', { attempts });
+    await api.post('/api/tests/attempts/migrate', { attempts });
     clearAnonymousAttempts();
 }
 
@@ -25,8 +25,8 @@ export function AuthProvider({ children }) {
     const refreshUser = useCallback(async () => {
         try {
             const data = await fetchUser();
-            setUser(data);
-            await migrateAttempts();
+            setUser(data || null);
+            if (data) await migrateAttempts();
         } catch {
             setUser(null);
         }
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
         if (initialized.current) return;
         initialized.current = true;
         fetchUser()
-            .then(data => { setUser(data); return migrateAttempts(); })
+            .then(data => { setUser(data || null); if (data) return migrateAttempts(); })
             .catch(() => setUser(null))
             .finally(() => setLoading(false));
     }, []);

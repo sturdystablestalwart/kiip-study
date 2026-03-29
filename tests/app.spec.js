@@ -864,7 +864,7 @@ test.describe('Anonymous Progress', () => {
   });
 
   test('migration endpoint requires authentication', async ({ request }) => {
-    const response = await request.post(`${API_URL}/api/attempts/migrate`, {
+    const response = await request.post(`${API_URL}/api/tests/attempts/migrate`, {
       data: { attempts: [{ testId: 'abc', score: 5, totalQuestions: 10 }] },
     });
     expect(response.status()).toBe(401);

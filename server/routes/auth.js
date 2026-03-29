@@ -10,9 +10,11 @@ const crypto = require('crypto');
 const MagicLink = require('../models/MagicLink');
 const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
 
+const isTest = process.env.NODE_ENV === 'test';
+
 const magicLinkLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 15,
+    max: isTest ? 10000 : 15,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
@@ -20,7 +22,7 @@ const magicLinkLimiter = rateLimit({
 
 const magicLinkEmailLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 3,
+    max: isTest ? 10000 : 3,
     keyGenerator: (req) => req.body?.email || req.ip,
     standardHeaders: true,
     legacyHeaders: false,
@@ -124,15 +126,26 @@ router.get('/google/callback', authLimiter,
     }
 );
 
-// GET /api/auth/me
-router.get('/me', requireAuth, (req, res) => {
-    res.json({
-        _id: req.user._id,
-        email: req.user.email,
-        displayName: req.user.displayName,
-        isAdmin: req.user.isAdmin,
-        preferences: req.user.preferences
-    });
+// GET /api/auth/me — returns null instead of 401 to avoid browser console errors
+router.get('/me', async (req, res) => {
+    try {
+        const token = req.cookies?.jwt;
+        if (!token) return res.json(null);
+
+        const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'kiip-study', audience: 'kiip-study-api', algorithms: ['HS256'] });
+        const user = await User.findById(decoded.userId);
+        if (!user) return res.json(null);
+
+        res.json({
+            _id: user._id,
+            email: user.email,
+            displayName: user.displayName,
+            isAdmin: user.isAdmin,
+            preferences: user.preferences
+        });
+    } catch {
+        res.json(null);
+    }
 });
 
 // PATCH /api/auth/preferences
