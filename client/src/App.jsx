@@ -24,6 +24,8 @@ const AdminDuplicates = React.lazy(() => import('./pages/AdminDuplicates'));
 const SharedTest = React.lazy(() => import('./pages/SharedTest'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
 const ShortcutsModal = React.lazy(() => import('./components/ShortcutsModal'));
+const MagicLinkVerify = React.lazy(() => import('./pages/MagicLinkVerify'));
+const AuthModal = React.lazy(() => import('./components/AuthModal'));
 
 import SearchPaletteContext from './context/SearchPaletteContext';
 
@@ -405,7 +407,7 @@ function AdminDropdown({ flagCount }) {
 
 /* ─── Navigation ─── */
 
-function Navigation() {
+function Navigation({ onSignIn }) {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
   const { isDark, toggleMode } = useThemeMode();
@@ -451,7 +453,7 @@ function Navigation() {
           {loading ? null : user ? (
             <SignOutButton onClick={logout}>{t('nav.signOut')}</SignOutButton>
           ) : (
-            <SignInButton href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google/start`}>
+            <SignInButton as="button" onClick={onSignIn}>
               {t('nav.signIn')}
             </SignInButton>
           )}
@@ -465,6 +467,7 @@ function AppInner() {
   const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const openPalette = useCallback(() => setShowPalette(true), []);
   const searchCtx = React.useMemo(() => ({ openPalette }), [openPalette]);
@@ -494,7 +497,7 @@ function AppInner() {
           <Router>
             <ErrorBoundary>
               <AppShell>
-                <Navigation />
+                <Navigation onSignIn={() => setShowAuthModal(true)} />
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
@@ -507,12 +510,14 @@ function AppInner() {
                     <Route path="/admin/import" element={<AdminBulkImport />} />
                     <Route path="/admin/duplicates" element={<AdminDuplicates />} />
                     <Route path="/shared/:shareId" element={<SharedTest />} />
+                    <Route path="/auth/verify" element={<MagicLinkVerify />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </AppShell>
               {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
               {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
+              {showAuthModal && <Suspense fallback={null}><AuthModal onClose={() => setShowAuthModal(false)} /></Suspense>}
             </ErrorBoundary>
           </Router>
         </SearchPaletteContext.Provider>
