@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { below } from '../theme/breakpoints';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
+import { saveAnonymousAttempt } from '../utils/anonymousAttempts';
 
 /* ───────── Styled Components ───────── */
 
@@ -779,18 +780,25 @@ function TestTaker() {
         console.error('Failed to submit session', err);
       }
     } else {
-      // No active session — save attempt directly (session creation may have failed or been skipped)
-      try {
-        await api.post(`/api/tests/${id}/attempt`, {
-          score: correctCount,
-          totalQuestions: test.questions.length,
-          duration: (30 * 60) - timeLeft,
-          overdueTime: overdueSeconds,
-          answers: submissionAnswers,
-          mode
-        });
-      } catch (err) {
-        console.error('Failed to save attempt', err);
+      // No active session — save to localStorage for anonymous, or direct API for authenticated
+      const attemptData = {
+        testId: id,
+        score: correctCount,
+        totalQuestions: test.questions.length,
+        duration: (30 * 60) - timeLeft,
+        overdueTime: overdueSeconds,
+        answers: submissionAnswers,
+        mode
+      };
+
+      if (user) {
+        try {
+          await api.post(`/api/tests/${id}/attempt`, attemptData);
+        } catch (err) {
+          console.error('Failed to save attempt', err);
+        }
+      } else {
+        saveAnonymousAttempt(attemptData);
       }
     }
   };
