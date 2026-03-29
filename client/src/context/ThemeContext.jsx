@@ -24,15 +24,15 @@ export function ThemeModeProvider({ children }) {
   const isDark = mode === 'dark' || (mode === 'system' && systemDark);
   const theme = isDark ? darkTheme : lightTheme;
 
-  const cycleMode = useCallback(() => {
-    setMode(prev => {
-      const next = prev === 'system' ? 'light' : prev === 'light' ? 'dark' : 'system';
+  const toggleMode = useCallback(() => {
+    setMode(() => {
+      const next = isDark ? 'light' : 'dark';
       localStorage.setItem('theme', next);
       return next;
     });
-  }, []);
+  }, [isDark]);
 
-  const value = useMemo(() => ({ mode, isDark, cycleMode, theme }), [mode, isDark, cycleMode, theme]);
+  const value = useMemo(() => ({ mode, isDark, toggleMode, theme }), [mode, isDark, toggleMode, theme]);
 
   return (
     <ThemeContext.Provider value={value}>

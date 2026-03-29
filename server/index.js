@@ -34,10 +34,10 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// Global rate limiter — 100 requests per minute per IP
+// Global rate limiter — 100 requests per minute per IP (relaxed in test mode)
 app.use('/api', rateLimit({
     windowMs: 60 * 1000,
-    max: 100,
+    max: process.env.NODE_ENV === 'test' ? 10000 : 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
@@ -181,6 +181,8 @@ const healthHandler = (req, res) => {
     const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
     res.json({
         status: mongoState === 1 ? 'ok' : 'degraded',
+        mongo: states[mongoState] || 'unknown',
+        uptime: process.uptime(),
     });
 };
 app.get('/health', healthHandler);

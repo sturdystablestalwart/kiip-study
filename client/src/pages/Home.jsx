@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useSearchPalette } from '../context/SearchPaletteContext';
 import { below } from '../theme/breakpoints';
 import FilterDropdown from '../components/FilterDropdown';
 
@@ -45,6 +46,43 @@ const CreateButton = styled(Link)`
 
   &:active {
     transform: translateY(0);
+  }
+`;
+
+const SearchTrigger = styled.button`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: ${({ theme }) => theme.layout.controlHeights.input}px;
+  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              box-shadow ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
+`;
+
+const SearchHintSpan = styled.span`
+  margin-left: auto;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  padding: 2px ${({ theme }) => theme.layout.space[2]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+
+  ${below.mobile} {
+    display: none;
   }
 `;
 
@@ -251,6 +289,9 @@ const ErrorBanner = styled.div`
 `;
 
 const RetryButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: ${({ theme }) => theme.colors.state.danger};
   color: ${({ theme }) => theme.colors.bg.surface};
   border: none;
@@ -259,6 +300,7 @@ const RetryButton = styled.button`
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   cursor: pointer;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
@@ -283,6 +325,8 @@ const ModalOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: ${({ theme }) => theme.colors.scrim};
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,10 +362,14 @@ const ModalActions = styled.div`
 `;
 
 const ModalBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[5]}px;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   cursor: pointer;
   border: none;
@@ -578,7 +626,9 @@ const TestCount = styled.span`
 `;
 
 const LoadMoreButton = styled.button`
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 300px;
   margin: ${({ theme }) => theme.layout.space[6]}px auto 0;
@@ -588,6 +638,7 @@ const LoadMoreButton = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.md}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   cursor: pointer;
   transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
@@ -610,6 +661,7 @@ const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 function Home() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const searchPalette = useSearchPalette();
   const isAdmin = user?.isAdmin;
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const [tests, setTests] = useState([]);
@@ -745,6 +797,11 @@ function Home() {
         <h1>{t('home.title')}</h1>
         {isAdmin && <CreateButton to="/create">+ {t('nav.create')}</CreateButton>}
       </PageHeader>
+
+      <SearchTrigger onClick={() => searchPalette?.openPalette()} aria-label={t('nav.search')}>
+        {t('nav.search')}
+        <SearchHintSpan>Ctrl+P</SearchHintSpan>
+      </SearchTrigger>
 
       {error && (
         <ErrorBanner>

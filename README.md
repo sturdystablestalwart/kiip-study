@@ -33,7 +33,7 @@ A desktop-first practice test platform for the Korea Immigration and Integration
 | AI | Google Gemini 2.5 Flash |
 | Auth | Google OAuth 2.0, JWT (httpOnly cookies) |
 | i18n | react-i18next (EN, KO, RU, ES) |
-| Charts | AnyChart / anychart-react |
+| Charts | AnyChart |
 | PDF | PDFKit (server-side generation) |
 | Testing | Playwright E2E (95+ tests) |
 | Deployment | Docker Compose + Caddy (automatic HTTPS) |

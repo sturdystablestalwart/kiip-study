@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { ThemeProvider } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import GlobalStyles from './theme/GlobalStyles';
@@ -25,6 +25,10 @@ const SharedTest = React.lazy(() => import('./pages/SharedTest'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
 const ShortcutsModal = React.lazy(() => import('./components/ShortcutsModal'));
 
+import SearchPaletteContext from './context/SearchPaletteContext';
+
+/* ─── Styled components ─── */
+
 const AppShell = styled.div`
   max-width: ${({ theme }) => theme.layout.maxWidth}px;
   margin: 0 auto;
@@ -40,15 +44,15 @@ const AppShell = styled.div`
 
 const Nav = styled.nav`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.layout.space[8]}px;
-  padding-bottom: ${({ theme }) => theme.layout.space[5]}px;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[7]}px;
+  padding-bottom: ${({ theme }) => theme.layout.space[4]}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
 
   ${below.mobile} {
     flex-wrap: wrap;
-    gap: ${({ theme }) => theme.layout.space[3]}px;
+    gap: ${({ theme }) => theme.layout.space[2]}px;
   }
 `;
 
@@ -58,6 +62,7 @@ const Logo = styled(Link)`
   color: ${({ theme }) => theme.colors.accent.clay};
   text-decoration: none;
   letter-spacing: -0.5px;
+  margin-right: ${({ theme }) => theme.layout.space[3]}px;
 
   &:hover {
     color: ${({ theme }) => theme.colors.accent.clay};
@@ -67,16 +72,12 @@ const Logo = styled(Link)`
 
 const NavLinks = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.layout.space[5]}px;
-
-  ${below.mobile} {
-    flex-wrap: wrap;
-    gap: ${({ theme }) => theme.layout.space[2]}px;
-  }
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[1]}px;
 `;
 
 const NavLink = styled(Link)`
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   color: ${({ active, theme }) => active ? theme.colors.accent.indigo : theme.colors.text.muted};
   text-decoration: none;
@@ -91,65 +92,145 @@ const NavLink = styled(Link)`
   }
 `;
 
-const NavSearchTrigger = styled.button`
+const NavSpacer = styled.div`
+  flex: 1;
+`;
+
+/* ─── Admin dropdown ─── */
+
+const AdminDropdownWrapper = styled.div`
+  position: relative;
+`;
+
+const AdminTrigger = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[1]}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
+  font-family: inherit;
+  color: ${({ $active, theme }) => $active ? theme.colors.accent.indigo : theme.colors.text.muted};
+  padding: ${({ theme }) => theme.layout.space[2]}px ${({ theme }) => theme.layout.space[3]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.accent.indigo};
+    background: ${({ theme }) => theme.colors.selection.bg};
+  }
+
+  &::after {
+    content: '\\25BE';
+    font-size: 10px;
+    margin-left: 2px;
+  }
+`;
+
+const AdminMenu = styled.div`
+  position: absolute;
+  top: calc(100% + ${({ theme }) => theme.layout.space[1]}px);
+  left: 0;
+  min-width: 180px;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  box-shadow: ${({ theme }) => theme.layout.shadow.md};
+  z-index: ${({ theme }) => theme.zIndex.dropdown};
+  padding: ${({ theme }) => theme.layout.space[1]}px 0;
+  overflow: hidden;
+`;
+
+const AdminMenuItem = styled(Link)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[2]}px;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  color: ${({ theme }) => theme.colors.text.faint};
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
+  color: ${({ theme }) => theme.colors.text.primary};
+  text-decoration: none;
+  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.selection.bg};
+  }
+`;
+
+/* ─── Utility buttons ─── */
+
+const NavUtilities = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const IconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  color: ${({ theme }) => theme.colors.text.muted};
   cursor: pointer;
   transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-  min-width: 200px;
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.focus.ring};
     background: ${({ theme }) => theme.colors.bg.surface};
+    color: ${({ theme }) => theme.colors.text.primary};
   }
 
-  ${below.tablet} {
-    min-width: 140px;
-  }
-  ${below.mobile} {
-    min-width: ${({ theme }) => theme.layout.controlHeights.button}px;
-    padding: 0 ${({ theme }) => theme.layout.space[3]}px;
-    font-size: 0;
-    gap: 0;
-
-    &::before {
-      content: '\\2315';
-      font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-    }
+  svg {
+    width: 16px;
+    height: 16px;
   }
 `;
 
-const SearchHint = styled.span`
-  margin-left: auto;
-  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+const LangToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   color: ${({ theme }) => theme.colors.text.muted};
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  font-family: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
-  ${below.mobile} {
-    display: none;
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    background: ${({ theme }) => theme.colors.bg.surface};
+    color: ${({ theme }) => theme.colors.text.primary};
   }
 `;
 
 const AuthSection = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.layout.space[3]}px;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
 `;
 
 const SignInButton = styled.a`
   display: inline-flex;
   align-items: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
+  justify-content: center;
+  height: 36px;
+  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
   background: ${({ theme }) => theme.colors.accent.indigo};
   color: ${({ theme }) => theme.colors.onAccent};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -161,21 +242,26 @@ const SignInButton = styled.a`
   &:hover { opacity: 0.85; }
 `;
 
-const UserName = styled.span`
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  color: ${({ theme }) => theme.colors.text.muted};
-`;
-
 const SignOutButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
   background: none;
-  border: none;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   color: ${({ theme }) => theme.colors.text.faint};
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   font-family: inherit;
   cursor: pointer;
-  padding: ${({ theme }) => theme.layout.space[2]}px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
-  &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
+  &:hover {
+    color: ${({ theme }) => theme.colors.text.primary};
+    border-color: ${({ theme }) => theme.colors.text.faint};
+  }
 `;
 
 const Badge = styled.span`
@@ -193,53 +279,29 @@ const Badge = styled.span`
   margin-left: ${({ theme }) => theme.layout.space[1]}px;
 `;
 
-const ThemeToggle = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: ${({ theme }) => theme.layout.controlHeights.button}px;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  cursor: pointer;
-  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+/* ─── Sun / Moon icons ─── */
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.focus.ring};
-    background: ${({ theme }) => theme.colors.bg.surface};
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-`;
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+);
 
-const LangToggle = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
-  font-weight: 550;
-  cursor: pointer;
-  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.focus.ring};
-    background: ${({ theme }) => theme.colors.bg.surface};
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-`;
+/* ─── 404 ─── */
 
 const NotFoundWrapper = styled.div`
   text-align: center;
@@ -277,16 +339,76 @@ function NotFound() {
   );
 }
 
+/* ─── Constants ─── */
+
 const LANG_CYCLE = ['en', 'ko', 'ru', 'es'];
 const LANG_LABELS = { en: 'EN', ko: '한국어', ru: 'РУ', es: 'ES' };
 
-const THEME_ICONS = { light: '\u25CB', dark: '\u25CF', system: '\u25D0' };
-const THEME_LABELS = { light: 'Light mode (click for dark)', dark: 'Dark mode (click for system)', system: 'System mode (click for light)' };
+/* ─── Admin Dropdown component ─── */
 
-function Navigation({ onSearchClick }) {
+function AdminDropdown({ flagCount }) {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname === '/create';
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
+
+  const handleItemClick = (path) => {
+    setOpen(false);
+    navigate(path);
+  };
+
+  return (
+    <AdminDropdownWrapper ref={ref}>
+      <AdminTrigger onClick={() => setOpen(prev => !prev)} $active={isAdminRoute} aria-expanded={open}>
+        {t('nav.admin', 'Admin')}
+        {flagCount > 0 && <Badge>{flagCount}</Badge>}
+      </AdminTrigger>
+      {open && (
+        <AdminMenu>
+          <AdminMenuItem to="/create" onClick={() => handleItemClick('/create')}>
+            {t('nav.create')}
+          </AdminMenuItem>
+          <AdminMenuItem to="/admin/flags" onClick={() => handleItemClick('/admin/flags')}>
+            {t('nav.flags')}
+            {flagCount > 0 && <Badge>{flagCount}</Badge>}
+          </AdminMenuItem>
+          <AdminMenuItem to="/admin/import" onClick={() => handleItemClick('/admin/import')}>
+            {t('nav.import')}
+          </AdminMenuItem>
+          <AdminMenuItem to="/admin/duplicates" onClick={() => handleItemClick('/admin/duplicates')}>
+            {t('nav.duplicates')}
+          </AdminMenuItem>
+        </AdminMenu>
+      )}
+    </AdminDropdownWrapper>
+  );
+}
+
+/* ─── Navigation ─── */
+
+function Navigation() {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
-  const { mode, cycleMode } = useThemeMode();
+  const { isDark, toggleMode } = useThemeMode();
   const { t, i18n } = useTranslation();
   const [flagCount, setFlagCount] = useState(0);
 
@@ -299,61 +421,42 @@ function Navigation({ onSearchClick }) {
   }, [user]);
 
   const cycleLang = () => {
-    const baseLang = i18n.language.split('-')[0]; // 'en-US' -> 'en'
+    const baseLang = i18n.language.split('-')[0];
     const currentIdx = LANG_CYCLE.indexOf(baseLang);
     const nextIdx = (currentIdx + 1) % LANG_CYCLE.length;
     i18n.changeLanguage(LANG_CYCLE[nextIdx]);
   };
 
+  const themeLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+
   return (
     <Nav>
       <Logo to="/">KIIP Study</Logo>
-      <NavSearchTrigger onClick={onSearchClick} aria-label="Search tests">
-        {t('nav.search')}
-        <SearchHint>Ctrl+P</SearchHint>
-      </NavSearchTrigger>
       <NavLinks>
         <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>{t('nav.home')}</NavLink>
         {user && (
           <NavLink to="/dashboard" active={location.pathname === '/dashboard' ? 1 : 0}>{t('nav.dashboard')}</NavLink>
         )}
-        {user?.isAdmin && (
-          <NavLink to="/create" active={location.pathname === '/create' ? 1 : 0}>{t('nav.create')}</NavLink>
-        )}
-        {user?.isAdmin && (
-          <NavLink to="/admin/flags" active={location.pathname.startsWith('/admin/flags') ? 1 : 0}>
-            {t('nav.flags')}{flagCount > 0 && <Badge>{flagCount}</Badge>}
-          </NavLink>
-        )}
-        {user?.isAdmin && (
-          <NavLink to="/admin/import" active={location.pathname === '/admin/import' ? 1 : 0}>
-            {t('nav.import')}
-          </NavLink>
-        )}
-        {user?.isAdmin && (
-          <NavLink to="/admin/duplicates" active={location.pathname === '/admin/duplicates' ? 1 : 0}>
-            {t('nav.duplicates')}
-          </NavLink>
-        )}
+        {user?.isAdmin && <AdminDropdown flagCount={flagCount} />}
       </NavLinks>
-      <LangToggle onClick={cycleLang} aria-label="Change language" title="Change language">
-        {LANG_LABELS[i18n.language] || LANG_LABELS.en}
-      </LangToggle>
-      <ThemeToggle onClick={cycleMode} aria-label={THEME_LABELS[mode]} title={THEME_LABELS[mode]}>
-        {THEME_ICONS[mode]}
-      </ThemeToggle>
-      <AuthSection>
-        {loading ? null : user ? (
-          <>
-            <UserName>{user.displayName}</UserName>
+      <NavSpacer />
+      <NavUtilities>
+        <LangToggle onClick={cycleLang} aria-label="Change language" title="Change language">
+          {LANG_LABELS[i18n.language] || LANG_LABELS.en}
+        </LangToggle>
+        <IconButton onClick={toggleMode} aria-label={themeLabel} title={themeLabel}>
+          {isDark ? <MoonIcon /> : <SunIcon />}
+        </IconButton>
+        <AuthSection>
+          {loading ? null : user ? (
             <SignOutButton onClick={logout}>{t('nav.signOut')}</SignOutButton>
-          </>
-        ) : (
-          <SignInButton href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google/start`}>
-            {t('nav.signIn')}
-          </SignInButton>
-        )}
-      </AuthSection>
+          ) : (
+            <SignInButton href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google/start`}>
+              {t('nav.signIn')}
+            </SignInButton>
+          )}
+        </AuthSection>
+      </NavUtilities>
     </Nav>
   );
 }
@@ -362,6 +465,9 @@ function AppInner() {
   const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  const openPalette = useCallback(() => setShowPalette(true), []);
+  const searchCtx = React.useMemo(() => ({ openPalette }), [openPalette]);
 
   const handleGlobalKeyDown = useCallback((e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
@@ -384,30 +490,32 @@ function AppInner() {
     <ThemeProvider theme={theme}>
       <GlobalStyles />
       <AuthProvider>
-        <Router>
-          <ErrorBoundary>
-            <AppShell>
-              <Navigation onSearchClick={() => setShowPalette(true)} />
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/create" element={<CreateTest />} />
-                  <Route path="/test/:id" element={<TestTaker />} />
-                  <Route path="/endless" element={<EndlessMode />} />
-                  <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
-                  <Route path="/admin/flags" element={<AdminFlags />} />
-                  <Route path="/admin/import" element={<AdminBulkImport />} />
-                  <Route path="/admin/duplicates" element={<AdminDuplicates />} />
-                  <Route path="/shared/:shareId" element={<SharedTest />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </AppShell>
-            {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
-            {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
-          </ErrorBoundary>
-        </Router>
+        <SearchPaletteContext.Provider value={searchCtx}>
+          <Router>
+            <ErrorBoundary>
+              <AppShell>
+                <Navigation />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/create" element={<CreateTest />} />
+                    <Route path="/test/:id" element={<TestTaker />} />
+                    <Route path="/endless" element={<EndlessMode />} />
+                    <Route path="/admin/tests/:id/edit" element={<AdminTestEditor />} />
+                    <Route path="/admin/flags" element={<AdminFlags />} />
+                    <Route path="/admin/import" element={<AdminBulkImport />} />
+                    <Route path="/admin/duplicates" element={<AdminDuplicates />} />
+                    <Route path="/shared/:shareId" element={<SharedTest />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </AppShell>
+              {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
+              {showShortcuts && <Suspense fallback={null}><ShortcutsModal onClose={() => setShowShortcuts(false)} /></Suspense>}
+            </ErrorBoundary>
+          </Router>
+        </SearchPaletteContext.Provider>
         <Toast />
       </AuthProvider>
     </ThemeProvider>

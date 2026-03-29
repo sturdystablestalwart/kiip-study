@@ -334,6 +334,8 @@ const ModalOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: ${({ theme }) => theme.colors.scrim};
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,10 +371,14 @@ const ModalActions = styled.div`
 `;
 
 const ModalBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: ${({ theme }) => theme.layout.controlHeights.button}px;
   padding: 0 ${({ theme }) => theme.layout.space[5]}px;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   cursor: pointer;
   border: none;
@@ -423,14 +429,28 @@ const FlagButton = styled.button`
 const FlagSelect = styled.select`
   width: 100%;
   height: ${({ theme }) => theme.layout.controlHeights.input}px;
-  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
+  padding: 0 ${({ theme }) => theme.layout.space[7]}px 0 ${({ theme }) => theme.layout.space[4]}px;
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
   font-family: inherit;
   color: ${({ theme }) => theme.colors.text.primary};
-  background: ${({ theme }) => theme.colors.bg.surface};
+  background-color: ${({ theme }) => theme.colors.bg.surface};
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235B5F64' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              box-shadow ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const FlagTextarea = styled.textarea`
@@ -445,6 +465,18 @@ const FlagTextarea = styled.textarea`
   background: ${({ theme }) => theme.colors.bg.surface};
   resize: vertical;
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              box-shadow ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text.faint};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.focus.ring};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focus.shadow};
+  }
 `;
 
 const FlagSuccessMsg = styled.p`
@@ -747,7 +779,7 @@ function TestTaker() {
         console.error('Failed to submit session', err);
       }
     } else {
-      // Anonymous user — use legacy attempt endpoint
+      // No active session — save attempt directly (session creation may have failed or been skipped)
       try {
         await api.post(`/api/tests/${id}/attempt`, {
           score: correctCount,
@@ -866,6 +898,7 @@ function TestTaker() {
               value={mode}
               onChange={(e) => handleModeChange(e.target.value)}
               disabled={isSubmitted}
+              aria-label="Test mode"
             >
               <option value="Test">{t('test.exam')}</option>
               <option value="Practice">{t('test.practice')}</option>

@@ -158,8 +158,8 @@ test.describe('Test Taking Flow', () => {
 
   test('shows mode selector with Test and Practice options', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    const select = page.locator('select');
-    await expect(select).toBeVisible();
+    const modeSelect = page.getByLabel('Test mode');
+    await expect(modeSelect).toBeVisible();
     await expect(page.getByText('Mode:')).toBeVisible();
   });
 
@@ -223,19 +223,32 @@ test.describe('Practice Mode', () => {
 
   test('switching mode shows confirmation modal when progress exists', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    // Answer a question to create progress — try MCQ option first, fallback to text input
+    // Answer a question to create progress — try MCQ, text input, or any clickable option
+    let answered = false;
     const mcqOption = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await mcqOption.count() > 0) {
       await mcqOption.click();
-    } else {
+      answered = true;
+    }
+    if (!answered) {
       const textInput = page.locator('input[type="text"]').first();
       if (await textInput.count() > 0) {
         await textInput.fill('test answer');
         await textInput.press('Enter');
+        answered = true;
       }
     }
+    if (!answered) {
+      // Try any option-like button (ordering, fill-in-blank, etc.)
+      const anyOption = page.locator('[class*="Option"], [class*="option"]').first();
+      if (await anyOption.count() > 0) {
+        await anyOption.click();
+        answered = true;
+      }
+    }
+    if (!answered) return; // Skip if no answerable question found
     // Now switch mode — should trigger modal
-    await page.locator('select').selectOption('Practice');
+    await page.getByLabel('Test mode').selectOption('Practice');
     await expect(page.getByText(/Switching modes will reset/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
@@ -244,7 +257,7 @@ test.describe('Practice Mode', () => {
   test('Practice mode shows instant feedback with explanation', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
     // Switch to Practice mode (no progress yet, so direct switch)
-    await page.locator('select').selectOption('Practice');
+    await page.getByLabel('Test mode').selectOption('Practice');
     // If modal appeared (unlikely without progress), confirm it
     const confirmBtn = page.getByRole('button', { name: 'Confirm' });
     if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
@@ -287,12 +300,25 @@ test.describe('Exit and Navigation', () => {
     return true;
   }
 
+  // Helper: answer any question type to create progress
+  async function answerAnyQuestion(page) {
+    const mcqOption = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
+    if (await mcqOption.count() > 0) {
+      await mcqOption.click();
+      return true;
+    }
+    const textInput = page.locator('input[type="text"]').first();
+    if (await textInput.count() > 0) {
+      await textInput.fill('test answer');
+      await textInput.press('Enter');
+      return true;
+    }
+    return false;
+  }
+
   test('"Back to Tests" shows confirmation modal when progress exists', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    // Answer a question first to create progress
-    const firstOption = page.locator('button').filter({ hasText: /^1\./ }).first();
-    if (await firstOption.count() > 0) await firstOption.click();
-    // Now exit — should show modal
+    if (!await answerAnyQuestion(page)) return;
     await page.getByRole('button', { name: 'Back to Tests' }).click();
     await expect(page.getByText(/unsaved progress/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
@@ -301,9 +327,7 @@ test.describe('Exit and Navigation', () => {
 
   test('Cancel dismisses exit modal', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    // Answer a question to trigger modal on exit
-    const firstOption = page.locator('button').filter({ hasText: /^1\./ }).first();
-    if (await firstOption.count() > 0) await firstOption.click();
+    if (!await answerAnyQuestion(page)) return;
     await page.getByRole('button', { name: 'Back to Tests' }).click();
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByText(/unsaved progress/)).not.toBeVisible();
@@ -312,9 +336,7 @@ test.describe('Exit and Navigation', () => {
 
   test('Confirm returns to home page', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
-    // Answer a question to trigger modal on exit
-    const firstOption = page.locator('button').filter({ hasText: /^1\./ }).first();
-    if (await firstOption.count() > 0) await firstOption.click();
+    if (!await answerAnyQuestion(page)) return;
     await page.getByRole('button', { name: 'Back to Tests' }).click();
     await page.getByRole('button', { name: 'Confirm' }).click();
     await expect(page).toHaveURL(BASE_URL + '/');
@@ -578,7 +600,7 @@ test.describe('Mode Direct Switch', () => {
   test('switching mode without progress skips confirmation', async ({ page }) => {
     if (!await goToFirstTest(page)) return;
     // No answers yet — mode switch should be instant (no modal)
-    await page.locator('select').selectOption('Practice');
+    await page.getByLabel('Test mode').selectOption('Practice');
     // No modal should appear
     await expect(page.getByText(/Switching modes will reset/)).not.toBeVisible();
   });

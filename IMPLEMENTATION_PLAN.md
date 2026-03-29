@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines the full implementation roadmap for KIIP Study, a MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress. The plan is organized into Phase 0 (stabilization of the current codebase) followed by six feature phases ordered by priority: production polish, instant library access, exam-accurate formats, admin-quality content control, authentication, and PDF exports.
+This document outlines the full implementation roadmap for KIIP Study, a MERN-stack KIIP exam practice platform with a public, admin-curated test library and per-user progress. The plan is organized into Phase 0 (stabilization of the current codebase) followed by seven feature phases ordered by priority: production polish, instant library access, exam-accurate formats, admin-quality content control, continuity + audit, PDF exports, and expansion (dark theme, i18n, analytics, security hardening).
 
 **Owner:** Alex Reznitskii | **Version:** 2.0 | **Date:** 2026-02-15
 
@@ -22,7 +22,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | `POST /api/tests/upload` | ✅ Done | multer with MIME filter, 10MB limit, returns imageUrl |
 | `POST /api/tests/upload-multiple` | ✅ Done | Up to 20 images per request |
 | `POST /api/tests/generate-from-file` | ✅ Done | PDF/DOCX/TXT/MD, rate limited, temp file cleanup |
-| `GET /health` | ✅ Done | Added — returns mongo state + uptime |
+| `GET /health` | ✅ Done | Added — returns status, mongo state, and uptime |
 
 ### 0.2 Image Handling ✅
 
@@ -60,7 +60,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 
 - [x] Removed unused `openai` package from server dependencies
 - [x] Removed stale `tests/verify_app.js` (superseded by `tests/app.spec.js`)
-- [x] Kept `bcryptjs` and `jsonwebtoken` for Phase 5 auth
+- [x] Kept `jsonwebtoken` for Phase 4 auth
 
 ---
 
@@ -73,7 +73,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 ### Tasks (PR-sized)
 
 - [x] **1.1** Multi-stage client Dockerfile (node:20-alpine build → nginx:alpine serve)
-- [x] **1.2** Nginx reverse proxy: serves SPA, proxies `/api` + `/uploads` + `/health` to Express
+- [x] **1.2** Caddy reverse proxy with automatic HTTPS: serves SPA, proxies `/api` + `/uploads` + `/health` to Express
 - [x] **1.3** Docker volumes: `mongo_data` + `server_uploads` named volumes, persistent across rebuilds
 - [x] **1.4** `/health` endpoint with MongoDB state + uptime (done in Phase 0)
 - [x] **1.5** CI: install → lint → build → Playwright chromium on every PR (`.github/workflows/ci.yml`)
@@ -360,7 +360,7 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | Package | Purpose |
 |---------|---------|
 | `react-i18next`, `i18next`, `i18next-browser-languagedetector` | Multi-language UI |
-| `anychart`, `anychart-react` | Analytics charts |
+| `anychart` | Analytics charts |
 | `exceljs`, `papaparse` | Bulk import (XLSX/CSV) |
 | `string-similarity` | Question deduplication |
 | `nanoid` | Share link IDs |
@@ -385,10 +385,10 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | Phase | New Packages (estimated) |
 |-------|-------------------------|
 | Phase 0 | `express-validator` (already installed) |
-| Phase 1 | nginx (Docker), GitHub Actions or similar CI |
+| Phase 1 | Caddy (Docker), GitHub Actions CI |
 | Phase 2 | None (React + Mongoose changes) |
 | Phase 3 | None (schema + UI changes) |
-| Phase 4 | None (admin routes + UI) |
-| Phase 5 | `passport`, `passport-google-oauth20`, `cookie-parser` (already installed in Phase 4) |
+| Phase 4 | `passport`, `passport-google-oauth20`, `cookie-parser` (auth + admin suite) |
+| Phase 5 | None (sessions + audit — uses existing deps) |
 | Phase 6 | `pdfkit` (PDF generation) |
-| Phase 7 | `react-i18next`, `i18next`, `i18next-browser-languagedetector`, `anychart`, `anychart-react`, `exceljs`, `papaparse`, `string-similarity`, `nanoid`, `helmet` |
+| Phase 7 | `react-i18next`, `i18next`, `i18next-browser-languagedetector`, `anychart`, `exceljs`, `papaparse`, `string-similarity`, `nanoid`, `helmet` |
