@@ -149,7 +149,7 @@ const QuestionCard = styled.div`
     padding: ${({ theme }) => theme.layout.space[5]}px;
   }
   ${below.mobile} {
-    padding-bottom: ${({ theme }) => theme.layout.space[9]}px;
+    padding-bottom: 80px;
   }
 `;
 
