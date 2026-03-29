@@ -297,4 +297,43 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
     }
 });
 
+// POST /api/attempts/migrate — migrate anonymous localStorage attempts to DB
+router.post('/attempts/migrate', requireAuth, async (req, res) => {
+    try {
+        const { attempts } = req.body;
+        if (!Array.isArray(attempts) || attempts.length === 0) {
+            return res.status(400).json({ message: 'No attempts to migrate' });
+        }
+
+        const toMigrate = attempts.slice(0, 50);
+        const docs = [];
+
+        for (const att of toMigrate) {
+            if (!att.testId || typeof att.score !== 'number' || typeof att.totalQuestions !== 'number') {
+                continue;
+            }
+            docs.push({
+                testId: att.testId,
+                userId: req.user._id,
+                score: att.score,
+                totalQuestions: att.totalQuestions,
+                duration: att.duration || 0,
+                overdueTime: att.overdueTime || 0,
+                answers: att.answers || [],
+                mode: ['Practice', 'Test', 'Endless'].includes(att.mode) ? att.mode : 'Test',
+                createdAt: att.createdAt ? new Date(att.createdAt) : new Date(),
+            });
+        }
+
+        if (docs.length > 0) {
+            await Attempt.insertMany(docs, { ordered: false });
+        }
+
+        res.json({ migrated: docs.length });
+    } catch (err) {
+        console.error('Attempt migration error:', err);
+        res.status(500).json({ message: 'Migration failed' });
+    }
+});
+
 module.exports = { router, parseTextWithLLM };
