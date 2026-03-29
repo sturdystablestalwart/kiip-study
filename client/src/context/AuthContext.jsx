@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api';
+import { getAnonymousAttempts, clearAnonymousAttempts, hasAnonymousAttempts } from '../utils/anonymousAttempts';
 
 const AuthContext = createContext(null);
 
@@ -8,12 +9,30 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        api.get('/api/auth/me')
-            .then(res => setUser(res.data))
-            .catch(() => setUser(null))
-            .finally(() => setLoading(false));
+    const migrateAnonymousAttempts = useCallback(async () => {
+        if (!hasAnonymousAttempts()) return;
+        try {
+            const attempts = getAnonymousAttempts();
+            await api.post('/api/attempts/migrate', { attempts });
+            clearAnonymousAttempts();
+        } catch (err) {
+            console.error('Failed to migrate anonymous attempts:', err);
+        }
     }, []);
+
+    const refreshUser = useCallback(async () => {
+        try {
+            const res = await api.get('/api/auth/me');
+            setUser(res.data);
+            await migrateAnonymousAttempts();
+        } catch {
+            setUser(null);
+        }
+    }, [migrateAnonymousAttempts]);
+
+    useEffect(() => {
+        refreshUser().finally(() => setLoading(false));
+    }, [refreshUser]);
 
     useEffect(() => {
         const handleExpiry = () => setUser(null);
@@ -30,7 +49,7 @@ export function AuthProvider({ children }) {
         setUser(null);
     }, []);
 
-    const value = useMemo(() => ({ user, loading, logout }), [user, loading, logout]);
+    const value = useMemo(() => ({ user, loading, logout, refreshUser }), [user, loading, logout, refreshUser]);
 
     return (
         <AuthContext.Provider value={value}>
