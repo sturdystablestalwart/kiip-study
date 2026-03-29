@@ -568,16 +568,22 @@ test.describe('Theme and Language', () => {
 
 test.describe('Auth UI', () => {
 
-  test('shows Sign in link when not authenticated', async ({ page }) => {
+  test('shows Sign in button when not authenticated', async ({ page }) => {
     await page.goto(BASE_URL);
+    // Set language to English for consistent test
+    await page.evaluate(() => localStorage.setItem('i18nextLng', 'en'));
+    await page.reload();
     await expect(page.getByText('Sign in')).toBeVisible();
   });
 
-  test('Sign in link points to Google OAuth', async ({ page }) => {
+  test('Sign in button opens auth modal', async ({ page }) => {
     await page.goto(BASE_URL);
-    const signIn = page.getByText('Sign in');
-    const href = await signIn.getAttribute('href');
-    expect(href).toContain('/api/auth/google/start');
+    await page.evaluate(() => localStorage.setItem('i18nextLng', 'en'));
+    await page.reload();
+    await page.getByText('Sign in').click();
+    await expect(page.getByText('Sign in to KIIP Study')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByPlaceholder('your@email.com')).toBeVisible();
+    await expect(page.getByText('Sign in with Google')).toBeVisible();
   });
 
 });

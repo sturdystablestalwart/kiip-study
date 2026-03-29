@@ -21,7 +21,7 @@ const Card = styled.div`
     padding: ${({ theme }) => theme.layout.space[8]}px;
     max-width: 400px;
     width: 100%;
-    box-shadow: ${({ theme }) => theme.shadows.soft};
+    box-shadow: ${({ theme }) => theme.layout.shadow.md};
 `;
 
 const Title = styled.h2`
@@ -129,7 +129,7 @@ function maskEmail(email) {
 
 export default function AuthModal({ onClose }) {
     const { t, i18n } = useTranslation();
-    const { refreshUser } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [state, setState] = useState('idle');
     const [email, setEmail] = useState('');
     const [cooldown, setCooldown] = useState(0);
@@ -146,16 +146,12 @@ export default function AuthModal({ onClose }) {
         return () => window.removeEventListener('keydown', onKey);
     }, [onClose]);
 
+    // Poll for auth changes (user clicked magic link in another tab)
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                await refreshUser();
-                onClose();
-            } catch { /* not logged in yet */ }
-        };
-        const interval = setInterval(checkAuth, 3000);
+        if (user) { onClose(); return; }
+        const interval = setInterval(() => refreshUser(), 3000);
         return () => clearInterval(interval);
-    }, [refreshUser, onClose]);
+    }, [user, refreshUser, onClose]);
 
     const handleSend = useCallback(async () => {
         if (!email.trim() || !email.includes('@')) return;

@@ -1,38 +1,45 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../utils/api';
 import { getAnonymousAttempts, clearAnonymousAttempts, hasAnonymousAttempts } from '../utils/anonymousAttempts';
 
 const AuthContext = createContext(null);
 
+async function fetchUser() {
+    const res = await api.get('/api/auth/me');
+    return res.data;
+}
+
+async function migrateAttempts() {
+    if (!hasAnonymousAttempts()) return;
+    const attempts = getAnonymousAttempts();
+    await api.post('/api/attempts/migrate', { attempts });
+    clearAnonymousAttempts();
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    const migrateAnonymousAttempts = useCallback(async () => {
-        if (!hasAnonymousAttempts()) return;
-        try {
-            const attempts = getAnonymousAttempts();
-            await api.post('/api/attempts/migrate', { attempts });
-            clearAnonymousAttempts();
-        } catch (err) {
-            console.error('Failed to migrate anonymous attempts:', err);
-        }
-    }, []);
+    const initialized = useRef(false);
 
     const refreshUser = useCallback(async () => {
         try {
-            const res = await api.get('/api/auth/me');
-            setUser(res.data);
-            await migrateAnonymousAttempts();
+            const data = await fetchUser();
+            setUser(data);
+            await migrateAttempts();
         } catch {
             setUser(null);
         }
-    }, [migrateAnonymousAttempts]);
+    }, []);
 
     useEffect(() => {
-        refreshUser().finally(() => setLoading(false));
-    }, [refreshUser]);
+        if (initialized.current) return;
+        initialized.current = true;
+        fetchUser()
+            .then(data => { setUser(data); return migrateAttempts(); })
+            .catch(() => setUser(null))
+            .finally(() => setLoading(false));
+    }, []);
 
     useEffect(() => {
         const handleExpiry = () => setUser(null);

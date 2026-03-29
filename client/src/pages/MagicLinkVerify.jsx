@@ -36,27 +36,22 @@ export default function MagicLinkVerify() {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { refreshUser } = useAuth();
-    const [status, setStatus] = useState('checking');
-    const [errorCode, setErrorCode] = useState(null);
+
+    // Derive initial state synchronously from URL params
+    const errorParam = searchParams.get('error');
+    const [status, setStatus] = useState(errorParam ? 'error' : 'checking');
+    const [errorCode, setErrorCode] = useState(errorParam || null);
 
     useEffect(() => {
-        const error = searchParams.get('error');
-        if (error) {
-            setStatus('error');
-            setErrorCode(error);
-            return;
-        }
+        // If there was an error param, state is already set — nothing to do
+        if (errorParam) return;
 
+        let cancelled = false;
         refreshUser()
-            .then(() => {
-                setStatus('success');
-                setTimeout(() => navigate('/'), 1000);
-            })
-            .catch(() => {
-                setStatus('error');
-                setErrorCode('TOKEN_INVALID');
-            });
-    }, [searchParams, refreshUser, navigate]);
+            .then(() => { if (!cancelled) { setStatus('success'); setTimeout(() => navigate('/'), 1000); } })
+            .catch(() => { if (!cancelled) { setStatus('error'); setErrorCode('TOKEN_INVALID'); } });
+        return () => { cancelled = true; };
+    }, [errorParam, refreshUser, navigate]);
 
     const errorMessages = {
         TOKEN_EXPIRED: t('auth.verifyExpired'),

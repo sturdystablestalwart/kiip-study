@@ -174,17 +174,19 @@ test.describe('Home Page — Full Audit', () => {
     assertNoErrors('Test card click');
   });
 
-  test('Sign in link is visible and points to OAuth', async ({ page }) => {
+  test('Sign in button opens auth modal', async ({ page }) => {
     await page.goto(BASE_URL);
+    await page.evaluate(() => localStorage.setItem('i18nextLng', 'en'));
+    await page.reload();
     await page.waitForTimeout(500);
 
-    const signIn = page.getByRole('link', { name: /Sign in/i });
+    const signIn = page.getByRole('button', { name: /Sign in/i });
     if (await signIn.count() > 0) {
-      const href = await signIn.getAttribute('href');
-      expect(href).toContain('/api/auth/google/start');
+      await signIn.click();
+      await expect(page.getByText('Sign in to KIIP Study')).toBeVisible({ timeout: 5000 });
     }
 
-    assertNoErrors('Sign in link');
+    assertNoErrors('Sign in modal');
   });
 });
 
