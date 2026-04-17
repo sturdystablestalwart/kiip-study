@@ -8,6 +8,7 @@ const path = require('path');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const Test = require('../models/Test');
 const { checkAgainstExisting } = require('../utils/dedup');
+const logger = require('../utils/logger');
 
 const crypto = require('crypto');
 const upload = multer({
@@ -104,7 +105,7 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
 
     res.json({ previewId, ...preview });
   } catch (err) {
-    console.error('Bulk import error:', err);
+    logger.error({ err }, 'Bulk import error');
     res.status(500).json({ error: 'Failed to parse file' });
   } finally {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);

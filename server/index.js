@@ -14,6 +14,8 @@ const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
+const logger = require('./utils/logger');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -142,7 +144,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_a
     const { parseTextWithLLM } = require('./routes/tests');
     await autoImportTests(parseTextWithLLM);
 })
-.catch(err => console.log(err));
+.catch(err => logger.error({ err }, 'MongoDB connection failed'));
 
 // Routes
 const { router: testRoutes } = require('./routes/tests');
@@ -193,7 +195,7 @@ app.get('/api/health', healthHandler);
 
 // Production error handler — hide stack traces from clients
 app.use((err, req, res, _next) => {
-  console.error(err);
+  logger.error({ err }, 'Unhandled error');
   const status = err.status || 500;
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(status).json({ error: message });

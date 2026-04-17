@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Test = require('../models/Test');
+const logger = require('./logger');
 
 const autoImportTests = async (parseFunction) => {
     const testsDir = path.join(__dirname, '../../additionalContext/tests');
@@ -38,7 +39,7 @@ const autoImportTests = async (parseFunction) => {
             await newTest.save();
             console.log(`Successfully imported ${fileName}`);
         } catch (err) {
-            console.error(`Failed to import ${fileName}:`, err.message);
+            logger.error({ err }, `Failed to import ${fileName}`);
         }
     }
 };

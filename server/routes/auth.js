@@ -9,6 +9,7 @@ const { requireAuth, JWT_SECRET } = require('../middleware/auth');
 const crypto = require('crypto');
 const MagicLink = require('../models/MagicLink');
 const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
+const logger = require('../utils/logger');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -198,7 +199,7 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
 
         res.json({ message: 'If this email is valid, a sign-in link has been sent.' });
     } catch (err) {
-        console.error('Magic link send error:', err);
+        logger.error({ err }, 'Magic link send error');
         res.status(500).json({ message: 'Failed to send sign-in link' });
     }
 });
@@ -263,7 +264,7 @@ router.get('/magic/verify', async (req, res) => {
         res.cookie('jwt', jwtToken, COOKIE_OPTIONS);
         res.redirect(clientUrl);
     } catch (err) {
-        console.error('Magic link verify error:', err);
+        logger.error({ err }, 'Magic link verify error');
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
         res.redirect(`${clientUrl}/auth/verify?error=TOKEN_INVALID`);
     }

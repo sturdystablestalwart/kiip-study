@@ -24,6 +24,7 @@ const Test    = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const { requireAuth } = require('../middleware/auth');
 const { generateTestPdf } = require('../utils/pdfGenerator');
+const logger = require('../utils/logger');
 
 // All PDF routes require a logged-in user
 router.use(requireAuth);
@@ -113,7 +114,7 @@ router.get('/test/:id', async (req, res) => {
             });
         });
     } catch (err) {
-        console.error('[PDF] /test/:id error:', err);
+        logger.error({ err }, '[PDF] /test/:id error');
         if (!res.headersSent) {
             res.status(500).json({ message: safeError('Failed to generate PDF', err) });
         }
@@ -169,7 +170,7 @@ router.get('/attempt/:attemptId', async (req, res) => {
             });
         });
     } catch (err) {
-        console.error('[PDF] /attempt/:attemptId error:', err);
+        logger.error({ err }, '[PDF] /attempt/:attemptId error');
         if (!res.headersSent) {
             res.status(500).json({ message: safeError('Failed to generate PDF', err) });
         }

@@ -66,11 +66,8 @@ async function sendMagicLinkEmail(email, token, lang = 'en') {
 
     const transport = getTransporter();
     if (!transport) {
-        console.log('\n========== MAGIC LINK (no SMTP configured) ==========');
-        console.log(`  Email: ${email}`);
-        console.log(`  Link:  ${link}`);
-        console.log('=====================================================\n');
-        return;
+        console.warn('[magic-link] SMTP not configured — email NOT sent. Check SMTP_USER/SMTP_PASS/SMTP_FROM env vars.');
+        return { sent: false, reason: 'smtp-not-configured' };
     }
 
     await transport.sendMail({

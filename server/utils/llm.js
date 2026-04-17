@@ -1,9 +1,10 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { validateLLMOutput } = require('./llmValidator');
+const logger = require('./logger');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
-    console.error('WARNING: GEMINI_API_KEY is not set — AI generation will fail');
+    logger.warn('GEMINI_API_KEY is not set — AI generation will fail');
 }
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || 'missing');
 
@@ -54,7 +55,7 @@ const parseTextWithLLM = async (text) => {
         validateLLMOutput(parsed);
         return parsed;
     } catch (err) {
-        console.error("LLM Parsing Error:", err);
+        logger.error({ err }, 'LLM Parsing Error');
         throw new Error("Failed to parse text with AI: " + err.message);
     }
 };
