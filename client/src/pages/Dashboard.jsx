@@ -243,6 +243,96 @@ const LoadMoreButton = styled.button`
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
+const CompareButton = styled.button`
+  padding: ${({ theme }) => theme.layout.space[2]}px ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.accent.indigo};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.accent.indigo};
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  cursor: pointer;
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.accent.indigo};
+    color: ${({ theme }) => theme.colors.bg.surface};
+  }
+`;
+
+const ComparePanel = styled.div`
+  background: ${({ theme }) => theme.colors.bg.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  padding: ${({ theme }) => theme.layout.space[5]}px;
+  margin-top: ${({ theme }) => theme.layout.space[4]}px;
+  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+`;
+
+const ComparePanelHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
+
+  h3 { margin: 0; }
+`;
+
+const CloseCompareBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  cursor: pointer;
+  padding: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const CompareGrid = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  overflow-x: auto;
+`;
+
+const CompareCard = styled.div`
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  padding: ${({ theme }) => theme.layout.space[4]}px;
+  text-align: center;
+  min-width: 100px;
+  flex-shrink: 0;
+`;
+
+const CompareDate = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  margin-bottom: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const CompareScore = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.h2.size}px;
+  font-weight: ${({ theme }) => theme.typography.scale.h2.weight};
+  color: ${({ $percent, theme }) =>
+    $percent >= 70 ? theme.colors.accent.moss :
+    $percent >= 50 ? theme.colors.state.warning :
+    theme.colors.state.danger};
+`;
+
+const CompareMeta = styled.div`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  margin-top: ${({ theme }) => theme.layout.space[2]}px;
+`;
+
+const ReviewLink = styled(Link)`
+  display: inline-block;
+  margin-top: ${({ theme }) => theme.layout.space[3]}px;
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.accent.indigo};
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+`;
+
 /* ───────── Helpers ───────── */
 
 const QUESTION_TYPE_LABELS = {
@@ -293,6 +383,8 @@ function Dashboard() {
   const [attempts, setAttempts] = useState([]);
   const [attemptsNextCursor, setAttemptsNextCursor] = useState(null);
   const [loadingAttempts, setLoadingAttempts] = useState(false);
+  const [compareTestId, setCompareTestId] = useState(null);
+  const [compareAttempts, setCompareAttempts] = useState([]);
 
   const lineRef = useRef(null);
   const barRef = useRef(null);
@@ -571,6 +663,14 @@ function Dashboard() {
 
   const { kpis, accuracyTrend, unitBreakdown } = stats;
 
+  const attemptsByTest = {};
+  attempts.forEach(a => {
+    if (!a.testId) return;
+    const key = a.testId._id || a.testId;
+    if (!attemptsByTest[key]) attemptsByTest[key] = [];
+    attemptsByTest[key].push(a);
+  });
+
   return (
     <div>
       <PageHeader>
@@ -616,6 +716,7 @@ function Dashboard() {
           )}
         </KpiCard>
       </KpiGrid>
+      <ReviewLink to="/review">Review Failed Questions →</ReviewLink>
 
       {/* Line chart: Accuracy Over Time */}
       {accuracyTrend && accuracyTrend.length > 0 && (
@@ -661,6 +762,18 @@ function Dashboard() {
                 <AttemptScore>{a.score}/{a.totalQuestions}</AttemptScore>
                 <AttemptMeta>{a.mode}</AttemptMeta>
                 <AttemptMeta>{new Date(a.createdAt).toLocaleDateString()}</AttemptMeta>
+                {attemptsByTest[a.testId?._id || a.testId]?.length >= 2 && (
+                  <CompareButton
+                    data-testid="compare-attempts"
+                    onClick={() => {
+                      const key = a.testId?._id || a.testId;
+                      setCompareTestId(key);
+                      setCompareAttempts(attemptsByTest[key].slice(0, 5));
+                    }}
+                  >
+                    Compare
+                  </CompareButton>
+                )}
               </AttemptRow>
             ))}
           </AttemptList>
@@ -671,6 +784,26 @@ function Dashboard() {
             >
               {loadingAttempts ? t('common.loading') : t('dashboard.loadMore')}
             </LoadMoreButton>
+          )}
+          {compareTestId && compareAttempts.length > 0 && (
+            <ComparePanel>
+              <ComparePanelHeader>
+                <h3>{compareAttempts[0]?.test?.title || 'Test Comparison'}</h3>
+                <CloseCompareBtn onClick={() => setCompareTestId(null)}>&times;</CloseCompareBtn>
+              </ComparePanelHeader>
+              <CompareGrid>
+                {compareAttempts.map((a) => {
+                  const pct = Math.round((a.score / a.totalQuestions) * 100);
+                  return (
+                    <CompareCard key={a._id}>
+                      <CompareDate>{new Date(a.createdAt).toLocaleDateString()}</CompareDate>
+                      <CompareScore $percent={pct}>{pct}%</CompareScore>
+                      <CompareMeta>{a.score}/{a.totalQuestions} · {Math.floor(a.duration / 60)}m</CompareMeta>
+                    </CompareCard>
+                  );
+                })}
+              </CompareGrid>
+            </ComparePanel>
           )}
         </ChartSection>
       )}
