@@ -17,6 +17,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust 1 proxy hop (Caddy reverse proxy) for correct req.ip and rate-limit keying
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(compression());
 const ALLOWED_ORIGINS = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
