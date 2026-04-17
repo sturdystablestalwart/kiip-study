@@ -592,12 +592,94 @@ const SessionMeta = styled.p`
 
 const SessionBadge = styled.span`
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
   padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[2]}px;
   border-radius: ${({ theme }) => theme.layout.radius.pill}px;
   font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
   background: ${({ theme }) => theme.colors.accent.indigo}15;
   color: ${({ theme }) => theme.colors.accent.indigo};
+`;
+
+const PulsingDot = styled.span`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.state.success};
+  margin-right: ${({ theme }) => theme.layout.space[2]}px;
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  animation: pulse 2s infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+const DifficultyBadge = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  padding: 2px 8px;
+  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
+  background: ${({ $score, theme }) =>
+    $score >= 80 ? theme.colors.state.correctBg :
+    $score >= 50 ? theme.colors.state.infoBg :
+    theme.colors.state.wrongBg};
+  color: ${({ $score, theme }) =>
+    $score >= 80 ? theme.colors.state.success :
+    $score >= 50 ? theme.colors.state.warning :
+    theme.colors.state.danger};
+`;
+
+const OnboardingCard = styled.div`
+  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+  padding: ${({ theme }) => theme.layout.space[6]}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
+`;
+
+const OnboardingTitle = styled.h2`
+  margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
+`;
+
+const OnboardingText = styled.p`
+  color: ${({ theme }) => theme.colors.text.muted};
+  margin: 0 0 ${({ theme }) => theme.layout.space[4]}px 0;
+`;
+
+const OnboardingHints = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
+`;
+
+const Hint = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  color: ${({ theme }) => theme.colors.text.muted};
+`;
+
+const DismissBtn = styled.button`
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[5]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.accent.clay};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.accent.clay};
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  cursor: pointer;
+  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.accent.clay};
+    color: ${({ theme }) => theme.colors.bg.surface};
+  }
 `;
 
 const FilterBar = styled.div`
@@ -674,6 +756,10 @@ function Home() {
   const [unitFilter, setUnitFilter] = useState('');
   const [recentAttempts, setRecentAttempts] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);
+  const [difficultyMap, setDifficultyMap] = useState({});
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem('kiip_onboarded')
+  );
   const [deleteModal, setDeleteModal] = useState({ show: false, testId: null, testTitle: '' });
   const [deleting, setDeleting] = useState(false);
   const [copiedTestId, setCopiedTestId] = useState(null);
@@ -725,13 +811,15 @@ function Home() {
     if (!user) return;
     const controller = new AbortController();
 
-    // Fetch recent attempts and active sessions in parallel
+    // Fetch recent attempts, active sessions, and difficulty data in parallel
     Promise.all([
       api.get('/api/tests/recent-attempts?limit=5', { timeout: 10000, signal: controller.signal }),
-      api.get('/api/sessions/active', { signal: controller.signal })
-    ]).then(([recentRes, sessionsRes]) => {
+      api.get('/api/sessions/active', { signal: controller.signal }),
+      api.get('/api/review/difficulty', { signal: controller.signal })
+    ]).then(([recentRes, sessionsRes, diffRes]) => {
       setRecentAttempts(recentRes.data);
       setActiveSessions(sessionsRes.data.sessions || []);
+      setDifficultyMap(diffRes.data.difficulty || {});
     }).catch(err => {
       if (err.name === 'CanceledError') return;
       console.error('Failed to fetch user data:', err);
@@ -791,12 +879,30 @@ function Home() {
     ? Math.round((lastAttempt.score / lastAttempt.totalQuestions) * 100)
     : 0;
 
+  const dismissOnboarding = () => {
+    localStorage.setItem('kiip_onboarded', '1');
+    setShowOnboarding(false);
+  };
+
   return (
     <div>
       <PageHeader>
         <h1>{t('home.title')}</h1>
         {isAdmin && <CreateButton to="/create">+ {t('nav.create')}</CreateButton>}
       </PageHeader>
+
+      {showOnboarding && (
+        <OnboardingCard data-testid="onboarding-card">
+          <OnboardingTitle>{t('onboarding.welcome')}</OnboardingTitle>
+          <OnboardingText>{t('onboarding.description')}</OnboardingText>
+          <OnboardingHints>
+            <Hint>{t('onboarding.hintKeyboard')}</Hint>
+            <Hint>{t('onboarding.hintSearch')}</Hint>
+            <Hint>{t('onboarding.hintEndless')}</Hint>
+          </OnboardingHints>
+          <DismissBtn onClick={dismissOnboarding}>{t('onboarding.dismiss')}</DismissBtn>
+        </OnboardingCard>
+      )}
 
       <SearchTrigger onClick={() => searchPalette?.openPalette()} aria-label={t('nav.search')}>
         {t('nav.search')}
@@ -808,6 +914,29 @@ function Home() {
           <span>{error}</span>
           <RetryButton onClick={() => fetchTests()}>{t('common.retry')}</RetryButton>
         </ErrorBanner>
+      )}
+
+      {activeSessions.length > 0 && (
+        <SessionSection data-testid="active-sessions">
+          <SessionSectionTitle>{t('home.continueSession')}</SessionSectionTitle>
+          <SessionGrid>
+            {activeSessions.map(session => {
+              const mins = Math.floor(session.remainingTime / 60);
+              const secs = session.remainingTime % 60;
+              return (
+                <SessionCard key={session._id} to={`/test/${session.testId._id || session.testId}`}>
+                  <SessionInfo>
+                    <SessionTitle>{session.testId.title || 'Test'}</SessionTitle>
+                    <SessionMeta>
+                      {session.mode} mode &mdash; {mins}:{String(secs).padStart(2, '0')} remaining
+                    </SessionMeta>
+                  </SessionInfo>
+                  <SessionBadge><PulsingDot />Continue</SessionBadge>
+                </SessionCard>
+              );
+            })}
+          </SessionGrid>
+        </SessionSection>
       )}
 
       {lastAttempt && (
@@ -852,29 +981,6 @@ function Home() {
           </EndlessInfo>
         </EndlessCard>
       </DashboardSection>
-
-      {activeSessions.length > 0 && (
-        <SessionSection>
-          <SessionSectionTitle>{t('home.continueSession')}</SessionSectionTitle>
-          <SessionGrid>
-            {activeSessions.map(session => {
-              const mins = Math.floor(session.remainingTime / 60);
-              const secs = session.remainingTime % 60;
-              return (
-                <SessionCard key={session._id} to={`/test/${session.testId._id || session.testId}`}>
-                  <SessionInfo>
-                    <SessionTitle>{session.testId.title || 'Test'}</SessionTitle>
-                    <SessionMeta>
-                      {session.mode} mode &mdash; {mins}:{String(secs).padStart(2, '0')} remaining
-                    </SessionMeta>
-                  </SessionInfo>
-                  <SessionBadge>Continue</SessionBadge>
-                </SessionCard>
-              );
-            })}
-          </SessionGrid>
-        </SessionSection>
-      )}
 
       <FilterBar>
         <SectionTitle style={{ margin: 0 }}>{t('home.allTests')}</SectionTitle>
@@ -928,6 +1034,12 @@ function Home() {
               )}
               <CardTitle>{test.title}</CardTitle>
               <CardMeta>{t('home.questionsCount', { count: test.questionCount })}</CardMeta>
+              {difficultyMap[test._id] && (
+                <DifficultyBadge $score={difficultyMap[test._id].avgScore}>
+                  {difficultyMap[test._id].avgScore >= 80 ? 'Easy' :
+                   difficultyMap[test._id].avgScore >= 50 ? 'Medium' : 'Hard'}
+                </DifficultyBadge>
+              )}
               {test.lastAttempt ? (
                 <CardScore>
                   {t('home.lastScore', { score: Math.round((test.lastAttempt.score / test.lastAttempt.totalQuestions) * 100) })}
