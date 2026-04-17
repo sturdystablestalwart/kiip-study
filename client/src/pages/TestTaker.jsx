@@ -487,6 +487,63 @@ const FlagSuccessMsg = styled.p`
   margin: ${({ theme }) => theme.layout.space[4]}px 0;
 `;
 
+/* ── Save indicator ── */
+
+const SaveIndicator = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ $status, theme }) => {
+    if ($status === 'saving') return theme.colors.text.faint;
+    if ($status === 'saved') return theme.colors.state.success;
+    if ($status === 'error') return theme.colors.state.warning;
+    return 'transparent';
+  }};
+  transition: color ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
+`;
+
+/* ── Progress bar ── */
+
+const ProgressContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+const ProgressBarTrack = styled.div`
+  flex: 1;
+  height: 4px;
+  background: ${({ theme }) => theme.colors.border.subtle};
+  border-radius: 2px;
+  overflow: hidden;
+`;
+
+const ProgressBarFill = styled.div`
+  height: 100%;
+  width: ${({ $percent }) => $percent}%;
+  background: ${({ theme }) => theme.colors.accent.indigo};
+  transition: width ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
+  border-radius: 2px;
+`;
+
+const ProgressText = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
+  white-space: nowrap;
+`;
+
+/* ── Keyboard shortcut hint ── */
+
+const Kbd = styled.kbd`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  padding: 1px 5px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: 4px;
+  margin-left: ${({ theme }) => theme.layout.space[2]}px;
+  opacity: 0.6;
+  font-family: inherit;
+
+  ${below.tablet} { display: none; }
+`;
+
 /* ── Export links ── */
 
 const ExportRow = styled.div`
@@ -542,6 +599,8 @@ function TestTaker() {
   const [attemptId, setAttemptId] = useState(null);
 
   const { user } = useAuth();
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState('');
   const [flagNote, setFlagNote] = useState('');
@@ -627,15 +686,19 @@ function TestTaker() {
         orderedItems: ans.orderedItems || [],
         blankAnswers: ans.blankAnswers || []
       }));
+      setSaveStatus('saving');
       api.patch(`/api/sessions/${sessionId}`, {
         answers: answerArray,
         currentQuestion: currentQ,
         remainingTime: timeLeft
       }, { signal: controller.signal }).then(() => {
         autoSaveFailCount.current = 0;
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }).catch(err => {
         if (err.name === 'CanceledError') return;
         autoSaveFailCount.current++;
+        setSaveStatus('error');
         if (autoSaveFailCount.current >= 3) {
           console.warn('Auto-save failed repeatedly — progress may not be saved');
         }
@@ -892,6 +955,11 @@ function TestTaker() {
   const currentQuestion = test.questions[currentQ];
   const currentAnswer = answers[currentQ];
   const showFeedback = mode === 'Practice' ? (currentAnswer !== undefined) : isSubmitted;
+
+  const answeredCount = test ? Object.keys(answers).filter(k => {
+    const a = answers[k];
+    return a && (a.selectedOptions?.length > 0 || a.textAnswer?.trim() || a.orderedItems?.length > 0 || a.blankAnswers?.some(b => b?.trim()));
+  }).length : 0;
   const percentage = Math.round((score / test.questions.length) * 100);
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -917,11 +985,25 @@ function TestTaker() {
           <TimerDisplay $expired={timerExpired}>
             {timerExpired ? `+${formatTime(overdueSeconds)}` : formatTime(timeLeft)}
           </TimerDisplay>
+          <SaveIndicator $status={saveStatus} data-testid="save-indicator">
+            {saveStatus === 'saving' && 'Saving...'}
+            {saveStatus === 'saved' && '✓ Saved'}
+            {saveStatus === 'error' && 'Save failed'}
+          </SaveIndicator>
           <ExitButton onClick={handleExitClick}>
             {t('test.goHome')}
           </ExitButton>
         </HeaderRight>
       </HeaderBar>
+
+      {!isSubmitted && test && (
+        <ProgressContainer data-testid="progress-bar">
+          <ProgressBarTrack>
+            <ProgressBarFill $percent={test.questions.length > 0 ? (answeredCount / test.questions.length) * 100 : 0} />
+          </ProgressBarTrack>
+          <ProgressText>{answeredCount} / {test.questions.length}</ProgressText>
+        </ProgressContainer>
+      )}
 
       {isSubmitted && (
         <ResultCard>
@@ -996,12 +1078,12 @@ function TestTaker() {
 
         <Controls>
           <NavButton onClick={goPrev} disabled={!canGoPrev}>
-            {t('test.previous')}
+            {t('test.previous')} <Kbd>←</Kbd>
           </NavButton>
           {reviewMode ? (
-            <NavButton $primary onClick={goNext} disabled={!canGoNext}>{t('test.next')}</NavButton>
+            <NavButton $primary onClick={goNext} disabled={!canGoNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
           ) : canGoNext ? (
-            <NavButton $primary onClick={goNext}>{t('test.next')}</NavButton>
+            <NavButton $primary onClick={goNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
           ) : (
             <SubmitButton onClick={handleSubmit} disabled={isSubmitted}>
               {t('test.submit')}
