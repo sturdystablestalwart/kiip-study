@@ -35,8 +35,12 @@ const Item = styled.div`
   line-height: ${({ theme }) => theme.typography.scale.body.line}px;
   color: ${({ theme }) => theme.colors.text.primary};
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+  opacity: ${({ $isDragging }) => $isDragging ? 0.5 : 1};
+  transform: ${({ $isOver }) => $isOver ? 'scale(1.02)' : 'scale(1)'};
+  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
+              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
   user-select: none;
 
   border-left: 4px solid ${({ $correctPos, $incorrectPos, $showFeedback, theme }) => {
@@ -137,6 +141,8 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
   const orderedItems = answer?.orderedItems ?? options.map((_, i) => i);
 
   const [draggingIdx, setDraggingIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [ariaMessage, setAriaMessage] = useState('');
   const dragItem = useRef(null);
 
   const swap = useCallback(
@@ -148,6 +154,7 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
       next[fromIdx] = next[toIdx];
       next[toIdx] = temp;
       onAnswer({ orderedItems: next });
+      setAriaMessage(`Moved item to position ${toIdx + 1}`);
     },
     [disabled, orderedItems, onAnswer]
   );
@@ -159,9 +166,10 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, position) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverIdx(position);
   };
 
   const handleDrop = (e, dropIdx) => {
@@ -177,12 +185,15 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
     const moved = next.splice(fromIdx, 1)[0];
     next.splice(dropIdx, 0, moved);
     onAnswer({ orderedItems: next });
+    setAriaMessage(`Moved item to position ${dropIdx + 1}`);
     setDraggingIdx(null);
+    setDragOverIdx(null);
     dragItem.current = null;
   };
 
   const handleDragEnd = () => {
     setDraggingIdx(null);
+    setDragOverIdx(null);
     dragItem.current = null;
   };
 
@@ -203,10 +214,12 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
               $showFeedback={showFeedback}
               $isCorrectPosition={isCorrectPosition}
               $dragging={draggingIdx === position}
+              $isDragging={draggingIdx === position}
+              $isOver={dragOverIdx === position}
               $disabled={disabled}
               draggable={!disabled}
               onDragStart={(e) => handleDragStart(e, position)}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => handleDragOver(e, position)}
               onDrop={(e) => handleDrop(e, position)}
               onDragEnd={handleDragEnd}
             >
@@ -240,6 +253,22 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
           <strong>Why?</strong> {question.explanation}
         </ExplanationPanel>
       )}
+
+      <span
+        aria-live="polite"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          border: 0,
+        }}
+      >
+        {ariaMessage}
+      </span>
     </div>
   );
 }
