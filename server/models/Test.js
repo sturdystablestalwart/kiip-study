@@ -35,5 +35,7 @@ TestSchema.index({ title: 'text', category: 'text', description: 'text' });
 // Compound index for filtering + sorting
 TestSchema.index({ level: 1, unit: 1, createdAt: -1 });
 
+// Compound index for cursor pagination by (createdAt desc, _id desc)
+TestSchema.index({ createdAt: -1, _id: -1 });
 
 module.exports = mongoose.model('Test', TestSchema);

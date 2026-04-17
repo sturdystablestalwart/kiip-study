@@ -13,6 +13,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    mem_limit: 1g
+    cpus: '1.0'
 
   server:
     build:
@@ -47,6 +49,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: '1.0'
 
   client:
     build:
@@ -67,6 +74,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    mem_limit: 128m
+    cpus: '0.5'
 
   caddy:
     image: caddy:2-alpine
@@ -88,6 +101,27 @@ services:
       - server
     networks:
       - kiip-network
+    mem_limit: 128m
+    cpus: '0.25'
+
+  backup:
+    image: mongo:7
+    container_name: kiip-backup
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongo:27017/kiip_test_app
+    volumes:
+      - ./ops/backup.sh:/usr/local/bin/backup.sh:ro
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "while true; do sleep 86400; /usr/local/bin/backup.sh; done"
+    restart: unless-stopped
+    networks:
+      - kiip-network
+    mem_limit: 256m
 
 volumes:
   mongo_data:

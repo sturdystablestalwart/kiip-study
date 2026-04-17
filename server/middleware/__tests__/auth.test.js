@@ -53,7 +53,7 @@ describe('requireAuth', () => {
   });
 
   it('returns 401 for expired token', async () => {
-    const expiredToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { ...JWT_OPTS, expiresIn: '-1s' });
+    const expiredToken = jwt.sign({ userId: 'user123' }, TEST_SECRET, { ...JWT_OPTS, expiresIn: '-30s' });
 
     const req = { cookies: { jwt: expiredToken } };
     const res = mockRes();

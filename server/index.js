@@ -14,8 +14,13 @@ const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
+const logger = require('./utils/logger');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust 1 proxy hop (Caddy reverse proxy) for correct req.ip and rate-limit keying
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(compression());
@@ -59,52 +64,12 @@ app.use(helmet({
 }));
 
 // Custom NoSQL injection sanitizer (express-mongo-sanitize is incompatible with Express 5)
-// Recursively strips keys starting with '$' or containing '.' AND
-// removes values that are objects containing MongoDB operator keys
-app.use('/api', (req, _res, next) => {
-  const MONGO_OPS = new Set(['$gt','$gte','$lt','$lte','$ne','$in','$nin','$regex','$exists','$or','$and','$not','$nor','$where','$elemMatch','$size','$type','$mod','$text','$all']);
-  const PROTO_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-  const sanitize = (obj) => {
-    if (!obj || typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) { obj.forEach(sanitize); return obj; }
-    for (const key of Object.keys(obj)) {
-      if (PROTO_KEYS.has(key) || key.startsWith('$') || key.includes('.')) {
-        delete obj[key];
-      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-        // Check if the value itself contains MongoDB operators
-        if (!Array.isArray(obj[key])) {
-          const valueKeys = Object.keys(obj[key]);
-          if (valueKeys.some(k => MONGO_OPS.has(k))) {
-            delete obj[key];
-            continue;
-          }
-        }
-        sanitize(obj[key]);
-      }
-    }
-    return obj;
-  };
-  if (req.body) sanitize(req.body);
-  if (req.params) sanitize(req.params);
-  // Express 5: req.query is a getter, so sanitize the parsed values in-place
-  if (req.query && typeof req.query === 'object') {
-    for (const key of Object.keys(req.query)) {
-      if (key.startsWith('$') || key.includes('.')) {
-        delete req.query[key];
-      } else if (typeof req.query[key] === 'object' && req.query[key] !== null) {
-        if (!Array.isArray(req.query[key])) {
-          const valueKeys = Object.keys(req.query[key]);
-          if (valueKeys.some(k => MONGO_OPS.has(k))) {
-            delete req.query[key];
-            continue;
-          }
-        }
-        sanitize(req.query[key]);
-      }
-    }
-  }
-  next();
-});
+const { sanitizeMiddleware } = require('./middleware/sanitizer');
+app.use('/api', sanitizeMiddleware);
+
+// Origin/Referer check — defense-in-depth CSRF protection alongside SameSite=Lax cookies
+const { createOriginCheck } = require('./middleware/originCheck');
+app.use('/api', createOriginCheck(ALLOWED_ORIGINS));
 
 // Serve uploaded images (auth-gated for documents/temp, public for images)
 const { requireAuth } = require('./middleware/auth');
@@ -139,7 +104,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_a
     const { parseTextWithLLM } = require('./routes/tests');
     await autoImportTests(parseTextWithLLM);
 })
-.catch(err => console.log(err));
+.catch(err => logger.error({ err }, 'MongoDB connection failed'));
 
 // Routes
 const { router: testRoutes } = require('./routes/tests');
@@ -190,12 +155,28 @@ app.get('/api/health', healthHandler);
 
 // Production error handler — hide stack traces from clients
 app.use((err, req, res, _next) => {
-  console.error(err);
+  logger.error({ err }, 'Unhandled error');
   const status = err.status || 500;
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(status).json({ error: message });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+const shutdown = (signal) => {
+    console.log(`${signal} received, shutting down gracefully...`);
+    const forced = setTimeout(() => {
+        console.error('Forced shutdown after 30s timeout');
+        process.exit(1);
+    }, 30000);
+    server.close(async () => {
+        try { await mongoose.connection.close(); } catch (e) { /* ignore */ }
+        clearTimeout(forced);
+        process.exit(0);
+    });
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const logger = require('../utils/logger');
 
 // Rate limit public share endpoint to prevent brute-force enumeration
 const shareLimiter = rateLimit({
@@ -14,7 +15,7 @@ const shareLimiter = rateLimit({
 });
 
 // POST /api/tests/:id/share — generate share ID (requires auth)
-router.post('/:id/share', requireAuth, async (req, res) => {
+router.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
   try {
     const test = await Test.findById(req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
@@ -28,7 +29,7 @@ router.post('/:id/share', requireAuth, async (req, res) => {
     const shareUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/shared/${test.shareId}`;
     res.json({ shareId: test.shareId, shareUrl });
   } catch (err) {
-    console.error('Error generating share link:', err);
+    logger.error({ err }, 'Error generating share link');
     res.status(500).json({ error: 'Failed to generate share link' });
   }
 });
@@ -50,7 +51,7 @@ router.get('/:shareId', shareLimiter, async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300');
     res.json(test);
   } catch (err) {
-    console.error('Error fetching shared test:', err);
+    logger.error({ err }, 'Error fetching shared test');
     res.status(500).json({ error: 'Failed to fetch shared test' });
   }
 });

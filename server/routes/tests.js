@@ -7,6 +7,7 @@ const { scoreQuestion } = require('../utils/scoring');
 const { parseTextWithLLM } = require('../utils/llm');
 const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
+const logger = require('../utils/logger');
 
 // ============================================
 // ROUTES
@@ -331,7 +332,7 @@ router.post('/attempts/migrate', requireAuth, async (req, res) => {
 
         res.json({ migrated: docs.length });
     } catch (err) {
-        console.error('Attempt migration error:', err);
+        logger.error({ err }, 'Attempt migration error');
         res.status(500).json({ message: 'Migration failed' });
     }
 });

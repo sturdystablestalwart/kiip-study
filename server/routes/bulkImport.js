@@ -8,6 +8,7 @@ const path = require('path');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const Test = require('../models/Test');
 const { checkAgainstExisting } = require('../utils/dedup');
+const logger = require('../utils/logger');
 
 const crypto = require('crypto');
 const upload = multer({
@@ -104,7 +105,7 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
 
     res.json({ previewId, ...preview });
   } catch (err) {
-    console.error('Bulk import error:', err);
+    logger.error({ err }, 'Bulk import error');
     res.status(500).json({ error: 'Failed to parse file' });
   } finally {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
@@ -194,5 +195,27 @@ function validateAndGroup(rows) {
 
   return { tests: Array.from(testsMap.values()), totalRows: rows.length, globalErrors };
 }
+
+// --- Temp file cleanup (TTL: 1 hour) ---
+const TEMP_DIR = path.join(__dirname, '../uploads/temp');
+const MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+async function cleanupTempPreviews() {
+    try {
+        const entries = await fs.promises.readdir(TEMP_DIR).catch(() => []);
+        const now = Date.now();
+        for (const name of entries) {
+            if (!name.startsWith('preview-')) continue;
+            const full = path.join(TEMP_DIR, name);
+            try {
+                const stat = await fs.promises.stat(full);
+                if (now - stat.mtimeMs > MAX_AGE_MS) await fs.promises.unlink(full);
+            } catch { /* ignore individual file errors */ }
+        }
+    } catch { /* ignore — temp dir may not exist yet */ }
+}
+
+cleanupTempPreviews();
+setInterval(cleanupTempPreviews, 15 * 60 * 1000).unref();
 
 module.exports = router;

@@ -68,8 +68,9 @@ server/uploads/documents/*
 !server/uploads/images/.gitkeep
 !server/uploads/documents/.gitkeep
 
-# Backups
-backups/
+# Local backups
+backups/*.tar.gz
+backups/mongo-*/
 
 # Bundle analysis
 dist/bundle-report.html
