@@ -101,7 +101,7 @@
     "editor": "Edit Test",
     "save": "Save Changes",
     "addQuestion": "Add Question",
-    "removeQuestion": "Remove",
+    "removeQuestion": "Remove this question?",
     "questionType": "Question Type",
     "options": "Options",
     "correctAnswer": "Correct Answer",
@@ -157,7 +157,8 @@
     "allTime": "All time",
     "noData": "Take some tests to see your progress here.",
     "recentAttempts": "Recent Attempts",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "compare": "Compare"
   },
   "endless": {
     "title": "Endless Practice",
@@ -186,7 +187,10 @@
     "sessionExpired": "Session expired — please sign in again",
     "networkError": "Cannot reach the server. Check your connection.",
     "loadMore": "Load more",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "saveError": "Save failed"
   },
   "shared": {
     "notFound": "Test not found",
@@ -232,10 +236,18 @@
     "goHome": "Go to home"
   },
   "review": {
-    "title": "Failed Questions Review",
-    "noFailed": "No failed questions found",
-    "noFailedDesc": "Great job! You haven't missed any questions in your recent attempts.",
+    "title": "Review Failed Questions",
+    "noFailed": "No failed questions!",
+    "noFailedDesc": "You answered everything correctly in recent attempts. Keep it up!",
     "check": "Check Answer",
     "finish": "Back to Dashboard"
+  },
+  "onboarding": {
+    "welcome": "Welcome to KIIP Study",
+    "description": "Practice for your Korean Immigration Integration Program exam with our question library.",
+    "hintKeyboard": "Press Ctrl+P to quickly search for tests",
+    "hintSearch": "Use filters to find tests by level and unit",
+    "hintEndless": "Try Endless Practice for continuous drilling",
+    "dismiss": "Got it!"
   }
 }
