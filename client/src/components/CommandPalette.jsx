@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { below } from '../theme/breakpoints';
 import api from '../utils/api';
+import useFocusTrap from '../hooks/useFocusTrap';
 
 const Overlay = styled.div`
   position: fixed;
@@ -108,9 +109,12 @@ function CommandPalette({ onClose }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
+  const trapRef = useRef(null);
   const navigate = useNavigate();
   const debounceRef = useRef(null);
   const searchControllerRef = useRef(null);
+
+  useFocusTrap(trapRef);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -175,7 +179,7 @@ function CommandPalette({ onClose }) {
 
   return (
     <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label="Command palette">
-      <Panel onClick={e => e.stopPropagation()}>
+      <Panel ref={trapRef} onClick={e => e.stopPropagation()}>
         <SearchInput
           ref={inputRef}
           type="text"

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import useFocusTrap from '../hooks/useFocusTrap';
 
 const Overlay = styled.div`
   position: fixed;
@@ -70,6 +71,8 @@ const shortcuts = [
 function ShortcutsModal({ onClose }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
+
+  useFocusTrap(panelRef);
 
   useEffect(() => {
     const handleKey = (e) => {

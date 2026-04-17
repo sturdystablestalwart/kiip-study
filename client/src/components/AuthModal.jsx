@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import useFocusTrap from '../hooks/useFocusTrap';
 
 const Overlay = styled.div`
     position: fixed;
@@ -130,7 +131,10 @@ function maskEmail(email) {
 export default function AuthModal({ onClose }) {
     const { t, i18n } = useTranslation();
     const { user, refreshUser } = useAuth();
+    const cardRef = useRef(null);
     const [state, setState] = useState('idle');
+
+    useFocusTrap(cardRef);
     const [email, setEmail] = useState('');
     const [cooldown, setCooldown] = useState(0);
 
@@ -188,7 +192,7 @@ export default function AuthModal({ onClose }) {
 
     return (
         <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label={t('auth.signInTitle')}>
-            <Card onClick={e => e.stopPropagation()}>
+            <Card ref={cardRef} onClick={e => e.stopPropagation()}>
                 {state === 'checkEmail' ? (
                     <>
                         <Title>{t('auth.checkEmail')}</Title>
