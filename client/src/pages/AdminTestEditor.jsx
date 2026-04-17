@@ -299,6 +299,60 @@ const OrderNum = styled.span`
   min-width: 20px;
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: ${({ theme }) => theme.colors.scrim};
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: ${({ theme }) => theme.zIndex.modal};
+`;
+
+const ModalCard = styled.div`
+  background: ${({ theme }) => theme.colors.bg.surface};
+  padding: ${({ theme }) => theme.layout.space[7]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+  box-shadow: ${({ theme }) => theme.layout.shadow.md};
+  max-width: 420px;
+  width: 90%;
+
+  h3 { margin: 0 0 ${({ theme }) => theme.layout.space[4]}px 0; }
+  p { color: ${({ theme }) => theme.colors.text.muted}; margin: 0 0 ${({ theme }) => theme.layout.space[6]}px 0; }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+  justify-content: flex-end;
+`;
+
+const ModalBtnCancel = styled.button`
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[5]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  cursor: pointer;
+  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
+`;
+
+const ModalBtnDanger = styled.button`
+  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[5]}px;
+  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+  border: none;
+  background: ${({ theme }) => theme.colors.state.danger};
+  color: #fff;
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  cursor: pointer;
+  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
+`;
+
 const QUESTION_TYPES = [
     { value: 'mcq-single', label: 'MCQ (single)' },
     { value: 'mcq-multiple', label: 'MCQ (multiple)' },
@@ -323,6 +377,7 @@ function AdminTestEditor() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [chipInputs, setChipInputs] = useState({});
+    const [deleteQModal, setDeleteQModal] = useState({ show: false, idx: null });
 
     useEffect(() => {
         if (!authLoading && !user?.isAdmin) {
@@ -418,8 +473,17 @@ function AdminTestEditor() {
         }));
     };
 
-    const deleteQuestion = (idx) => {
-        setQuestions(prev => prev.filter((_, i) => i !== idx));
+    const requestDeleteQuestion = (idx) => {
+        setDeleteQModal({ show: true, idx });
+    };
+
+    const confirmDeleteQuestion = () => {
+        setQuestions(prev => prev.filter((_, i) => i !== deleteQModal.idx));
+        setDeleteQModal({ show: false, idx: null });
+    };
+
+    const cancelDeleteQuestion = () => {
+        setDeleteQModal({ show: false, idx: null });
     };
 
     const addQuestion = () => {
@@ -483,7 +547,7 @@ function AdminTestEditor() {
             {error && <ErrorMsg>{error}</ErrorMsg>}
 
             {questions.map((q, qIdx) => (
-                <QuestionCard key={qIdx}>
+                <QuestionCard key={qIdx} data-testid="question-card">
                     <QuestionHeader>
                         <QuestionNum>Q{qIdx + 1}</QuestionNum>
                         <TypeSelect value={q.type || 'mcq-single'} onChange={e => changeType(qIdx, e.target.value)} aria-label={`Question ${qIdx + 1} type`}>
@@ -491,7 +555,7 @@ function AdminTestEditor() {
                                 <option key={t.value} value={t.value}>{t.label}</option>
                             ))}
                         </TypeSelect>
-                        <DeleteQBtn onClick={() => deleteQuestion(qIdx)} aria-label={`Delete question ${qIdx + 1}`}>
+                        <DeleteQBtn onClick={() => requestDeleteQuestion(qIdx)} aria-label={`Delete question ${qIdx + 1}`} data-testid="delete-question-btn">
                             &times;
                         </DeleteQBtn>
                     </QuestionHeader>
@@ -620,6 +684,19 @@ function AdminTestEditor() {
                     {saving ? t('common.loading') : t('admin.save')}
                 </SaveBtn>
             </BottomBar>
+
+            {deleteQModal.show && (
+                <ModalOverlay onClick={cancelDeleteQuestion} role="dialog" aria-modal="true" aria-label="Delete question confirmation">
+                    <ModalCard onClick={e => e.stopPropagation()}>
+                        <h3>Remove this question?</h3>
+                        <p>Question {deleteQModal.idx + 1} will be removed. This cannot be undone until you save.</p>
+                        <ModalActions>
+                            <ModalBtnCancel onClick={cancelDeleteQuestion}>Cancel</ModalBtnCancel>
+                            <ModalBtnDanger onClick={confirmDeleteQuestion}>Remove</ModalBtnDanger>
+                        </ModalActions>
+                    </ModalCard>
+                </ModalOverlay>
+            )}
         </div>
     );
 }
