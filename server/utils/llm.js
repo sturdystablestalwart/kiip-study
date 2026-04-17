@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { validateLLMOutput } = require('./llmValidator');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -50,12 +51,7 @@ const parseTextWithLLM = async (text) => {
         const response = await result.response;
         const jsonText = response.text().replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
         const parsed = JSON.parse(jsonText);
-
-        // Validate that we have at least 1 question
-        if (!parsed.questions || parsed.questions.length === 0) {
-            throw new Error('AI generated no valid questions. Please provide more content.');
-        }
-
+        validateLLMOutput(parsed);
         return parsed;
     } catch (err) {
         console.error("LLM Parsing Error:", err);
