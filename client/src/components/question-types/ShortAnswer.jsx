@@ -1,5 +1,19 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+/* ───────── Animations ───────── */
+
+const correctPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+`;
+
+const incorrectShake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+`;
 
 /* ───────── Styled Components ───────── */
 
@@ -42,6 +56,16 @@ const AnswerInput = styled.input`
     opacity: 0.7;
     cursor: default;
   }
+
+  animation: ${({ $correct, $incorrect }) => {
+    if ($correct) return css`${correctPulse} 300ms ease-out`;
+    if ($incorrect) return css`${incorrectShake} 300ms ease-out`;
+    return css`none`;
+  }};
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const FeedbackMessage = styled.div`
@@ -60,6 +84,11 @@ const AcceptedList = styled.ul`
   li {
     margin-bottom: ${({ theme }) => theme.layout.space[1]}px;
   }
+`;
+
+const CharCount = styled.span`
+  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
+  color: ${({ theme }) => theme.colors.text.faint};
 `;
 
 const ExplanationPanel = styled.div`
@@ -110,21 +139,24 @@ function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
         $correct={showFeedback && isCorrect}
         $incorrect={showFeedback && !isCorrect && textAnswer.length > 0}
       />
+      <CharCount>{(answer?.textAnswer || '').length} characters</CharCount>
 
-      {showFeedback && isCorrect && (
-        <FeedbackMessage $correct>Correct!</FeedbackMessage>
-      )}
+      <div aria-live="polite">
+        {showFeedback && isCorrect && (
+          <FeedbackMessage $correct>Correct!</FeedbackMessage>
+        )}
 
-      {showFeedback && !isCorrect && textAnswer.length > 0 && accepted.length > 0 && (
-        <>
-          <FeedbackMessage>Incorrect. Accepted answers:</FeedbackMessage>
-          <AcceptedList>
-            {accepted.map((a, idx) => (
-              <li key={idx}>{a}</li>
-            ))}
-          </AcceptedList>
-        </>
-      )}
+        {showFeedback && !isCorrect && textAnswer.length > 0 && accepted.length > 0 && (
+          <>
+            <FeedbackMessage>Incorrect. Accepted answers:</FeedbackMessage>
+            <AcceptedList>
+              {accepted.map((a, idx) => (
+                <li key={idx}>{a}</li>
+              ))}
+            </AcceptedList>
+          </>
+        )}
+      </div>
 
       {showFeedback && question.explanation && (
         <ExplanationPanel>

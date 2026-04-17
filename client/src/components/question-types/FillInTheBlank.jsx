@@ -1,5 +1,19 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+/* ───────── Animations ───────── */
+
+const correctPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+`;
+
+const incorrectShake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+`;
 
 /* ───────── Styled Components ───────── */
 
@@ -58,6 +72,16 @@ const BlankInput = styled.input`
   &:disabled {
     opacity: 0.7;
     cursor: default;
+  }
+
+  animation: ${({ $correct, $incorrect }) => {
+    if ($correct) return css`${correctPulse} 300ms ease-out`;
+    if ($incorrect) return css`${incorrectShake} 300ms ease-out`;
+    return css`none`;
+  }};
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -141,9 +165,11 @@ function FillInTheBlank({ question, answer, onAnswer, showFeedback, disabled }) 
                     aria-label={`Blank ${currentBlankIdx + 1}`}
                   />
                   {showFeedback && isIncorrect && blankDef && (
-                    <BlankFeedback>
-                      {(blankDef.acceptedAnswers ?? [blankDef.answer]).join(' / ')}
-                    </BlankFeedback>
+                    <span aria-live="polite">
+                      <BlankFeedback>
+                        {(blankDef.acceptedAnswers ?? [blankDef.answer]).join(' / ')}
+                      </BlankFeedback>
+                    </span>
                   )}
                 </>
               )}

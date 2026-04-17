@@ -1,5 +1,19 @@
 import React, { useState, useRef, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+/* ───────── Animations ───────── */
+
+const correctPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+`;
+
+const incorrectShake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+`;
 
 /* ───────── Styled Components ───────── */
 
@@ -42,6 +56,17 @@ const Item = styled.div`
 
   &:active {
     cursor: ${({ $disabled }) => ($disabled ? 'default' : 'grabbing')};
+  }
+
+  animation: ${({ $showFeedback, $isCorrectPosition }) => {
+    if (!$showFeedback) return css`none`;
+    if ($isCorrectPosition) return css`${correctPulse} 300ms ease-out`;
+    if ($showFeedback && !$isCorrectPosition) return css`${incorrectShake} 300ms ease-out`;
+    return css`none`;
+  }};
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -176,6 +201,7 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
               $correctPos={isCorrectPosition}
               $incorrectPos={isIncorrectPosition}
               $showFeedback={showFeedback}
+              $isCorrectPosition={isCorrectPosition}
               $dragging={draggingIdx === position}
               $disabled={disabled}
               draggable={!disabled}

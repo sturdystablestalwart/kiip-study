@@ -1,5 +1,19 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+/* ───────── Animations ───────── */
+
+const correctPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+`;
+
+const incorrectShake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+`;
 
 /* ───────── Styled Components ───────── */
 
@@ -48,6 +62,17 @@ const OptionButton = styled.button`
   &:disabled {
     cursor: default;
   }
+
+  animation: ${({ $showFeedback, $isCorrect, $selected }) => {
+    if (!$showFeedback) return css`none`;
+    if ($isCorrect) return css`${correctPulse} 300ms ease-out`;
+    if ($selected && !$isCorrect) return css`${incorrectShake} 300ms ease-out`;
+    return css`none`;
+  }};
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const ExplanationPanel = styled.div`
@@ -77,10 +102,12 @@ function MCQSingle({ question, answer, onAnswer, showFeedback, disabled }) {
 
   return (
     <div>
-      <OptionsGrid>
+      <OptionsGrid role="radiogroup" aria-label="Answer options">
         {question.options.map((opt, idx) => (
           <OptionButton
             key={idx}
+            role="radio"
+            aria-checked={selectedIndex === idx}
             $selected={selectedIndex === idx}
             $isCorrect={opt.isCorrect}
             $showFeedback={showFeedback}
