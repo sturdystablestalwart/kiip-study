@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 // Rate limit public share endpoint to prevent brute-force enumeration
 const shareLimiter = rateLimit({
@@ -14,7 +14,7 @@ const shareLimiter = rateLimit({
 });
 
 // POST /api/tests/:id/share — generate share ID (requires auth)
-router.post('/:id/share', requireAuth, async (req, res) => {
+router.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
   try {
     const test = await Test.findById(req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
