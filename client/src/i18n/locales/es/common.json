@@ -230,5 +230,12 @@
     "verifyInvalid": "Este enlace no es valido.",
     "requestNewLink": "Solicitar nuevo enlace",
     "goHome": "Ir al inicio"
+  },
+  "review": {
+    "title": "Repaso de preguntas fallidas",
+    "noFailed": "No hay preguntas fallidas",
+    "noFailedDesc": "Buen trabajo! No has fallado ninguna pregunta recientemente.",
+    "check": "Comprobar respuesta",
+    "finish": "Volver al panel"
   }
 }

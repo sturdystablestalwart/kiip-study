@@ -26,6 +26,7 @@ const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
 const ShortcutsModal = React.lazy(() => import('./components/ShortcutsModal'));
 const MagicLinkVerify = React.lazy(() => import('./pages/MagicLinkVerify'));
 const AuthModal = React.lazy(() => import('./components/AuthModal'));
+const FailedQuestions = React.lazy(() => import('./pages/FailedQuestions'));
 
 import SearchPaletteContext from './context/SearchPaletteContext';
 
@@ -511,6 +512,7 @@ function AppInner() {
                     <Route path="/admin/duplicates" element={<AdminDuplicates />} />
                     <Route path="/shared/:shareId" element={<SharedTest />} />
                     <Route path="/auth/verify" element={<MagicLinkVerify />} />
+                    <Route path="/review" element={<FailedQuestions />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

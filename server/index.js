@@ -137,6 +137,9 @@ const duplicatesRoutes = require('./routes/duplicates');
 app.use('/api/admin/tests', bulkImportRoutes);
 app.use('/api/admin/duplicates', duplicatesRoutes);
 
+const reviewRoutes = require('./routes/review');
+app.use('/api/review', reviewRoutes);
+
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });

@@ -230,5 +230,12 @@
     "verifyInvalid": "이 링크는 유효하지 않습니다.",
     "requestNewLink": "새 링크 요청",
     "goHome": "홈으로 이동"
+  },
+  "review": {
+    "title": "오답 복습",
+    "noFailed": "오답 문항 없음",
+    "noFailedDesc": "훌륭해요! 최근 시도에서 틀린 문항이 없습니다.",
+    "check": "정답 확인",
+    "finish": "대시보드로 돌아가기"
   }
 }

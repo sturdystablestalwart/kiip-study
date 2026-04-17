@@ -230,5 +230,12 @@
     "verifyInvalid": "This link is invalid.",
     "requestNewLink": "Request a new link",
     "goHome": "Go to home"
+  },
+  "review": {
+    "title": "Failed Questions Review",
+    "noFailed": "No failed questions found",
+    "noFailedDesc": "Great job! You haven't missed any questions in your recent attempts.",
+    "check": "Check Answer",
+    "finish": "Back to Dashboard"
   }
 }
