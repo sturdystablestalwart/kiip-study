@@ -111,22 +111,29 @@ export default function FailedQuestions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!user);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState({});
   const [correctCount, setCorrectCount] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get('/api/review/failed?limit=30')
-      .then(res => setQuestions(res.data.questions))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+    if (!user) return;
+    const controller = new AbortController();
+    const fetchFailed = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/api/review/failed?limit=30', { signal: controller.signal });
+        setQuestions(res.data.questions);
+      } catch (err) {
+        if (err.name === 'CanceledError') return;
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFailed();
+    return () => controller.abort();
   }, [user]);
 
   const handleAnswer = useCallback(
