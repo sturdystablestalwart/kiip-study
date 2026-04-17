@@ -14,6 +14,10 @@ COPY . .
 # Create uploads directories
 RUN mkdir -p uploads/images uploads/documents
 
+# Drop to non-root user for security
+RUN chown -R node:node /app
+USER node
+
 # Expose port
 EXPOSE 5000
 
