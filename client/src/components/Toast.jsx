@@ -33,6 +33,12 @@ const ToastItem = styled.div`
   padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
   background: ${({ theme }) => theme.colors.bg.surface};
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-left: 4px solid ${({ $type, theme }) => {
+    if ($type === 'success') return theme.colors.state.success;
+    if ($type === 'error') return theme.colors.state.danger;
+    if ($type === 'warning') return theme.colors.state.warning;
+    return theme.colors.accent.indigo;
+  }};
   border-radius: ${({ theme }) => theme.layout.radius.md}px;
   box-shadow: ${({ theme }) => theme.layout.shadow.md};
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
@@ -78,8 +84,8 @@ export default function Toast() {
 
   useEffect(() => {
     const handler = (e) => {
-      const { id, message, duration } = e.detail;
-      setToasts(prev => [...prev, { id, message, exiting: false }]);
+      const { id, message, type, duration } = e.detail;
+      setToasts(prev => [...prev, { id, message, type, exiting: false }]);
 
       if (duration > 0) {
         setTimeout(() => {
@@ -100,12 +106,10 @@ export default function Toast() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 160);
   };
 
-  if (!toasts.length) return null;
-
   return (
-    <ToastContainer>
+    <ToastContainer role="status" aria-live="polite">
       {toasts.map(toast => (
-        <ToastItem key={toast.id} $exiting={toast.exiting}>
+        <ToastItem key={toast.id} $exiting={toast.exiting} $type={toast.type}>
           {toast.message}
           <DismissButton onClick={() => dismiss(toast.id)} aria-label="Dismiss">
             &times;
