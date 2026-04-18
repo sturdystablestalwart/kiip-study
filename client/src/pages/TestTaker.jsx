@@ -8,6 +8,7 @@ import { below } from '../theme/breakpoints';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import { saveAnonymousAttempt } from '../utils/anonymousAttempts';
+import { Button, Card, Modal, ModalActions } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -19,15 +20,10 @@ const Page = styled.div`
 
 /* ── Header ── */
 
-const HeaderBar = styled.div`
+const HeaderBar = styled(Card)`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
   gap: ${({ theme }) => theme.layout.space[4]}px;
   flex-wrap: wrap;
 
@@ -89,33 +85,10 @@ const TimerDisplay = styled.div`
   font-variant-numeric: tabular-nums;
 `;
 
-const ExitButton = styled.button`
-  height: 36px;
-  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.selection.bg};
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-`;
-
 /* ── Result card ── */
 
-const ResultCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+const ResultCard = styled(Card)`
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
 
   h2 {
     margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
@@ -138,13 +111,7 @@ const OverdueNote = styled.p`
 
 /* ── Question card ── */
 
-const QuestionCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
-
+const QuestionCard = styled(Card)`
   ${below.tablet} {
     padding: ${({ theme }) => theme.layout.space[5]}px;
   }
@@ -214,28 +181,9 @@ const NavButton = styled.button`
   }
 `;
 
-const SubmitButton = styled(NavButton)`
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
 
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-  }
-`;
-
-const BackToTestsButton = styled(NavButton)`
+const BackToTestsButton = styled(Button)`
   margin-top: ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-  }
 `;
 
 const ReviewButton = styled.button`
@@ -326,31 +274,10 @@ const LoadingScreen = styled(StatusScreen)`
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
-/* ── Modals ── */
+/* ── Modal inner styles ── */
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${({ theme }) => theme.colors.scrim};
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-`;
-
-const ModalCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  max-width: 420px;
-  width: 90%;
+const ModalBody = styled.div`
   text-align: center;
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
 
   h3 {
     margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
@@ -363,45 +290,6 @@ const ModalCard = styled.div`
     font-size: ${({ theme }) => theme.typography.scale.small.size}px;
     line-height: ${({ theme }) => theme.typography.scale.small.line}px;
   }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.layout.space[3]}px;
-  justify-content: center;
-`;
-
-const ModalBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-family: inherit;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  border: none;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover { opacity: 0.9; }
-`;
-
-const ModalBtnSecondary = styled(ModalBtn)`
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-`;
-
-const ModalBtnPrimary = styled(ModalBtn)`
-  background: ${({ theme }) => theme.colors.accent.indigo};
-  color: ${({ theme }) => theme.colors.bg.surface};
-`;
-
-const ModalBtnDanger = styled(ModalBtn)`
-  background: ${({ theme }) => theme.colors.state.danger};
-  color: ${({ theme }) => theme.colors.bg.surface};
 `;
 
 /* ── Flag UI ── */
@@ -990,9 +878,9 @@ function TestTaker() {
             {saveStatus === 'saved' && '✓ Saved'}
             {saveStatus === 'error' && 'Save failed'}
           </SaveIndicator>
-          <ExitButton onClick={handleExitClick}>
+          <Button $variant="secondary" $size="compact" onClick={handleExitClick}>
             {t('test.goHome')}
-          </ExitButton>
+          </Button>
         </HeaderRight>
       </HeaderBar>
 
@@ -1006,7 +894,7 @@ function TestTaker() {
       )}
 
       {isSubmitted && (
-        <ResultCard>
+        <ResultCard $padding="lg" $radius="lg" $shadow="md">
           <h2>{t('test.score')}: {score}/{test.questions.length}</h2>
           <ScorePercentage>{percentage}%</ScorePercentage>
           {overdueSeconds > 0 && (
@@ -1048,7 +936,7 @@ function TestTaker() {
         </ResultCard>
       )}
 
-      <QuestionCard>
+      <QuestionCard $padding="lg" $radius="lg">
         {currentQuestion.image && (
           <QuestionImage
             src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${currentQuestion.image}`}
@@ -1085,9 +973,9 @@ function TestTaker() {
           ) : canGoNext ? (
             <NavButton $primary onClick={goNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
           ) : (
-            <SubmitButton onClick={handleSubmit} disabled={isSubmitted}>
+            <Button onClick={handleSubmit} disabled={isSubmitted}>
               {t('test.submit')}
-            </SubmitButton>
+            </Button>
           )}
         </Controls>
 
@@ -1116,70 +1004,71 @@ function TestTaker() {
       </QuestionCard>
 
       {showExitModal && (
-        <ModalOverlay onClick={cancelExit} role="dialog" aria-modal="true" aria-label={t('test.confirmExit')}>
-          <ModalCard onClick={e => e.stopPropagation()}>
+        <Modal onClose={cancelExit} ariaLabel={t('test.confirmExit')}>
+          <ModalBody>
             <h3>{t('test.confirmExit')}</h3>
             <p></p>
-            <ModalActions>
-              <ModalBtnSecondary onClick={cancelExit}>{t('common.cancel')}</ModalBtnSecondary>
-              <ModalBtnDanger onClick={confirmExit}>{t('common.confirm')}</ModalBtnDanger>
-            </ModalActions>
-          </ModalCard>
-        </ModalOverlay>
+          </ModalBody>
+          <ModalActions>
+            <Button $variant="secondary" onClick={cancelExit}>{t('common.cancel')}</Button>
+            <Button $variant="danger" onClick={confirmExit}>{t('common.confirm')}</Button>
+          </ModalActions>
+        </Modal>
       )}
 
       {showModeModal && (
-        <ModalOverlay onClick={cancelModeChange} role="dialog" aria-modal="true" aria-label={t('test.confirmModeSwitch')}>
-          <ModalCard onClick={e => e.stopPropagation()}>
+        <Modal onClose={cancelModeChange} ariaLabel={t('test.confirmModeSwitch')}>
+          <ModalBody>
             <h3>{t('test.confirmModeSwitch')}</h3>
             <p></p>
-            <ModalActions>
-              <ModalBtnSecondary onClick={cancelModeChange}>{t('common.cancel')}</ModalBtnSecondary>
-              <ModalBtnPrimary onClick={confirmModeChange}>{t('common.confirm')}</ModalBtnPrimary>
-            </ModalActions>
-          </ModalCard>
-        </ModalOverlay>
+          </ModalBody>
+          <ModalActions>
+            <Button $variant="secondary" onClick={cancelModeChange}>{t('common.cancel')}</Button>
+            <Button $variant="accent" onClick={confirmModeChange}>{t('common.confirm')}</Button>
+          </ModalActions>
+        </Modal>
       )}
 
       {showFlagModal && (
-        <ModalOverlay onClick={() => setShowFlagModal(false)} role="dialog" aria-modal="true" aria-label={t('flag.title')}>
-          <ModalCard onClick={e => e.stopPropagation()}>
+        <Modal onClose={() => setShowFlagModal(false)} ariaLabel={t('flag.title')}>
+          <ModalBody>
             <h3>{t('flag.title')}</h3>
-            {flagSuccess ? (
-              <FlagSuccessMsg>{t('flag.success')}</FlagSuccessMsg>
-            ) : (
-              <>
-                <FlagSelect
-                  value={flagReason}
-                  onChange={e => setFlagReason(e.target.value)}
+          </ModalBody>
+          {flagSuccess ? (
+            <FlagSuccessMsg>{t('flag.success')}</FlagSuccessMsg>
+          ) : (
+            <>
+              <FlagSelect
+                value={flagReason}
+                onChange={e => setFlagReason(e.target.value)}
+              >
+                <option value="">{t('flag.reason')}...</option>
+                <option value="incorrect-answer">{t('flag.incorrectAnswer')}</option>
+                <option value="unclear-question">{t('flag.unclearQuestion')}</option>
+                <option value="typo">{t('flag.typo')}</option>
+                <option value="other">{t('flag.other')}</option>
+              </FlagSelect>
+              <FlagTextarea
+                placeholder={t('flag.note')}
+                value={flagNote}
+                onChange={e => setFlagNote(e.target.value)}
+                maxLength={500}
+              />
+              <ModalActions>
+                <Button $variant="secondary" onClick={() => setShowFlagModal(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  $variant="accent"
+                  onClick={handleFlagSubmit}
+                  disabled={!flagReason || flagSubmitting}
                 >
-                  <option value="">{t('flag.reason')}...</option>
-                  <option value="incorrect-answer">{t('flag.incorrectAnswer')}</option>
-                  <option value="unclear-question">{t('flag.unclearQuestion')}</option>
-                  <option value="typo">{t('flag.typo')}</option>
-                  <option value="other">{t('flag.other')}</option>
-                </FlagSelect>
-                <FlagTextarea
-                  placeholder={t('flag.note')}
-                  value={flagNote}
-                  onChange={e => setFlagNote(e.target.value)}
-                  maxLength={500}
-                />
-                <ModalActions>
-                  <ModalBtnSecondary onClick={() => setShowFlagModal(false)}>
-                    {t('common.cancel')}
-                  </ModalBtnSecondary>
-                  <ModalBtnPrimary
-                    onClick={handleFlagSubmit}
-                    disabled={!flagReason || flagSubmitting}
-                  >
-                    {flagSubmitting ? t('common.loading') : t('flag.submit')}
-                  </ModalBtnPrimary>
-                </ModalActions>
-              </>
-            )}
-          </ModalCard>
-        </ModalOverlay>
+                  {flagSubmitting ? t('common.loading') : t('flag.submit')}
+                </Button>
+              </ModalActions>
+            </>
+          )}
+        </Modal>
       )}
     </Page>
   );
