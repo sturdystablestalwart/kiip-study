@@ -31,7 +31,7 @@ const Description = styled.p`
 export default function EmptyState({ icon, title, description, children }) {
   return (
     <Wrapper>
-      {icon && <Icon>{icon}</Icon>}
+      {icon && <Icon aria-hidden="true">{icon}</Icon>}
       {title && <Title>{title}</Title>}
       {description && <Description>{description}</Description>}
       {children}
