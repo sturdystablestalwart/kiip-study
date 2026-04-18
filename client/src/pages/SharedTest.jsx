@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { Card as UICard, Badge } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -12,12 +13,7 @@ const Container = styled.div`
   padding: ${({ theme }) => theme.layout.space[8]}px 0;
 `;
 
-const Card = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+const Card = styled(UICard).attrs({ $radius: 'lg', $padding: 'lg' })`
 `;
 
 const Title = styled.h1`
@@ -42,15 +38,9 @@ const MetaRow = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
 `;
 
-const MetaBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
+const MetaBadge = styled(Badge)`
   padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[3]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  color: ${({ theme }) => theme.colors.text.muted};
 `;
 
 const StartButton = styled(Link)`

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { Button, Card } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -184,14 +185,10 @@ const Divider = styled.div`
   }
 `;
 
-const FileDisplay = styled.div`
+const FileDisplay = styled(Card).attrs({ $alt: true, $padding: 'sm', $radius: 'sm' })`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[3]}px;
-  padding: ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
 
   span {
     flex: 1;
@@ -220,33 +217,8 @@ const ClearFileButton = styled.button`
   }
 `;
 
-const SubmitButton = styled.button`
+const SubmitButton = styled(Button).attrs({ $variant: 'accent' })`
   width: 100%;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-    transform: translateY(-1px);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    background: ${({ theme }) => theme.colors.border.subtle};
-    color: ${({ theme }) => theme.colors.text.faint};
-    cursor: not-allowed;
-  }
 `;
 
 const ErrorBanner = styled.div`
@@ -271,13 +243,9 @@ const RateLimitBanner = styled.div`
   line-height: ${({ theme }) => theme.typography.scale.small.line}px;
 `;
 
-const LoadingBox = styled.div`
+const LoadingBox = styled(Card).attrs({ $alt: true, $padding: 'md' })`
   text-align: center;
   margin-top: ${({ theme }) => theme.layout.space[5]}px;
-  padding: ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
 `;
 
 const LoadingTimer = styled.p`

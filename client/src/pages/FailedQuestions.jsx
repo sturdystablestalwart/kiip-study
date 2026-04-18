@@ -6,6 +6,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
+import { Button, Card } from '../components/ui';
 
 const Page = styled.div`
   display: flex;
@@ -43,12 +44,7 @@ const Stat = styled.div`
   }
 `;
 
-const QuestionCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  padding: ${({ theme }) => theme.layout.space[6]}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+const QuestionCard = styled(Card).attrs({ $padding: 'lg' })`
 `;
 
 const SourceLabel = styled.p`
@@ -69,31 +65,10 @@ const NavControls = styled.div`
   margin-top: ${({ theme }) => theme.layout.space[4]}px;
 `;
 
-const NavButton = styled.button`
-  padding: ${({ theme }) => theme.layout.space[3]}px
-    ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid
-    ${({ $primary, theme }) =>
-      $primary ? 'transparent' : theme.colors.accent.indigo};
-  background: ${({ $primary, theme }) =>
-    $primary ? theme.colors.accent.indigo : 'transparent'};
-  color: ${({ $primary, theme }) =>
-    $primary ? theme.colors.bg.surface : theme.colors.accent.indigo};
-  font-family: inherit;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  cursor: pointer;
-  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms
-    ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    opacity: 0.85;
-  }
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
+// NavButton uses Button primitive; $primary prop maps to accent (indigo) vs secondary variant
+const NavButton = styled(Button).attrs(({ $primary }) => ({
+  $variant: $primary ? 'accent' : 'secondary',
+}))`
 `;
 
 const EmptyState = styled.div`
