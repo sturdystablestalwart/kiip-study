@@ -4,18 +4,14 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, Badge, Modal, ModalActions } from '../components/ui';
 
-const BackLink = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.text.faint};
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
-  cursor: pointer;
+const BackLink = styled(Button).attrs({ $variant: 'ghost', $size: 'compact' })`
   padding: 0;
+  height: auto;
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
-  transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-  &:hover { color: ${({ theme }) => theme.colors.text.primary}; }
+  color: ${({ theme }) => theme.colors.text.faint};
+  font-weight: 400;
 `;
 
 const TitleInput = styled.input`
@@ -81,11 +77,7 @@ const DescTextarea = styled.textarea`
   }
 `;
 
-const QuestionCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  padding: ${({ theme }) => theme.layout.space[5]}px;
+const QuestionCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
 `;
 
@@ -100,6 +92,19 @@ const QuestionNum = styled.span`
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
   font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
   color: ${({ theme }) => theme.colors.text.faint};
+`;
+
+const MetaSelect = styled.select`
+  height: ${({ theme }) => theme.layout.controlHeights.input}px;
+  padding: 0 ${({ theme }) => theme.layout.space[3]}px;
+  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
+  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
+  font-family: inherit;
+  background: ${({ theme }) => theme.colors.bg.surface};
+  color: ${({ theme }) => theme.colors.text.primary};
+  flex: 1;
+  min-width: 0;
 `;
 
 const TypeSelect = styled.select`
@@ -208,15 +213,8 @@ const ChipRow = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
 `;
 
-const Chip = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.layout.space[1]}px;
+const Chip = styled(Badge).attrs({ $color: 'indigo' })`
   padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[3]}px;
-  background: ${({ theme }) => theme.colors.state.infoBg};
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  color: ${({ theme }) => theme.colors.accent.indigo};
 `;
 
 const ChipRemove = styled.button`
@@ -260,22 +258,6 @@ const BottomBar = styled.div`
   border-top: 1px solid ${({ theme }) => theme.colors.border.subtle};
 `;
 
-const SaveBtn = styled.button`
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[6]}px;
-  background: ${({ theme }) => theme.colors.accent.indigo};
-  color: ${({ theme }) => theme.colors.onAccent};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: 550;
-  font-family: inherit;
-  cursor: pointer;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-  &:hover { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-`;
-
 const ErrorMsg = styled.p`
   color: ${({ theme }) => theme.colors.state.danger};
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
@@ -299,58 +281,9 @@ const OrderNum = styled.span`
   min-width: 20px;
 `;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: ${({ theme }) => theme.colors.scrim};
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-`;
-
-const ModalCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
-  max-width: 420px;
-  width: 90%;
-
+const ModalBody = styled.div`
   h3 { margin: 0 0 ${({ theme }) => theme.layout.space[4]}px 0; }
-  p { color: ${({ theme }) => theme.colors.text.muted}; margin: 0 0 ${({ theme }) => theme.layout.space[6]}px 0; }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.layout.space[3]}px;
-  justify-content: flex-end;
-`;
-
-const ModalBtnCancel = styled.button`
-  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-family: inherit;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  cursor: pointer;
-  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
-`;
-
-const ModalBtnDanger = styled.button`
-  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: none;
-  background: ${({ theme }) => theme.colors.state.danger};
-  color: #fff;
-  font-family: inherit;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  cursor: pointer;
-  min-height: ${({ theme }) => theme.layout.controlHeights.button}px;
+  p { color: ${({ theme }) => theme.colors.text.muted}; margin: 0 0 ${({ theme }) => theme.layout.space[2]}px 0; }
 `;
 
 const QUESTION_TYPES = [
@@ -367,17 +300,25 @@ function AdminTestEditor() {
     const { user, loading: authLoading } = useAuth();
     const { t } = useTranslation();
 
+    const [curriculum, setCurriculum] = useState([]);
+
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
     const [level, setLevel] = useState('');
-    const [unit, setUnit] = useState('');
+    const [unitNumber, setUnitNumber] = useState('');
+    const [section, setSection] = useState('');
+    const [contentType, setContentType] = useState('general');
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [chipInputs, setChipInputs] = useState({});
     const [deleteQModal, setDeleteQModal] = useState({ show: false, idx: null });
+
+    useEffect(() => {
+        api.get('/api/curriculum').then(res => setCurriculum(res.data)).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (!authLoading && !user?.isAdmin) {
@@ -389,13 +330,15 @@ function AdminTestEditor() {
             const controller = new AbortController();
             api.get(`/api/tests/${id}`, { signal: controller.signal })
                 .then(res => {
-                    const t = res.data;
-                    setTitle(t.title || '');
-                    setCategory(t.category || '');
-                    setDescription(t.description || '');
-                    setLevel(t.level || '');
-                    setUnit(t.unit || '');
-                    setQuestions(t.questions || []);
+                    const data = res.data;
+                    setTitle(data.title || '');
+                    setCategory(data.category || '');
+                    setDescription(data.description || '');
+                    setLevel(data.level || '');
+                    setUnitNumber(data.unitNumber != null ? String(data.unitNumber) : '');
+                    setSection(data.section || '');
+                    setContentType(data.contentType || 'general');
+                    setQuestions(data.questions || []);
                 })
                 .catch(err => {
                     if (err.name === 'CanceledError') return;
@@ -519,7 +462,16 @@ function AdminTestEditor() {
 
         setSaving(true);
         try {
-            await api.patch(`/api/admin/tests/${id}`, { title, category, description, level, unit, questions });
+            await api.patch(`/api/admin/tests/${id}`, {
+                title,
+                category,
+                description,
+                level: level || undefined,
+                unitNumber: unitNumber ? parseInt(unitNumber) : undefined,
+                section: section || undefined,
+                contentType,
+                questions,
+            });
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to save');
@@ -538,8 +490,49 @@ function AdminTestEditor() {
 
             <MetaRow>
                 <MetaInput value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" aria-label="Category" />
-                <MetaInput value={level} onChange={e => setLevel(e.target.value)} placeholder="Level (e.g. Level 2)" aria-label="Level" />
-                <MetaInput value={unit} onChange={e => setUnit(e.target.value)} placeholder="Unit (e.g. Unit 5)" aria-label="Unit" />
+            </MetaRow>
+
+            <MetaRow>
+                <label>{t('home.level')}</label>
+                <MetaSelect value={level} onChange={e => { setLevel(e.target.value); setUnitNumber(''); setSection(''); }} aria-label="Level">
+                    <option value="">{t('home.allLevels')}</option>
+                    {curriculum.map(c => (
+                        <option key={c.level} value={c.level}>{c.levelName.ko} ({c.levelName.en})</option>
+                    ))}
+                </MetaSelect>
+            </MetaRow>
+
+            <MetaRow>
+                <label>{t('home.unit')}</label>
+                <MetaSelect value={unitNumber} onChange={e => setUnitNumber(e.target.value)} aria-label="Unit">
+                    <option value="">{t('home.allUnits')}</option>
+                    {(curriculum.find(c => c.level === level)?.units || []).filter(u => !u.isReview).map(u => (
+                        <option key={u.number} value={String(u.number)}>{u.number}과 — {u.titleKo}</option>
+                    ))}
+                </MetaSelect>
+            </MetaRow>
+
+            {level && level.startsWith('5') && (
+                <MetaRow>
+                    <label>{t('classification.section')}</label>
+                    <MetaSelect value={section} onChange={e => setSection(e.target.value)} aria-label="Section">
+                        <option value="">—</option>
+                        {[...new Set((curriculum.find(c => c.level === level)?.units || []).map(u => u.section).filter(Boolean))].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </MetaSelect>
+                </MetaRow>
+            )}
+
+            <MetaRow>
+                <label>{t('classification.contentType')}</label>
+                <MetaSelect value={contentType} onChange={e => setContentType(e.target.value)} aria-label="Content type">
+                    <option value="general">{t('classification.general')}</option>
+                    <option value="mock-exam">{t('classification.mockExam')}</option>
+                    <option value="topic-drill">{t('classification.topicDrill')}</option>
+                    <option value="vocabulary">{t('classification.vocabulary')}</option>
+                    <option value="grammar">{t('classification.grammar')}</option>
+                </MetaSelect>
             </MetaRow>
 
             <DescTextarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" aria-label="Description" />
@@ -680,22 +673,22 @@ function AdminTestEditor() {
 
             <BottomBar>
                 <AddBtn onClick={addQuestion}>+ {t('admin.addQuestion')}</AddBtn>
-                <SaveBtn onClick={handleSave} disabled={saving}>
+                <Button $variant="accent" onClick={handleSave} disabled={saving}>
                     {saving ? t('common.loading') : t('admin.save')}
-                </SaveBtn>
+                </Button>
             </BottomBar>
 
             {deleteQModal.show && (
-                <ModalOverlay onClick={cancelDeleteQuestion} role="dialog" aria-modal="true" aria-label="Delete question confirmation">
-                    <ModalCard onClick={e => e.stopPropagation()}>
+                <Modal onClose={cancelDeleteQuestion} ariaLabel="Delete question confirmation">
+                    <ModalBody>
                         <h3>Remove this question?</h3>
                         <p>Question {deleteQModal.idx + 1} will be removed. This cannot be undone until you save.</p>
-                        <ModalActions>
-                            <ModalBtnCancel onClick={cancelDeleteQuestion}>Cancel</ModalBtnCancel>
-                            <ModalBtnDanger onClick={confirmDeleteQuestion}>Remove</ModalBtnDanger>
-                        </ModalActions>
-                    </ModalCard>
-                </ModalOverlay>
+                    </ModalBody>
+                    <ModalActions>
+                        <Button $variant="secondary" onClick={cancelDeleteQuestion}>Cancel</Button>
+                        <Button $variant="danger" onClick={confirmDeleteQuestion}>Remove</Button>
+                    </ModalActions>
+                </Modal>
             )}
         </div>
     );
