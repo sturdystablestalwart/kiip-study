@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import i18n from '../i18n';
+import { Button } from './ui';
 
 const ErrorWrapper = styled.div`
   display: flex;
@@ -25,22 +26,6 @@ const ErrorMessage = styled.p`
   max-width: 400px;
 `;
 
-const ReloadButton = styled.button`
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.onAccent};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: 550;
-  font-family: inherit;
-  cursor: pointer;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover { opacity: 0.85; }
-`;
-
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -63,9 +48,9 @@ class ErrorBoundary extends React.Component {
           <ErrorMessage>
             {i18n.t('common.errorDesc')}
           </ErrorMessage>
-          <ReloadButton onClick={() => window.location.reload()}>
+          <Button onClick={() => window.location.reload()}>
             {i18n.t('common.reload')}
-          </ReloadButton>
+          </Button>
         </ErrorWrapper>
       );
     }

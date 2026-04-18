@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/ui';
 
 const Container = styled.div`
     display: flex;
@@ -17,18 +18,6 @@ const Container = styled.div`
 const Message = styled.p`
     color: ${({ theme }) => theme.colors.text.muted};
     font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-`;
-
-const Button = styled.button`
-    height: ${({ theme }) => theme.layout.controlHeights.button}px;
-    padding: 0 ${({ theme }) => theme.layout.space[6]}px;
-    background: ${({ theme }) => theme.colors.accent.clay};
-    color: #fff;
-    border: none;
-    border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-    font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-    cursor: pointer;
-    &:hover { opacity: 0.9; }
 `;
 
 export default function MagicLinkVerify() {
