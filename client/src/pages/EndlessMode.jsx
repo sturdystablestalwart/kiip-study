@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import FilterDropdown from '../components/FilterDropdown';
+import { Button, Card } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -18,13 +19,8 @@ const Page = styled.div`
 
 /* ── Start Screen ── */
 
-const StartScreen = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[8]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+const StartScreenCard = styled(Card)`
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
   max-width: 520px;
   margin: ${({ theme }) => theme.layout.space[8]}px auto 0;
   width: 100%;
@@ -50,42 +46,12 @@ const FilterRow = styled.div`
   flex-wrap: wrap;
 `;
 
-const StartButton = styled.button`
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[7]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
 /* ── Session Header ── */
 
-const SessionHeader = styled.div`
+const SessionHeaderCard = styled(Card)`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
   gap: ${({ theme }) => theme.layout.space[4]}px;
   flex-wrap: wrap;
 `;
@@ -157,13 +123,7 @@ const EndButton = styled.button`
 
 /* ── Question Card ── */
 
-const QuestionCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
-
+const QuestionCardWrapper = styled(Card)`
   @media (max-width: ${({ theme }) => theme.layout.breakpoints.tablet}px) {
     padding: ${({ theme }) => theme.layout.space[5]}px;
   }
@@ -188,52 +148,17 @@ const Controls = styled.div`
   margin-top: ${({ theme }) => theme.layout.space[6]}px;
 `;
 
-const NextButton = styled.button`
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-  background: ${({ theme }) => theme.colors.accent.indigo};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-
-  &:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
 /* ── Loading ── */
 
-const LoadingScreen = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[8]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+const LoadingScreenCard = styled(Card)`
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
 /* ── End Screen ── */
 
-const EndScreen = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+const EndScreenCard = styled(Card)`
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
   max-width: 520px;
   margin: ${({ theme }) => theme.layout.space[8]}px auto 0;
   width: 100%;
@@ -269,43 +194,10 @@ const EndActions = styled.div`
   flex-wrap: wrap;
 `;
 
-const ActionButton = styled.button`
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-  border: none;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    opacity: 0.9;
-  }
-`;
-
-const PrimaryAction = styled(ActionButton)`
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-`;
-
-const SecondaryAction = styled(ActionButton)`
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-`;
-
 /* ── Empty State ── */
 
-const EmptyState = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[8]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
+const EmptyStateCard = styled(Card)`
   text-align: center;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
 
   h3 {
     margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
@@ -514,7 +406,7 @@ function EndlessMode() {
   if (!started) {
     return (
       <Page>
-        <StartScreen>
+        <StartScreenCard $padding="lg" $radius="lg" $shadow="md">
           <StartTitle>{t('endless.title')}</StartTitle>
           <StartDescription>
             {t('home.endlessDesc')}
@@ -533,8 +425,8 @@ function EndlessMode() {
               onChange={setUnitFilter}
             />
           </FilterRow>
-          <StartButton onClick={handleStart}>{t('endless.start')}</StartButton>
-        </StartScreen>
+          <Button onClick={handleStart}>{t('endless.start')}</Button>
+        </StartScreenCard>
       </Page>
     );
   }
@@ -543,7 +435,7 @@ function EndlessMode() {
   if (ended) {
     return (
       <Page>
-        <EndScreen>
+        <EndScreenCard $padding="lg" $radius="lg" $shadow="md">
           <h2>{t('test.results')}</h2>
           <FinalScore $accuracy={accuracy}>
             {accuracy}%
@@ -554,10 +446,10 @@ function EndlessMode() {
             {t('test.duration')}: {formatDuration(sessionDuration)}
           </FinalStats>
           <EndActions>
-            <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
-            <SecondaryAction onClick={() => navigate('/')}>{t('test.goHome')}</SecondaryAction>
+            <Button onClick={handleNewSession}>{t('endless.start')}</Button>
+            <Button $variant="secondary" onClick={() => navigate('/')}>{t('test.goHome')}</Button>
           </EndActions>
-        </EndScreen>
+        </EndScreenCard>
       </Page>
     );
   }
@@ -566,7 +458,7 @@ function EndlessMode() {
   if (loading && questions.length === 0) {
     return (
       <Page>
-        <LoadingScreen>{t('common.loading')}</LoadingScreen>
+        <LoadingScreenCard $padding="lg" $radius="lg">{t('common.loading')}</LoadingScreenCard>
       </Page>
     );
   }
@@ -575,15 +467,15 @@ function EndlessMode() {
   if (!loading && questions.length === 0) {
     return (
       <Page>
-        <EmptyState>
+        <EmptyStateCard $padding="lg" $radius="lg">
           <h3>{authError ? t('common.error') : t('home.noTests')}</h3>
           <p>{authError ? t('common.loginRequired') : t('home.endlessDesc')}</p>
           {authError ? (
-            <SecondaryAction onClick={() => navigate('/')}>{t('test.goHome')}</SecondaryAction>
+            <Button $variant="secondary" onClick={() => navigate('/')}>{t('test.goHome')}</Button>
           ) : (
-            <PrimaryAction onClick={handleNewSession}>{t('endless.start')}</PrimaryAction>
+            <Button onClick={handleNewSession}>{t('endless.start')}</Button>
           )}
-        </EmptyState>
+        </EmptyStateCard>
       </Page>
     );
   }
@@ -594,7 +486,7 @@ function EndlessMode() {
 
   return (
     <Page>
-      <SessionHeader>
+      <SessionHeaderCard $padding="md">
         <StatsBar>
           <StatBadge>
             {t('endless.questionsAnswered')}: <StatValue>{totalAnswered}</StatValue>
@@ -616,9 +508,9 @@ function EndlessMode() {
           <TimerDisplay>{formatDuration(sessionDuration)}</TimerDisplay>
           <EndButton onClick={handleEnd}>{t('endless.quit')}</EndButton>
         </HeaderRight>
-      </SessionHeader>
+      </SessionHeaderCard>
 
-      <QuestionCard>
+      <QuestionCardWrapper $padding="lg" $radius="lg">
         {currentQuestion.image && (
           <QuestionImage
             src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${currentQuestion.image}`}
@@ -636,12 +528,12 @@ function EndlessMode() {
 
         {showFeedback && (
           <Controls>
-            <NextButton onClick={handleNext}>{t('test.next')}</NextButton>
+            <Button $variant="accent" onClick={handleNext}>{t('test.next')}</Button>
           </Controls>
         )}
-      </QuestionCard>
+      </QuestionCardWrapper>
 
-      {loading && <LoadingScreen>{t('common.loading')}</LoadingScreen>}
+      {loading && <LoadingScreenCard $padding="lg" $radius="lg">{t('common.loading')}</LoadingScreenCard>}
     </Page>
   );
 }
