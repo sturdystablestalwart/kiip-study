@@ -1,30 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import API_BASE_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import useFocusTrap from '../hooks/useFocusTrap';
-
-const Overlay = styled.div`
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: ${({ theme }) => theme.layout.space[4]}px;
-`;
-
-const Card = styled.div`
-    background: ${({ theme }) => theme.colors.bg.surface};
-    border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-    padding: ${({ theme }) => theme.layout.space[8]}px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: ${({ theme }) => theme.layout.shadow.md};
-`;
+import Modal from './ui/Modal';
+import { Button as UiButton } from './ui';
 
 const Title = styled.h2`
     font-size: ${({ theme }) => theme.typography.scale.h3.size}px;
@@ -49,33 +30,6 @@ const Input = styled.input`
         border-color: ${({ theme }) => theme.colors.accent.indigo};
         box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.accent.indigo}33;
     }
-`;
-
-const Button = styled.button`
-    width: 100%;
-    height: ${({ theme }) => theme.layout.controlHeights.button}px;
-    border: none;
-    border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-    font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity ${({ theme }) => theme.motion.fast}ms ease-out;
-    &:disabled { opacity: 0.6; cursor: not-allowed; }
-`;
-
-const PrimaryButton = styled(Button)`
-    background: ${({ theme }) => theme.colors.accent.clay};
-    color: #fff;
-    margin-top: ${({ theme }) => theme.layout.space[4]}px;
-    &:hover:not(:disabled) { opacity: 0.9; }
-`;
-
-const GoogleButton = styled(Button)`
-    background: transparent;
-    border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-    color: ${({ theme }) => theme.colors.text.primary};
-    margin-top: ${({ theme }) => theme.layout.space[3]}px;
-    &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.bg.surfaceAlt}; }
 `;
 
 const Divider = styled.div`
@@ -132,10 +86,7 @@ function maskEmail(email) {
 export default function AuthModal({ onClose }) {
     const { t, i18n } = useTranslation();
     const { user, refreshUser } = useAuth();
-    const cardRef = useRef(null);
     const [state, setState] = useState('idle');
-
-    useFocusTrap(cardRef);
     const [email, setEmail] = useState('');
     const [cooldown, setCooldown] = useState(0);
 
@@ -144,12 +95,6 @@ export default function AuthModal({ onClose }) {
         const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
         return () => clearTimeout(timer);
     }, [cooldown]);
-
-    useEffect(() => {
-        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
 
     // Poll for auth changes (user clicked magic link in another tab)
     useEffect(() => {
@@ -192,8 +137,7 @@ export default function AuthModal({ onClose }) {
     };
 
     return (
-        <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label={t('auth.signInTitle')}>
-            <Card ref={cardRef} onClick={e => e.stopPropagation()}>
+        <Modal onClose={onClose} maxWidth={400} ariaLabel={t('auth.signInTitle')}>
                 {state === 'checkEmail' ? (
                     <>
                         <Title>{t('auth.checkEmail')}</Title>
@@ -224,16 +168,15 @@ export default function AuthModal({ onClose }) {
                             disabled={state === 'sending'}
                             autoFocus
                         />
-                        <PrimaryButton onClick={handleSend} disabled={state === 'sending' || !email.includes('@')}>
+                        <UiButton onClick={handleSend} disabled={state === 'sending' || !email.includes('@')} style={{ width: '100%', marginTop: 16 }}>
                             {state === 'sending' ? '...' : t('auth.sendMagicLink')}
-                        </PrimaryButton>
+                        </UiButton>
                         <Divider>{t('auth.or')}</Divider>
-                        <GoogleButton onClick={handleGoogle}>
+                        <UiButton $variant="secondary" onClick={handleGoogle} style={{ width: '100%', marginTop: 12 }}>
                             {t('auth.signInWithGoogle')}
-                        </GoogleButton>
+                        </UiButton>
                     </>
                 )}
-            </Card>
-        </Overlay>
+        </Modal>
     );
 }
