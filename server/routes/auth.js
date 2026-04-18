@@ -105,27 +105,36 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
+// Helper: get the first CLIENT_URL (env may be comma-separated)
+function getClientUrl() {
+    return (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim();
+}
+
 // GET /api/auth/google/start
 router.get('/google/start', authLimiter,
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
 // GET /api/auth/google/callback
-router.get('/google/callback', authLimiter,
-    passport.authenticate('google', { session: false, failureRedirect: '/login?error=auth_failed' }),
-    (req, res) => {
+router.get('/google/callback', authLimiter, (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user) => {
+        const clientUrl = getClientUrl();
+
+        if (err || !user) {
+            logger.error({ err }, 'Google OAuth callback error');
+            return res.redirect(`${clientUrl}/?auth_error=google_failed`);
+        }
+
         const token = jwt.sign(
-            { userId: req.user._id },
+            { userId: user._id },
             JWT_SECRET,
             { expiresIn: '7d', issuer: 'kiip-study', audience: 'kiip-study-api', algorithm: 'HS256' }
         );
 
         res.cookie('jwt', token, COOKIE_OPTIONS);
-
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
         res.redirect(clientUrl);
-    }
-);
+    })(req, res, next);
+});
 
 // GET /api/auth/me — returns null instead of 401 to avoid browser console errors
 router.get('/me', async (req, res) => {
@@ -209,7 +218,7 @@ router.get('/magic/verify', async (req, res) => {
     try {
         const { token } = req.query;
         if (!token) {
-            return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/verify?error=TOKEN_INVALID`);
+            return res.redirect(`${getClientUrl()}/auth/verify?error=TOKEN_INVALID`);
         }
 
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -220,7 +229,7 @@ router.get('/magic/verify', async (req, res) => {
             { new: true }
         );
 
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const clientUrl = getClientUrl();
 
         if (!record) {
             const existing = await MagicLink.findOne({ tokenHash });
@@ -265,7 +274,7 @@ router.get('/magic/verify', async (req, res) => {
         res.redirect(clientUrl);
     } catch (err) {
         logger.error({ err }, 'Magic link verify error');
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const clientUrl = getClientUrl();
         res.redirect(`${clientUrl}/auth/verify?error=TOKEN_INVALID`);
     }
 });

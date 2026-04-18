@@ -16,19 +16,22 @@ const autoImportTests = async (parseFunction) => {
         const filePath = path.join(testsDir, file);
         const fileName = path.parse(file).name;
 
-        // Check if test already exists in DB
-        const existing = await Test.findOne({ title: { $regex: new RegExp(fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } });
-        if (existing) continue;
-
-        console.log(`Auto-importing test: ${fileName}`);
+        console.log(`Auto-import: checking ${fileName}...`);
         try {
             const content = fs.readFileSync(filePath, 'utf-8');
             const parsedData = await parseFunction(content);
-            
+
             // Extract level from title or filename (e.g. "Level 2", "2단계")
             const title = parsedData.title || fileName;
             const levelMatch = title.match(/Level\s*(\d)/i) || title.match(/(\d)\s*단계/);
             const level = levelMatch ? `Level ${levelMatch[1]}` : undefined;
+
+            // Check if test already exists by parsed title (exact match)
+            const existing = await Test.findOne({ title });
+            if (existing) {
+                console.log(`  Skipping "${title}" — already exists`);
+                continue;
+            }
 
             const newTest = new Test({
                 title,
@@ -37,7 +40,7 @@ const autoImportTests = async (parseFunction) => {
                 questions: parsedData.questions
             });
             await newTest.save();
-            console.log(`Successfully imported ${fileName}`);
+            console.log(`  Successfully imported "${title}"`);
         } catch (err) {
             logger.error({ err }, `Failed to import ${fileName}`);
         }

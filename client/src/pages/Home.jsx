@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
@@ -170,7 +170,7 @@ const DeleteButton = styled.button`
   }
 `;
 
-const EditButton = styled(Link)`
+const EditButton = styled.button`
   position: absolute;
   top: ${({ theme }) => theme.layout.space[2]}px;
   right: ${({ theme }) => theme.layout.space[8]}px;
@@ -179,10 +179,14 @@ const EditButton = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   color: ${({ theme }) => theme.colors.text.faint};
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  text-decoration: none;
+  font-family: inherit;
   transition: color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
               background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
@@ -197,7 +201,7 @@ const EditButton = styled(Link)`
   }
 `;
 
-const ExportLink = styled.a`
+const ExportLink = styled.button`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[1]}px;
@@ -206,8 +210,8 @@ const ExportLink = styled.a`
   border: 1px solid ${({ theme }) => theme.colors.border.subtle};
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
+  font-family: inherit;
   color: ${({ theme }) => theme.colors.text.muted};
-  text-decoration: none;
   background: ${({ theme }) => theme.colors.bg.surface};
   cursor: pointer;
   transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
@@ -743,6 +747,7 @@ const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 function Home() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const searchPalette = useSearchPalette();
   const isAdmin = user?.isAdmin;
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -818,7 +823,7 @@ function Home() {
       api.get('/api/review/difficulty', { signal: controller.signal })
     ]).then(([recentRes, sessionsRes, diffRes]) => {
       setRecentAttempts(recentRes.data);
-      setActiveSessions(sessionsRes.data.sessions || []);
+      setActiveSessions((sessionsRes.data.sessions || []).filter(s => s.testId));
       setDifficultyMap(diffRes.data.difficulty || {});
     }).catch(err => {
       if (err.name === 'CanceledError') return;
@@ -1017,8 +1022,7 @@ function Home() {
             <Card key={test._id} to={`/test/${test._id}`}>
               {isAdmin && (
                 <EditButton
-                  to={`/admin/tests/${test._id}/edit`}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/admin/tests/${test._id}/edit`); }}
                   aria-label={`Edit ${test.title}`}
                 >
                   &#9998;
@@ -1063,11 +1067,8 @@ function Home() {
                       )}
                     </ShareButton>
                     <ExportLink
-                      href={`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`}
-                      target="_blank"
-                      rel="noopener"
                       title={t('home.downloadPdf')}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`, '_blank', 'noopener'); }}
                     >
                       PDF
                     </ExportLink>

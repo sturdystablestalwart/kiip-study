@@ -237,5 +237,13 @@
     "noFailedDesc": "훌륭해요! 최근 시도에서 틀린 문항이 없습니다.",
     "check": "정답 확인",
     "finish": "대시보드로 돌아가기"
+  },
+  "onboarding": {
+    "welcome": "KIIP Study에 오신 것을 환영합니다",
+    "description": "한국 사회통합프로그램 시험을 문제 라이브러리로 연습하세요.",
+    "hintKeyboard": "Ctrl+P를 눌러 시험을 빠르게 검색하세요",
+    "hintSearch": "필터를 사용하여 단계와 단원별로 시험을 찾으세요",
+    "hintEndless": "무한 연습으로 계속 문제를 풀어보세요",
+    "dismiss": "알겠습니다!"
   }
 }

@@ -237,5 +237,13 @@
     "noFailedDesc": "Buen trabajo! No has fallado ninguna pregunta recientemente.",
     "check": "Comprobar respuesta",
     "finish": "Volver al panel"
+  },
+  "onboarding": {
+    "welcome": "Bienvenido a KIIP Study",
+    "description": "Practica para tu examen del Programa de Integración de Inmigración de Corea con nuestra biblioteca de preguntas.",
+    "hintKeyboard": "Presiona Ctrl+P para buscar exámenes rápidamente",
+    "hintSearch": "Usa los filtros para encontrar exámenes por nivel y unidad",
+    "hintEndless": "Prueba la práctica infinita para entrenamiento continuo",
+    "dismiss": "¡Entendido!"
   }
 }

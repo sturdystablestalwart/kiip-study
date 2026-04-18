@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import API_BASE_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import useFocusTrap from '../hooks/useFocusTrap';
 
@@ -183,7 +184,7 @@ export default function AuthModal({ onClose }) {
     }, [email, i18n.language]);
 
     const handleGoogle = () => {
-        window.location.href = '/api/auth/google/start';
+        window.location.href = `${API_BASE_URL}/api/auth/google/start`;
     };
 
     const handleKeyDown = (e) => {
