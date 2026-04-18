@@ -2,38 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { below } from '../theme/breakpoints';
 import api from '../utils/api';
-import useFocusTrap from '../hooks/useFocusTrap';
+import Modal from './ui/Modal';
 
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${({ theme }) => theme.colors.scrim};
-  display: flex;
-  justify-content: center;
-  padding-top: 15vh;
-  z-index: ${({ theme }) => theme.zIndex.palette};
-`;
-
-const Panel = styled.div`
-  width: 90%;
-  max-width: 560px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
-  overflow: hidden;
-  max-height: 420px;
+const PaletteContent = styled.div`
   display: flex;
   flex-direction: column;
-  align-self: flex-start;
-
-  ${below.mobile} {
-    width: calc(100vw - 32px);
-  }
+  max-height: 420px;
 `;
 
 const SearchInput = styled.input`
@@ -109,12 +84,9 @@ function CommandPalette({ onClose }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
-  const trapRef = useRef(null);
   const navigate = useNavigate();
   const debounceRef = useRef(null);
   const searchControllerRef = useRef(null);
-
-  useFocusTrap(trapRef);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -178,8 +150,8 @@ function CommandPalette({ onClose }) {
   };
 
   return (
-    <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label="Command palette">
-      <Panel ref={trapRef} onClick={e => e.stopPropagation()}>
+    <Modal onClose={onClose} maxWidth={560} maxHeight="420px" position="top" zIndex={2000} flush ariaLabel="Command palette">
+      <PaletteContent>
         <SearchInput
           ref={inputRef}
           type="text"
@@ -211,8 +183,8 @@ function CommandPalette({ onClose }) {
             <EmptyMessage>{t('nav.searchHint')}</EmptyMessage>
           )}
         </ResultsList>
-      </Panel>
-    </Overlay>
+      </PaletteContent>
+    </Modal>
   );
 }
 
