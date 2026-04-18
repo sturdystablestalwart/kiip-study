@@ -27,9 +27,4 @@ const Badge = styled.span`
   color: ${p => (colorMap[p.$color] || colorMap.default)(p).text};
 `;
 
-Badge.defaultProps = {
-  $color: 'default',
-  $size: 'sm',
-};
-
 export default Badge;

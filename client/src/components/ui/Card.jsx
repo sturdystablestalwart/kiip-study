@@ -26,10 +26,4 @@ const Card = styled.div`
   `}
 `;
 
-Card.defaultProps = {
-  $padding: 'md',
-  $radius: 'md',
-  $shadow: 'sm',
-};
-
 export default Card;

@@ -79,9 +79,4 @@ const Button = styled.button`
   ${p => variantStyles[p.$variant || 'primary']}
 `;
 
-Button.defaultProps = {
-  $variant: 'primary',
-  $size: 'default',
-};
-
 export default Button;
