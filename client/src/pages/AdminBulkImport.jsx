@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { below } from '../theme/breakpoints';
+import { Button, Card, Badge } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -110,14 +111,10 @@ const RemoveFile = styled.button`
   }
 `;
 
-const SummaryBar = styled.div`
+const SummaryBar = styled(Card).attrs({ $padding: 'sm' })`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
   margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.layout.space[3]}px;
@@ -133,38 +130,8 @@ const SummaryText = styled.span`
   color: ${({ theme }) => theme.colors.text.muted};
 `;
 
-const ConfirmButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[6]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  font-family: inherit;
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
+// ConfirmButton → primary Button (clay by default)
+const ConfirmButton = styled(Button)``;
 
 const PreviewSection = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[6]}px;
@@ -176,15 +143,12 @@ const PreviewTable = styled.div`
   gap: ${({ theme }) => theme.layout.space[3]}px;
 `;
 
-const TestRow = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+// TestRow: Card base + left-border accent per status
+const TestRow = styled(Card).attrs({ $padding: 'sm', $radius: 'sm' })`
   border-left: 3px solid ${({ $status, theme }) =>
     $status === 'valid' ? theme.colors.state.success :
     $status === 'error' ? theme.colors.state.danger :
     theme.colors.state.warning};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
 `;
 
 const TestRowHeader = styled.div`
@@ -206,22 +170,17 @@ const TestRowMeta = styled.span`
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
-const StatusBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 2px ${({ theme }) => theme.layout.space[3]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  background: ${({ $status, theme }) =>
-    $status === 'valid' ? theme.colors.state.correctBg :
-    $status === 'error' ? theme.colors.state.wrongBg :
-    `${theme.colors.state.warning}20`};
-  color: ${({ $status, theme }) =>
-    $status === 'valid' ? theme.colors.state.success :
-    $status === 'error' ? theme.colors.state.danger :
-    theme.colors.state.warning};
-`;
+// StatusBadge → unified Badge with dynamic color mapping
+const getStatusBadgeColor = (status) => {
+  if (status === 'valid') return 'success';
+  if (status === 'error') return 'danger';
+  return 'warning';
+};
+
+const StatusBadge = styled(Badge).attrs(p => ({
+  $color: getStatusBadgeColor(p.$status),
+  $size: 'sm',
+}))``;
 
 const ErrorList = styled.ul`
   margin: ${({ theme }) => theme.layout.space[2]}px 0 0 0;

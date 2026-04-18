@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card } from '../components/ui';
 
 const PageHeader = styled.div`
   display: flex;
@@ -46,12 +47,8 @@ const FlagList = styled.div`
   gap: ${({ theme }) => theme.layout.space[3]}px;
 `;
 
-const FlagCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  padding: ${({ theme }) => theme.layout.space[5]}px;
-`;
+// Card extended with flex layout needed by FlagHeader
+const FlagCard = styled(Card)``;
 
 const FlagHeader = styled.div`
   display: flex;
@@ -141,26 +138,16 @@ const ResolutionInput = styled.input`
   color: ${({ theme }) => theme.colors.text.primary};
 `;
 
-const LoadMoreButton = styled.button`
-  display: block;
-  margin: ${({ theme }) => theme.layout.space[6]}px auto;
-  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[6]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-family: inherit;
-  cursor: pointer;
-
-  &:hover { border-color: ${({ theme }) => theme.colors.focus.ring}; }
-  &:disabled { opacity: 0.5; cursor: default; }
-`;
-
-const EmptyState = styled.div`
+const EmptyStateText = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.layout.space[8]}px;
   color: ${({ theme }) => theme.colors.text.faint};
+`;
+
+const LoadMoreWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: ${({ theme }) => theme.layout.space[6]}px 0;
 `;
 
 // REASON_LABELS moved inside component for i18n access
@@ -253,9 +240,9 @@ function AdminFlags() {
             </FilterTabs>
 
             {loading ? (
-                <EmptyState>{t('common.loading')}</EmptyState>
+                <EmptyStateText>{t('common.loading')}</EmptyStateText>
             ) : flags.length === 0 ? (
-                <EmptyState>{STATUS_LABELS[statusFilter]} - 0</EmptyState>
+                <EmptyStateText>{STATUS_LABELS[statusFilter]} - 0</EmptyStateText>
             ) : (
                 <FlagList>
                     {flags.map(flag => (
@@ -312,9 +299,11 @@ function AdminFlags() {
             )}
 
             {nextCursor && (
-                <LoadMoreButton onClick={() => fetchFlags(nextCursor, true)}>
-                    {t('home.loadMore')}
-                </LoadMoreButton>
+                <LoadMoreWrap>
+                    <Button $variant="secondary" $size="compact" onClick={() => fetchFlags(nextCursor, true)}>
+                        {t('home.loadMore')}
+                    </Button>
+                </LoadMoreWrap>
             )}
         </div>
     );

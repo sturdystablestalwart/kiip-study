@@ -6,6 +6,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import FilterDropdown from '../components/FilterDropdown';
 import { below } from '../theme/breakpoints';
+import { Button, Card, Badge, EmptyState } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -67,37 +68,10 @@ const ThresholdValue = styled.span`
   min-width: 40px;
 `;
 
-const ScanButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.accent.indigo};
-  color: ${({ theme }) => theme.colors.onAccent};
-  border: none;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  font-family: inherit;
-  cursor: pointer;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
+// ScanButton → Button $variant="accent" (kept as alias for readability)
+const ScanButton = styled(Button).attrs({ $variant: 'accent' })``;
 
-  &:hover {
-    opacity: 0.85;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const SummaryBar = styled.div`
-  padding: ${({ theme }) => theme.layout.space[4]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
+const SummaryBar = styled(Card).attrs({ $padding: 'sm' })`
   margin-bottom: ${({ theme }) => theme.layout.space[5]}px;
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
   color: ${({ theme }) => theme.colors.text.muted};
@@ -109,13 +83,7 @@ const ClusterList = styled.div`
   gap: ${({ theme }) => theme.layout.space[4]}px;
 `;
 
-const ClusterCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  padding: ${({ theme }) => theme.layout.space[5]}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
-`;
+const ClusterCard = styled(Card).attrs({ $padding: 'md' })``;
 
 const ClusterHeader = styled.div`
   display: flex;
@@ -124,36 +92,9 @@ const ClusterHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.layout.space[4]}px;
 `;
 
-const SimilarityBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[3]}px;
-  background: ${({ theme }) => `${theme.colors.state.warning}20`};
-  color: ${({ theme }) => theme.colors.state.warning};
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-`;
+const SimilarityBadge = styled(Badge).attrs({ $color: 'warning' })``;
 
-const KeepBothButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
-  color: ${({ theme }) => theme.colors.text.muted};
-  cursor: pointer;
-  transition: all ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent.moss};
-    color: ${({ theme }) => theme.colors.accent.moss};
-  }
-`;
+const KeepBothButton = styled(Button).attrs({ $variant: 'secondary', $size: 'compact' })``;
 
 const QuestionPair = styled.div`
   display: grid;
@@ -165,12 +106,7 @@ const QuestionPair = styled.div`
   }
 `;
 
-const QuestionSide = styled.div`
-  padding: ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-`;
+const QuestionSide = styled(Card).attrs({ $alt: true, $padding: 'sm', $radius: 'sm', $shadow: 'sm' })``;
 
 const QuestionText = styled.p`
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
@@ -185,24 +121,7 @@ const QuestionSource = styled.p`
   margin: 0;
 `;
 
-const EmptyState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-
-  h2 {
-    color: ${({ theme }) => theme.colors.text.muted};
-    font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
-    margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.text.faint};
-    margin: 0;
-  }
-`;
+// EmptyState imported from ui components
 
 const LoadingState = styled.div`
   text-align: center;
@@ -336,10 +255,11 @@ function AdminDuplicates() {
           )}
 
           {visibleClusters.length === 0 ? (
-            <EmptyState>
-              <h2>{t('admin.duplicatesEmpty')}</h2>
-              <p>{t('admin.duplicatesEmpty')}</p>
-            </EmptyState>
+            <EmptyState
+              icon="✓"
+              title={t('admin.duplicatesEmpty')}
+              description={t('admin.duplicatesEmpty')}
+            />
           ) : (
             <ClusterList>
               {visibleClusters.map((cluster) => {
