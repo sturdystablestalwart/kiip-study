@@ -6,6 +6,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { below } from '../theme/breakpoints';
+import { Button, Card, EmptyState } from '../components/ui';
 import 'anychart';
 
 /* ───────── Styled Components ───────── */
@@ -56,12 +57,9 @@ const KpiGrid = styled.div`
   }
 `;
 
-const KpiCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[5]}px ${({ theme }) => theme.layout.space[6]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
+// KpiCard: Card with sm radius and md padding — extend for text alignment
+const KpiCard = styled(Card)`
+  text-align: left;
 `;
 
 const KpiLabel = styled.p`
@@ -96,12 +94,8 @@ const ChartTitle = styled.h2`
   margin: 0 0 ${({ theme }) => theme.layout.space[4]}px 0;
 `;
 
-const ChartContainer = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
-  padding: ${({ theme }) => theme.layout.space[4]}px;
+// ChartContainer: Card with sm padding — extend for fixed height
+const ChartContainer = styled(Card)`
   height: ${({ $height }) => $height || 300}px;
 `;
 
@@ -116,44 +110,10 @@ const TwoChartGrid = styled.div`
   }
 `;
 
-const EmptyState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+// EmptyState is now imported from ../components/ui
 
-  h2 {
-    color: ${({ theme }) => theme.colors.text.muted};
-    font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
-    margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
-  }
+// HomeLink is now rendered as <Button as={Link} to="/">
 
-  p {
-    color: ${({ theme }) => theme.colors.text.faint};
-    margin: 0 auto ${({ theme }) => theme.layout.space[5]}px;
-  }
-`;
-
-const HomeLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  text-decoration: none;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-    color: ${({ theme }) => theme.colors.bg.surface};
-  }
-`;
 
 const LoadingState = styled.div`
   text-align: center;
@@ -162,24 +122,8 @@ const LoadingState = styled.div`
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
 `;
 
-const SignInPrompt = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
+// SignInPrompt is now rendered as <EmptyState> from ../components/ui
 
-  h2 {
-    color: ${({ theme }) => theme.colors.text.muted};
-    font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
-    margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.text.faint};
-    margin: 0 auto;
-  }
-`;
 
 const AttemptList = styled.div`
   display: flex;
@@ -187,14 +131,11 @@ const AttemptList = styled.div`
   gap: ${({ theme }) => theme.layout.space[2]}px;
 `;
 
-const AttemptRow = styled.div`
+// AttemptRow: Card with sm padding and sm radius, extended for flex layout
+const AttemptRow = styled(Card)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.layout.space[4]}px;
-  padding: ${({ theme }) => theme.layout.space[3]}px ${({ theme }) => theme.layout.space[4]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
 
   ${below.mobile} {
     flex-wrap: wrap;
@@ -225,22 +166,10 @@ const AttemptScore = styled.span`
   white-space: nowrap;
 `;
 
-const LoadMoreButton = styled.button`
+// LoadMoreButton: Button secondary compact, centered with margin
+const LoadMoreButton = styled(Button)`
   display: block;
   margin: ${({ theme }) => theme.layout.space[4]}px auto 0;
-  height: 36px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover { border-color: ${({ theme }) => theme.colors.focus.ring}; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 const CompareButton = styled.button`
@@ -625,10 +554,11 @@ function Dashboard() {
         <PageHeader>
           <h1>{t('dashboard.title')}</h1>
         </PageHeader>
-        <SignInPrompt>
-          <h2>{t('nav.signIn')}</h2>
-          <p>{t('dashboard.noData')}</p>
-        </SignInPrompt>
+        <EmptyState
+          icon="🔒"
+          title={t('nav.signIn')}
+          description={t('dashboard.noData')}
+        />
       </div>
     );
   }
@@ -652,10 +582,12 @@ function Dashboard() {
         <PageHeader>
           <h1>{t('dashboard.title')}</h1>
         </PageHeader>
-        <EmptyState>
-          <h2>{t('dashboard.title')}</h2>
-          <p>{t('dashboard.noData')}</p>
-          <HomeLink to="/">{t('test.goHome')}</HomeLink>
+        <EmptyState
+          icon="📊"
+          title={t('dashboard.title')}
+          description={t('dashboard.noData')}
+        >
+          <Button as={Link} to="/">{t('test.goHome')}</Button>
         </EmptyState>
       </div>
     );
@@ -689,15 +621,15 @@ function Dashboard() {
 
       {/* KPI cards */}
       <KpiGrid>
-        <KpiCard>
+        <KpiCard $padding="md" $radius="sm">
           <KpiLabel>{t('dashboard.totalAttempts')}</KpiLabel>
           <KpiValue $accent>{kpis.totalAttempts}</KpiValue>
         </KpiCard>
-        <KpiCard>
+        <KpiCard $padding="md" $radius="sm">
           <KpiLabel>{t('dashboard.avgScore')}</KpiLabel>
           <KpiValue>{kpis.averageScore}%</KpiValue>
         </KpiCard>
-        <KpiCard>
+        <KpiCard $padding="md" $radius="sm">
           <KpiLabel>{t('dashboard.streak')}</KpiLabel>
           <KpiValue>{kpis.currentStreak}</KpiValue>
           <KpiSub>
@@ -706,7 +638,7 @@ function Dashboard() {
               : `${kpis.currentStreak} days`}
           </KpiSub>
         </KpiCard>
-        <KpiCard>
+        <KpiCard $padding="md" $radius="sm">
           <KpiLabel>{t('dashboard.weakestUnit')}</KpiLabel>
           <KpiValue>
             {kpis.weakestUnit ? kpis.weakestUnit.unit || '—' : '—'}
@@ -722,7 +654,7 @@ function Dashboard() {
       {accuracyTrend && accuracyTrend.length > 0 && (
         <ChartSection>
           <ChartTitle>{t('dashboard.accuracyOverTime')}</ChartTitle>
-          <ChartContainer $height={300}>
+          <ChartContainer $padding="sm" $height={300}>
             <div ref={lineRef} style={{ width: '100%', height: '100%' }} />
           </ChartContainer>
         </ChartSection>
@@ -734,7 +666,7 @@ function Dashboard() {
         {unitBreakdown && unitBreakdown.length > 0 && (
           <div>
             <ChartTitle>{t('dashboard.scoreByUnit')}</ChartTitle>
-            <ChartContainer $height={250}>
+            <ChartContainer $padding="sm" $height={250}>
               <div ref={barRef} style={{ width: '100%', height: '100%' }} />
             </ChartContainer>
           </div>
@@ -744,7 +676,7 @@ function Dashboard() {
         {typeStats?.types && typeStats.types.length > 0 && (
           <div>
             <ChartTitle>{t('dashboard.byQuestionType')}</ChartTitle>
-            <ChartContainer $height={250}>
+            <ChartContainer $padding="sm" $height={250}>
               <div ref={radarRef} style={{ width: '100%', height: '100%' }} />
             </ChartContainer>
           </div>
@@ -757,7 +689,7 @@ function Dashboard() {
           <ChartTitle>{t('dashboard.recentAttempts')}</ChartTitle>
           <AttemptList>
             {attempts.map(a => (
-              <AttemptRow key={a._id}>
+              <AttemptRow key={a._id} $padding="sm" $radius="sm">
                 <AttemptTitle>{a.test?.title || t('common.unknown')}</AttemptTitle>
                 <AttemptScore>{a.score}/{a.totalQuestions}</AttemptScore>
                 <AttemptMeta>{a.mode}</AttemptMeta>
@@ -779,6 +711,8 @@ function Dashboard() {
           </AttemptList>
           {attemptsNextCursor && (
             <LoadMoreButton
+              $variant="secondary"
+              $size="compact"
               onClick={() => fetchAttempts(attemptsNextCursor)}
               disabled={loadingAttempts}
             >
