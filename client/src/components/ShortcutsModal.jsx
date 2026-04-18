@@ -1,29 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import useFocusTrap from '../hooks/useFocusTrap';
-
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${({ theme }) => theme.colors.scrim};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: ${({ theme }) => theme.zIndex.palette};
-`;
-
-const Panel = styled.div`
-  width: 90%;
-  max-width: 400px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
-  padding: ${({ theme }) => theme.layout.space[6]}px;
-`;
+import Modal from './ui/Modal';
 
 const Title = styled.h2`
   margin: 0 0 ${({ theme }) => theme.layout.space[5]}px 0;
@@ -70,30 +48,17 @@ const shortcuts = [
 
 function ShortcutsModal({ onClose }) {
   const { t } = useTranslation();
-  const panelRef = useRef(null);
-
-  useFocusTrap(panelRef);
-
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
 
   return (
-    <Overlay onClick={onClose} role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
-      <Panel ref={panelRef} onClick={e => e.stopPropagation()}>
-        <Title>{t('shortcuts.title')}</Title>
-        {shortcuts.map(({ keys, labelKey }) => (
-          <ShortcutRow key={keys}>
-            <ShortcutLabel>{t(labelKey)}</ShortcutLabel>
-            <Kbd>{keys}</Kbd>
-          </ShortcutRow>
-        ))}
-      </Panel>
-    </Overlay>
+    <Modal onClose={onClose} maxWidth={400} zIndex={2000} ariaLabel="Keyboard shortcuts">
+      <Title>{t('shortcuts.title')}</Title>
+      {shortcuts.map(({ keys, labelKey }) => (
+        <ShortcutRow key={keys}>
+          <ShortcutLabel>{t(labelKey)}</ShortcutLabel>
+          <Kbd>{keys}</Kbd>
+        </ShortcutRow>
+      ))}
+    </Modal>
   );
 }
 
