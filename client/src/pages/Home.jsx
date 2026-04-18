@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSearchPalette } from '../context/SearchPaletteContext';
 import { below } from '../theme/breakpoints';
 import FilterDropdown from '../components/FilterDropdown';
+import { Button, Card as UiCard, Badge, Modal, ModalActions, EmptyState } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -23,31 +24,6 @@ const PageHeader = styled.div`
   }
 `;
 
-const CreateButton = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.accent.clay};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  text-decoration: none;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease},
-              transform ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.accent.clayHover};
-    color: ${({ theme }) => theme.colors.bg.surface};
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
 const SearchTrigger = styled.button`
   display: flex;
@@ -97,23 +73,6 @@ const Grid = styled.div`
   }
 `;
 
-const Card = styled(Link)`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[6]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  box-shadow: ${({ theme }) => theme.layout.shadow.sm};
-  text-decoration: none;
-  color: inherit;
-  position: relative;
-  transition: transform ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease},
-              box-shadow ${({ theme }) => theme.motion.baseMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: ${({ theme }) => theme.layout.shadow.md};
-  }
-`;
 
 const CardTitle = styled.h3`
   margin: 0 0 ${({ theme }) => theme.layout.space[2]}px 0;
@@ -260,24 +219,6 @@ const CopiedToast = styled.span`
   font-weight: ${({ theme }) => theme.typography.scale.body.weight};
 `;
 
-const EmptyState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.layout.space[9]}px ${({ theme }) => theme.layout.space[5]}px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-
-  h2 {
-    color: ${({ theme }) => theme.colors.text.muted};
-    font-weight: ${({ theme }) => theme.typography.scale.h3.weight};
-    margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.text.faint};
-    margin: 0 auto ${({ theme }) => theme.layout.space[5]}px;
-  }
-`;
 
 const ErrorBanner = styled.div`
   background: ${({ theme }) => theme.colors.state.wrongBg};
@@ -292,26 +233,6 @@ const ErrorBanner = styled.div`
   font-size: ${({ theme }) => theme.typography.scale.small.size}px;
 `;
 
-const RetryButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: ${({ theme }) => theme.colors.state.danger};
-  color: ${({ theme }) => theme.colors.bg.surface};
-  border: none;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[4]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  cursor: pointer;
-  font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-  font-family: inherit;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    opacity: 0.9;
-  }
-`;
 
 const LoadingState = styled.div`
   text-align: center;
@@ -320,85 +241,6 @@ const LoadingState = styled.div`
   font-size: ${({ theme }) => theme.typography.scale.body.size}px;
 `;
 
-/* ── Modal ── */
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${({ theme }) => theme.colors.scrim};
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-`;
-
-const ModalCard = styled.div`
-  background: ${({ theme }) => theme.colors.bg.surface};
-  padding: ${({ theme }) => theme.layout.space[7]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.lg}px;
-  max-width: 420px;
-  width: 90%;
-  text-align: center;
-  box-shadow: ${({ theme }) => theme.layout.shadow.md};
-
-  h3 {
-    margin: 0 0 ${({ theme }) => theme.layout.space[3]}px 0;
-    color: ${({ theme }) => theme.colors.text.primary};
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.text.muted};
-    margin: 0 auto ${({ theme }) => theme.layout.space[5]}px;
-    font-size: ${({ theme }) => theme.typography.scale.small.size}px;
-    line-height: ${({ theme }) => theme.typography.scale.small.line}px;
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.layout.space[3]}px;
-  justify-content: center;
-`;
-
-const ModalBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  padding: 0 ${({ theme }) => theme.layout.space[5]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.sm}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-family: inherit;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  border: none;
-  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const ModalBtnCancel = styled(ModalBtn)`
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-`;
-
-const ModalBtnDanger = styled(ModalBtn)`
-  background: ${({ theme }) => theme.colors.state.danger};
-  color: ${({ theme }) => theme.colors.bg.surface};
-`;
 
 const DashboardSection = styled.section`
   margin-bottom: ${({ theme }) => theme.layout.space[7]}px;
@@ -594,17 +436,6 @@ const SessionMeta = styled.p`
   margin: ${({ theme }) => theme.layout.space[1]}px 0 0 0;
 `;
 
-const SessionBadge = styled.span`
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  padding: ${({ theme }) => theme.layout.space[1]}px ${({ theme }) => theme.layout.space[2]}px;
-  border-radius: ${({ theme }) => theme.layout.radius.pill}px;
-  font-size: ${({ theme }) => theme.typography.scale.micro.size}px;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  background: ${({ theme }) => theme.colors.accent.indigo}15;
-  color: ${({ theme }) => theme.colors.accent.indigo};
-`;
 
 const PulsingDot = styled.span`
   display: inline-block;
@@ -711,36 +542,13 @@ const TestCount = styled.span`
   color: ${({ theme }) => theme.colors.text.faint};
 `;
 
-const LoadMoreButton = styled.button`
+
+const BadgeRow = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 300px;
-  margin: ${({ theme }) => theme.layout.space[6]}px auto 0;
-  height: ${({ theme }) => theme.layout.controlHeights.button}px;
-  background: ${({ theme }) => theme.colors.bg.surfaceAlt};
-  color: ${({ theme }) => theme.colors.text.muted};
-  border: 1px solid ${({ theme }) => theme.colors.border.subtle};
-  border-radius: ${({ theme }) => theme.layout.radius.md}px;
-  font-size: ${({ theme }) => theme.typography.scale.body.size}px;
-  font-family: inherit;
-  font-weight: ${({ theme }) => theme.typography.scale.body.weight};
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.border.subtle};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  gap: ${({ theme }) => theme.layout.space[2]}px;
+  flex-wrap: wrap;
+  margin-bottom: ${({ theme }) => theme.layout.space[2]}px;
 `;
-
-const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
-const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 
 /* ───────── Component ───────── */
 
@@ -759,6 +567,8 @@ function Home() {
   const [total, setTotal] = useState(0);
   const [levelFilter, setLevelFilter] = useState('');
   const [unitFilter, setUnitFilter] = useState('');
+  const [curriculum, setCurriculum] = useState([]);
+  const [contentTypeFilter, setContentTypeFilter] = useState('');
   const [recentAttempts, setRecentAttempts] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);
   const [difficultyMap, setDifficultyMap] = useState({});
@@ -769,6 +579,25 @@ function Home() {
   const [deleting, setDeleting] = useState(false);
   const [copiedTestId, setCopiedTestId] = useState(null);
   const [sharingTestId, setSharingTestId] = useState(null);
+
+  useEffect(() => {
+    api.get('/api/curriculum').then(res => setCurriculum(res.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => { setUnitFilter(''); }, [levelFilter]);
+
+  const levelOptions = curriculum.map(c => ({ value: c.level, label: c.levelName.ko }));
+  const unitOptions = levelFilter
+    ? (curriculum.find(c => c.level === levelFilter)?.units || [])
+        .filter(u => !u.isReview)
+        .map(u => ({ value: String(u.number), label: `${u.number}과 — ${u.titleKo}` }))
+    : [];
+  const CONTENT_TYPE_OPTIONS = [
+    { value: 'mock-exam', label: t('classification.mockExam') },
+    { value: 'topic-drill', label: t('classification.topicDrill') },
+    { value: 'vocabulary', label: t('classification.vocabulary') },
+    { value: 'grammar', label: t('classification.grammar') },
+  ];
 
   const fetchTests = useCallback(async (cursor = null, append = false, signal) => {
     try {
@@ -782,6 +611,7 @@ function Home() {
       const params = new URLSearchParams();
       if (levelFilter) params.set('level', levelFilter);
       if (unitFilter) params.set('unit', unitFilter);
+      if (contentTypeFilter) params.set('contentType', contentTypeFilter);
       if (cursor) params.set('cursor', cursor);
       params.set('limit', '20');
 
@@ -804,7 +634,7 @@ function Home() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [levelFilter, unitFilter]);
+  }, [levelFilter, unitFilter, contentTypeFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -893,7 +723,7 @@ function Home() {
     <div>
       <PageHeader>
         <h1>{t('home.title')}</h1>
-        {isAdmin && <CreateButton to="/create">+ {t('nav.create')}</CreateButton>}
+        {isAdmin && <Button as={Link} to="/create" $variant="primary">+ {t('nav.create')}</Button>}
       </PageHeader>
 
       {showOnboarding && (
@@ -917,7 +747,7 @@ function Home() {
       {error && (
         <ErrorBanner>
           <span>{error}</span>
-          <RetryButton onClick={() => fetchTests()}>{t('common.retry')}</RetryButton>
+          <Button $variant="danger" $size="compact" onClick={() => fetchTests()}>{t('common.retry')}</Button>
         </ErrorBanner>
       )}
 
@@ -936,7 +766,7 @@ function Home() {
                       {session.mode} mode &mdash; {mins}:{String(secs).padStart(2, '0')} remaining
                     </SessionMeta>
                   </SessionInfo>
-                  <SessionBadge><PulsingDot />Continue</SessionBadge>
+                  <Badge $color="indigo"><PulsingDot />Continue</Badge>
                 </SessionCard>
               );
             })}
@@ -993,25 +823,35 @@ function Home() {
           <FilterDropdown
             label={t('home.level')}
             value={levelFilter}
-            options={LEVEL_OPTIONS}
+            options={levelOptions}
             onChange={setLevelFilter}
           />
+          {unitOptions.length > 0 && (
+            <FilterDropdown
+              label={t('home.unit')}
+              value={unitFilter}
+              options={unitOptions}
+              onChange={setUnitFilter}
+            />
+          )}
           <FilterDropdown
-            label={t('home.unit')}
-            value={unitFilter}
-            options={UNIT_OPTIONS}
-            onChange={setUnitFilter}
+            label={t('classification.contentType')}
+            value={contentTypeFilter}
+            options={CONTENT_TYPE_OPTIONS}
+            onChange={setContentTypeFilter}
           />
           {total > 0 && <TestCount>{t('home.showing', { count: total })}</TestCount>}
         </FilterGroup>
       </FilterBar>
 
       {!loading && !error && tests.length === 0 && (
-        <EmptyState>
-          <h2>{t('home.noTests')}</h2>
-          <p>{levelFilter || unitFilter ? t('common.retry') : t('home.createFirst')}</p>
+        <EmptyState
+          icon="📋"
+          title={t('home.noTests')}
+          description={levelFilter || unitFilter ? t('common.retry') : t('home.createFirst')}
+        >
           {isAdmin && !levelFilter && !unitFilter && (
-            <CreateButton to="/create">{t('home.createFirst')}</CreateButton>
+            <Button as={Link} to="/create" $variant="primary">{t('home.createFirst')}</Button>
           )}
         </EmptyState>
       )}
@@ -1019,7 +859,7 @@ function Home() {
       {tests.length > 0 && (
         <Grid>
           {tests.map(test => (
-            <Card key={test._id} to={`/test/${test._id}`}>
+            <UiCard key={test._id} as={Link} to={`/test/${test._id}`} $interactive $padding="lg" style={{ position: 'relative', textDecoration: 'none', color: 'inherit' }}>
               {isAdmin && (
                 <EditButton
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/admin/tests/${test._id}/edit`); }}
@@ -1036,6 +876,17 @@ function Home() {
                   &times;
                 </DeleteButton>
               )}
+              <BadgeRow>
+                {test.level && (
+                  <Badge $color="indigo" $bold>
+                    {curriculum.find(c => c.level === test.level)?.levelName?.ko || test.level}
+                    {test.unitNumber != null && ` · ${test.unitNumber}과`}
+                  </Badge>
+                )}
+                {test.contentType && test.contentType !== 'general' && (
+                  <Badge $color="moss" $bold>{t(`classification.${test.contentType.replace('-', '')}`)}</Badge>
+                )}
+              </BadgeRow>
               <CardTitle>{test.title}</CardTitle>
               <CardMeta>{t('home.questionsCount', { count: test.questionCount })}</CardMeta>
               {difficultyMap[test._id] && (
@@ -1075,32 +926,35 @@ function Home() {
                   </>
                 )}
               </CardActions>
-            </Card>
+            </UiCard>
           ))}
         </Grid>
       )}
 
       {nextCursor && (
-        <LoadMoreButton onClick={handleLoadMore} disabled={loadingMore}>
+        <Button
+          $variant="secondary"
+          onClick={handleLoadMore}
+          disabled={loadingMore}
+          style={{ width: '100%', maxWidth: 300, margin: 'auto', display: 'flex' }}
+        >
           {loadingMore ? t('common.loading') : t('home.loadMore')}
-        </LoadMoreButton>
+        </Button>
       )}
 
       {deleteModal.show && (
-        <ModalOverlay onClick={cancelDelete} role="dialog" aria-modal="true" aria-label="Delete confirmation">
-          <ModalCard onClick={e => e.stopPropagation()}>
-            <h3>Remove this test?</h3>
-            <p>
-              &ldquo;{deleteModal.testTitle}&rdquo; and its attempt history will be permanently removed.
-            </p>
-            <ModalActions>
-              <ModalBtnCancel onClick={cancelDelete}>Keep it</ModalBtnCancel>
-              <ModalBtnDanger onClick={confirmDelete} disabled={deleting}>
-                {deleting ? 'Removing...' : 'Remove'}
-              </ModalBtnDanger>
-            </ModalActions>
-          </ModalCard>
-        </ModalOverlay>
+        <Modal onClose={cancelDelete} ariaLabel="Delete confirmation">
+          <h3 style={{ margin: '0 0 12px 0' }}>Remove this test?</h3>
+          <p style={{ color: 'inherit', marginBottom: 0 }}>
+            &ldquo;{deleteModal.testTitle}&rdquo; and its attempt history will be permanently removed.
+          </p>
+          <ModalActions>
+            <Button $variant="secondary" onClick={cancelDelete}>Keep it</Button>
+            <Button $variant="danger" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? 'Removing...' : 'Remove'}
+            </Button>
+          </ModalActions>
+        </Modal>
       )}
     </div>
   );
