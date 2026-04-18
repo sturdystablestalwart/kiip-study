@@ -14,13 +14,19 @@ const lightColors = {
   selection: { bg: '#F1E6D8' },
   scrim: 'rgba(31, 35, 40, 0.45)',
   onAccent: '#FFFFFF',
+  interactive: {
+    hoverBg: '#F2EDE4',
+    activeBg: '#EBE5DA',
+    disabledBg: '#F0ECE4',
+    disabledText: '#B0AFA8',
+  },
 };
 
 const darkColors = {
   bg: { canvas: '#1A1A1A', surface: '#242424', surfaceAlt: '#2C2C2C' },
   border: { subtle: '#3A3A3A' },
-  text: { primary: '#E8E4DC', muted: '#9A9A9A', faint: '#6A6A6A' },
-  accent: { clay: '#C47A5E', clayHover: '#A8654A', moss: '#8A9B74', indigo: '#4A8BB0' },
+  text: { primary: '#E8E4DC', muted: '#9A9A9A', faint: '#7A7A7A' },
+  accent: { clay: '#D08A6E', clayHover: '#B87358', moss: '#8A9B74', indigo: '#4A8BB0' },
   state: {
     success: '#4A9B6F', warning: '#D4A03A', danger: '#D45A5A',
     infoBg: '#1E2A2F', correctBg: '#1E2F1E', wrongBg: '#2F1E1E',
@@ -30,6 +36,12 @@ const darkColors = {
   selection: { bg: '#3A2E20' },
   scrim: 'rgba(0, 0, 0, 0.6)',
   onAccent: '#FFFFFF',
+  interactive: {
+    hoverBg: '#2E2E2E',
+    activeBg: '#363636',
+    disabledBg: '#2A2A2A',
+    disabledText: '#555555',
+  },
 };
 
 /* ─── Shared (theme-agnostic) ─── */
