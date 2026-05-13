@@ -46,6 +46,35 @@ const COOKIE_OPTIONS = {
     path: '/'
 };
 
+// ─── Signup allowlist (OAuth + magic-link) ──────────────────────────────
+// Both env vars are CSV. If EITHER is set, signups are gated. If both empty,
+// behavior is unchanged (open signup). If both are set, allow on EITHER match.
+//   ALLOWED_OAUTH_DOMAINS=foo.com,bar.com   → email must end with @foo.com or @bar.com
+//   ALLOWED_EMAILS=alice@x.com,bob@y.com    → email must be in this list
+function parseCsvEnv(value) {
+    if (!value || typeof value !== 'string') return [];
+    return value
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+}
+
+function isEmailAllowedForSignup(email) {
+    const domains = parseCsvEnv(process.env.ALLOWED_OAUTH_DOMAINS);
+    const emails = parseCsvEnv(process.env.ALLOWED_EMAILS);
+
+    // If neither allowlist is configured, signup is open (default behavior).
+    if (domains.length === 0 && emails.length === 0) return true;
+
+    const normalized = String(email || '').trim().toLowerCase();
+    if (!normalized) return false;
+
+    if (emails.length > 0 && emails.includes(normalized)) return true;
+    if (domains.length > 0 && domains.some((d) => normalized.endsWith('@' + d))) return true;
+
+    return false;
+}
+
 // Configure Passport Google Strategy
 passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
@@ -55,9 +84,16 @@ passport.use(new GoogleStrategy({
     },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            const email = profile.emails?.[0]?.value;
-            if (!email) {
+            const rawEmail = profile.emails?.[0]?.value;
+            if (!rawEmail) {
                 return done(new Error('No email found in Google profile'));
+            }
+            const email = rawEmail.trim().toLowerCase();
+
+            // Enforce optional signup allowlist (#35).
+            if (!isEmailAllowedForSignup(email)) {
+                logger.warn({ email }, 'OAuth signup rejected by allowlist');
+                return done(null, false, { message: 'Domain not allowed' });
             }
 
             let user = await User.findOne({ googleId: profile.id });
@@ -175,15 +211,81 @@ router.patch('/preferences', requireAuth, async (req, res) => {
     res.json({ preferences: user.preferences });
 });
 
+// ─── Magic-link bot protection (issue #20) ──────────────────────────────
+// Generic response used for ALL success-shaped paths (real send, honeypot,
+// cooldown, allowlist reject). Identical body + similar latency prevent
+// timing/existence enumeration.
+const MAGIC_LINK_GENERIC_RESPONSE = {
+    message: 'If this email is valid, a sign-in link has been sent.',
+};
+
+// Per-email cool-down: in-memory Map of { emailLower -> epochMs of last send }.
+// 60s threshold per email regardless of IP. Cheap, no extra deps.
+const MAGIC_LINK_COOLDOWN_MS = 60 * 1000;
+const lastSendByEmail = new Map();
+
+// Reap expired cooldown entries periodically to keep the map bounded.
+// Skipped in tests (no need + would keep the Node event loop alive).
+if (!isTest) {
+    const reaper = setInterval(() => {
+        const cutoff = Date.now() - MAGIC_LINK_COOLDOWN_MS;
+        for (const [key, ts] of lastSendByEmail) {
+            if (ts < cutoff) lastSendByEmail.delete(key);
+        }
+    }, 5 * 60 * 1000);
+    // Don't keep the event loop alive solely because of this timer.
+    if (reaper.unref) reaper.unref();
+}
+
+// Equalize latency for no-op success paths (honeypot, cooldown) so they
+// take a similar amount of time as the real send-mail path. Bots / timing
+// attackers should not be able to distinguish them.
+function approximateSendDelay() {
+    const ms = 50 + Math.floor(Math.random() * 100);
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // POST /api/auth/magic/send
 router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, res) => {
     try {
-        const { email, lang } = req.body;
+        // Honeypot: a hidden field the real form does NOT render. Bots that
+        // blindly fill every input get caught here. Respond with the same
+        // generic success shape (do NOT leak that we filtered them).
+        const honeypot = req.body?.website;
+        if (typeof honeypot === 'string' && honeypot.trim() !== '') {
+            logger.warn({ ip: req.ip }, 'Magic link honeypot tripped');
+            await approximateSendDelay();
+            return res.json(MAGIC_LINK_GENERIC_RESPONSE);
+        }
+
+        const { email, lang } = req.body || {};
         if (!email || typeof email !== 'string' || !email.includes('@')) {
             return res.status(400).json({ message: 'Valid email is required' });
         }
         const normalizedEmail = email.trim().toLowerCase();
         const validLang = ['en', 'ko', 'ru', 'es'].includes(lang) ? lang : 'en';
+
+        // Per-email cool-down (in addition to per-IP rate-limit). Same
+        // generic body — do not reveal that the email was recently used.
+        const now = Date.now();
+        const lastSent = lastSendByEmail.get(normalizedEmail);
+        if (lastSent && now - lastSent < MAGIC_LINK_COOLDOWN_MS) {
+            logger.info({ email: normalizedEmail }, 'Magic link per-email cooldown hit');
+            await approximateSendDelay();
+            return res.json(MAGIC_LINK_GENERIC_RESPONSE);
+        }
+
+        // Reject signups outside the allowlist (#35) — still respond with
+        // the generic body so we don't leak which emails are allowed.
+        if (!isEmailAllowedForSignup(normalizedEmail)) {
+            logger.warn({ email: normalizedEmail }, 'Magic link signup rejected by allowlist');
+            await approximateSendDelay();
+            return res.json(MAGIC_LINK_GENERIC_RESPONSE);
+        }
+
+        // Mark cooldown BEFORE the slow path so concurrent duplicates don't
+        // both fire emails.
+        lastSendByEmail.set(normalizedEmail, now);
 
         // Invalidate all pending tokens for this email
         await MagicLink.updateMany(
@@ -206,7 +308,7 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
 
         await sendMagicLinkEmail(normalizedEmail, rawToken, validLang);
 
-        res.json({ message: 'If this email is valid, a sign-in link has been sent.' });
+        res.json(MAGIC_LINK_GENERIC_RESPONSE);
     } catch (err) {
         logger.error({ err }, 'Magic link send error');
         res.status(500).json({ message: 'Failed to send sign-in link' });
@@ -291,3 +393,7 @@ router.post('/logout', (req, res) => {
 });
 
 module.exports = router;
+// Exposed for unit tests — not part of the HTTP surface.
+module.exports.isEmailAllowedForSignup = isEmailAllowedForSignup;
+module.exports._lastSendByEmail = lastSendByEmail;
+module.exports.MAGIC_LINK_COOLDOWN_MS = MAGIC_LINK_COOLDOWN_MS;
