@@ -16,9 +16,9 @@
 		reverse_proxy server:5000
 	}
 
-	# Everything else → SPA frontend
+	# Everything else → SPA frontend (nginx-unprivileged listens on 8080)
 	handle {
-		reverse_proxy client:80
+		reverse_proxy client:8080
 	}
 
 	header {
