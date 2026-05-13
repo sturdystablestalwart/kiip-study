@@ -392,3 +392,22 @@ This document outlines the full implementation roadmap for KIIP Study, a MERN-st
 | Phase 5 | None (sessions + audit — uses existing deps) |
 | Phase 6 | `pdfkit` (PDF generation) |
 | Phase 7 | `react-i18next`, `i18next`, `i18next-browser-languagedetector`, `anychart`, `exceljs`, `papaparse`, `string-similarity`, `nanoid`, `helmet` |
+
+---
+
+## Post-Phase-7 Work (Mar–May 2026)
+
+Phase 0–7 is closed. Subsequent feature and remediation work is tracked under separate plan documents.
+
+| Track | Plan | Status |
+|-------|------|--------|
+| Magic-link (passwordless) auth via email | `docs/superpowers/plans/2026-03-30-magic-link-auth.md` (+ `specs/2026-03-30-magic-link-auth-design.md`) | ✅ Shipped |
+| KIIP Curriculum + LLM-based test classification (level/unit/contentType) | `docs/superpowers/plans/2026-04-18-classification-system.md` (+ `specs/2026-04-18-classification-system-design.md`) | ✅ Shipped |
+| UX improvements (Tiers 1–3) — focus traps, ARIA live, semantic MCQ, ordering DnD a11y, attempt comparison, failed-questions review, prominent continue, difficulty badges, auto-save indicator, progress bar | `docs/superpowers/plans/2026-04-17-ux-improvements-tiers-1-3.md` | ✅ Shipped |
+| Design system migration (unified Button, Card, Badge, Modal, Stack, EmptyState primitives) | `docs/superpowers/plans/2026-04-18-design-system-components.md` | 🟡 In progress (~70%) |
+| Audit Remediation (security/perf/ops, 7 PRs) | `IMPLEMENTATION_PLAN_AUDIT_REMEDIATION.md` | ✅ All PRs landed as of 2026-05-13: PR1 share-IDOR fix, PR2 llmValidator, PR3 graceful shutdown, PR4 trust-proxy + compound index, PR5 pino logger + safeError, PR6 sanitizer + originCheck CSRF middleware, PR7 Docker hardening (SHA-pinned bases + client migrated to `nginxinc/nginx-unprivileged:alpine` on internal port 8080 + read_only/tmpfs/mem_limit on all containers + daily mongodump backup service). |
+| Server-side `pino` structured logging + `safeError()` pattern | (part of audit PR5) | ✅ Shipped |
+| Vitest unit test suite (server + client) | (part of audit track) | ✅ Shipped |
+| PWA support via `vite-plugin-pwa` | `client/vite.config.js` | ✅ Shipped |
+
+Older Phase 1–7 design/plan docs live in `docs/plans/`. The historical agent catalog used during Phase 0–4 is in `docs/AGENTS.md` (marked HISTORICAL — work complete).

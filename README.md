@@ -5,38 +5,45 @@ A desktop-first practice test platform for the Korea Immigration and Integration
 ## Features
 
 - **AI Test Generation** from pasted text or uploaded documents (PDF, DOCX, TXT, MD) via Google Gemini 2.5 Flash (admin-only)
+- **LLM Curriculum Classification** — each test is auto-classified by level/unit/contentType using Gemini structured output against the seeded KIIP curriculum (Levels 0–5 with unit-level taxonomy)
 - **5 Question Types** — MCQ single, MCQ multiple, short answer, ordering, fill-in-the-blank
 - **Practice Mode** with instant feedback and explanations
 - **Test Mode** with timed 30-minute sessions and submit-at-end review
 - **Endless Mode** — continuous random questions with configurable filters
 - **Resumable Sessions** — progress saved server-side, resume across devices
-- **Google OAuth** authentication with JWT httpOnly cookies
-- **Per-User Progress** — attempt history, scores, duration tracking
+- **Authentication** — Google OAuth **+ magic-link (passwordless email)** with JWT httpOnly cookies
+- **Per-User Progress** — attempt history, scores, duration tracking, failed-questions review
 - **Analytics Dashboard** with accuracy trends, unit breakdown, and per-question-type stats (AnyChart)
-- **Admin Suite** — test editor (all 5 types), flags moderation, audit logging
+- **Admin Suite** — test editor (all 5 types), flags moderation, audit logging, duplicates scanner
 - **PDF Exports** — blank test, answer key, student review, attempt report (Japandi-styled)
 - **Bulk Import** — XLSX/CSV spreadsheet import with question deduplication scan
-- **Test Sharing** via public nanoid links
+- **Test Sharing** via public nanoid links (admin-only generation)
 - **4 Languages** — English, Korean, Russian, Spanish (react-i18next)
 - **Theme Toggle** — light, dark, and system modes
 - **Keyboard Navigation** — Ctrl+P command palette, Ctrl+K shortcuts modal
 - **Mobile Responsive** — touch-friendly layout with responsive breakpoints
-- **Image Support** for visual questions (up to 20 images per test, auto-optimized)
+- **Image Support** for visual questions (up to 20 images per test, auto-optimized via sharp)
+- **PWA** — installable, with offline-cached static assets (vite-plugin-pwa)
+- **Unified Design System** — Button/Card/Badge/Modal/Stack/EmptyState primitives in `client/src/components/ui/`
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, Vite, styled-components 6, React Router 7 |
-| Backend | Express 5, Mongoose 9, Node.js |
+| Frontend | React 19, Vite (rolldown-vite), styled-components 6, React Router 7, vite-plugin-pwa |
+| Backend | Express 5, Mongoose 9, Node.js, pino (structured logs), morgan, compression |
 | Database | MongoDB 7 |
-| AI | Google Gemini 2.5 Flash |
-| Auth | Google OAuth 2.0, JWT (httpOnly cookies) |
+| AI | Google Gemini 2.5 Flash (generation + curriculum classification) |
+| Auth | Google OAuth 2.0 + magic-link (passwordless), JWT (httpOnly cookies), nodemailer |
+| Security | helmet CSP, custom NoSQL sanitizer, Origin/Referer CSRF middleware, express-rate-limit |
 | i18n | react-i18next (EN, KO, RU, ES) |
 | Charts | AnyChart |
 | PDF | PDFKit (server-side generation) |
-| Testing | Playwright E2E (95+ tests) |
-| Deployment | Docker Compose + Caddy (automatic HTTPS) |
+| Image processing | sharp |
+| Bulk import | exceljs, papaparse |
+| Testing | Playwright E2E (122 tests across `app.spec.js` + `manual-audit.spec.js`) + Vitest unit tests on both client and server (jsdom, supertest, mongodb-memory-server, @axe-core/playwright) |
+| Logging/Ops | pino structured logs, `safeError()` helper, graceful SIGTERM/SIGINT shutdown, helmet CSP, custom NoSQL sanitizer, Origin/Referer CSRF middleware |
+| Deployment | Docker Compose + Caddy (automatic HTTPS) + GitHub Actions CI |
 
 ## Quick Start
 
@@ -45,7 +52,7 @@ A desktop-first practice test platform for the Korea Immigration and Integration
 ```bash
 cp .env.example .env
 # Edit .env — add your GEMINI_API_KEY, Google OAuth credentials, JWT_SECRET
-docker-compose up -d
+docker compose up -d
 ```
 
 Open http://localhost
@@ -79,14 +86,18 @@ npm run setup
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GEMINI_API_KEY` | Yes | — | Google Gemini API key |
+| `GEMINI_API_KEY` | Yes | — | Google Gemini API key (generation + classification) |
 | `PORT` | No | `5000` | Express server port |
 | `MONGO_URI` | No | `mongodb://localhost:27017/kiip_test_app` | MongoDB connection |
 | `GOOGLE_CLIENT_ID` | Yes | — | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Yes | — | Google OAuth client secret |
-| `JWT_SECRET` | Yes | — | Secret for JWT cookies |
-| `ADMIN_EMAIL` | Yes | — | Email granted admin role on first login |
-| `CLIENT_URL` | No | `http://localhost:5173` | Frontend origin (CORS + OAuth) |
+| `GOOGLE_CALLBACK_URL` | No | `/api/auth/google/callback` | OAuth callback path |
+| `JWT_SECRET` | Yes | — | Secret for JWT cookies (long random string in prod) |
+| `ADMIN_EMAIL` | Yes | — | Email granted admin role on first login (Google or magic-link) |
+| `CLIENT_URL` | No | `http://localhost:5173` | Frontend origin (CORS + OAuth, comma-separated allowed) |
+| `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | Yes (for magic-link) | — | SMTP credentials for magic-link email delivery |
+| `NODE_ENV` | No | `development` | `development` / `production` / `test` |
+| `LOG_LEVEL` | No | `debug` (dev) / `info` (prod) | pino log level |
 
 ### Client (`client/.env`)
 
@@ -101,34 +112,49 @@ npm run install-all          # Install client + server dependencies
 npm start                    # Start both client and server
 npm run server               # Start server only
 npm run client               # Start client only
-npm test                     # Run Playwright E2E tests (Chromium)
-npm run test:all             # Run tests on all browsers
-npm run test:headed          # Run tests with visible browser
+npm test                     # Run Playwright E2E (Chromium)
+npm run test:all             # Run Playwright on all browsers
+npm run test:headed          # Run Playwright with visible browser
 npm run test:ui              # Open Playwright UI mode
+npm run test:unit            # Run Vitest unit tests on both client and server
 cd client && npm run build   # Production build
 cd client && npm run lint    # Lint client code
+cd client && npm run analyze # Build with bundle visualizer
+cd server && npm run test    # Run server Vitest only
 ```
 
 ## Project Structure
 
 ```
 kiip_test_app/
-├── client/                     React 19 frontend (Vite)
+├── client/                     React 19 frontend (Vite, PWA)
 │   └── src/
-│       ├── pages/              Route pages (Home, TestTaker, Dashboard, CreateTest, etc.)
-│       ├── components/         Reusable UI (CommandPalette, ErrorBoundary, Toast, etc.)
-│       ├── context/            AuthContext, ThemeContext
+│       ├── pages/              Home, TestTaker, Dashboard, EndlessMode, CreateTest,
+│       │                       FailedQuestions, SharedTest, MagicLinkVerify,
+│       │                       AdminTestEditor, AdminFlags, AdminBulkImport, AdminDuplicates
+│       ├── components/
+│       │   ├── ui/             Unified primitives (Button, Card, Badge, Modal, Stack, EmptyState)
+│       │   └── question-types/ MCQSingle, MCQMultiple, ShortAnswer, Ordering, FillInTheBlank
+│       ├── context/            AuthContext, ThemeContext, SearchPaletteContext
+│       ├── hooks/              useFocusTrap
 │       ├── i18n/               Locales (en, ko, ru, es)
-│       ├── theme/              Design tokens, GlobalStyles, breakpoints
-│       └── utils/              api.js (axios + interceptors), scoring.js
+│       ├── theme/              tokens.js, GlobalStyles.js, breakpoints.js
+│       └── utils/              api.js (axios + interceptors), scoring.js, anonymousAttempts.js
 ├── server/                     Express 5 backend
-│   ├── models/                 Test, Attempt, User, TestSession, Flag, AuditLog
-│   ├── routes/                 tests, auth, admin, sessions, flags, stats, share, pdf, bulkImport
-│   ├── middleware/             Auth guards (requireAuth, requireAdmin)
-│   └── utils/                  Auto-importer, deduplication
-├── tests/                      Playwright E2E specs
+│   ├── models/                 Test, Attempt, User, TestSession, Flag, AuditLog, Curriculum, MagicLink
+│   ├── routes/                 tests, auth (Google + magic-link), admin, sessions, flags, stats,
+│   │                           share, pdf, bulkImport, duplicates, curriculum, review
+│   ├── middleware/             auth (requireAuth/requireAdmin), sanitizer (NoSQL), originCheck (CSRF)
+│   ├── utils/                  llm, llmValidator, classifier, scoring, pdfGenerator, safeError,
+│   │                           logger (pino), magicLinkEmail (nodemailer), autoImporter, dedup,
+│   │                           curriculumSeed
+│   └── scripts/                migrateLegacyTests.js (one-time data migration)
+├── docs/                       PROJECT_REPORT, AGENTS (historical), plans/, superpowers/
+├── tests/                      Playwright E2E specs (app.spec.js + manual-audit.spec.js)
 ├── scripts/                    Setup and utility scripts
-├── docker-compose.yaml         Full-stack deployment
+├── IMPLEMENTATION_PLAN.md      Phase 0–7 (complete) + Post-Phase-7 pointer
+├── IMPLEMENTATION_PLAN_AUDIT_REMEDIATION.md  Active security/perf/ops remediation
+├── docker-compose.yaml         Full-stack deployment (mongo + server + client + caddy + backup)
 └── Caddyfile                   Reverse proxy with automatic HTTPS
 ```
 
@@ -147,10 +173,13 @@ kiip_test_app/
 ### Auth
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/auth/me` | Current user info |
+| `GET` | `/api/auth/me` | Current user info (returns `null` if not authed) |
 | `GET` | `/api/auth/google/start` | Initiate Google OAuth |
+| `GET` | `/api/auth/google/callback` | OAuth callback |
+| `POST` | `/api/auth/magic/send` | Send magic-link email (`{ email, lang? }`) |
+| `GET` | `/api/auth/magic/verify?token=` | Verify magic-link token → set JWT cookie |
 | `POST` | `/api/auth/logout` | Clear session |
-| `PATCH` | `/api/auth/preferences` | Update user preferences |
+| `PATCH` | `/api/auth/preferences` | Update language/theme preferences |
 
 ### Sessions
 | Method | Endpoint | Description |
@@ -173,14 +202,27 @@ kiip_test_app/
 | `GET` | `/api/admin/flags` | View flag queue |
 | `PATCH` | `/api/admin/flags/:id` | Resolve/dismiss flag |
 
+### Curriculum (Public)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/curriculum` | All KIIP levels with units |
+| `GET` | `/api/curriculum/:level` | Units for a specific level |
+
+### Review (Authenticated)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/review/failed?limit=` | Recent questions the user got wrong |
+| `GET` | `/api/review/difficulty` | Average accuracy per test (community signal) |
+
 ### Other
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/stats?period=` | Dashboard analytics |
-| `POST` | `/api/tests/:id/share` | Generate share link |
-| `GET` | `/api/shared/:shareId` | Public test metadata |
-| `GET` | `/api/pdf/test/:id?variant=` | Export test PDF |
-| `GET` | `/api/pdf/attempt/:attemptId?variant=` | Export attempt PDF |
+| `GET` | `/api/stats?period=7d\|30d\|90d\|all` | Dashboard KPIs + accuracy trend + unit breakdown |
+| `GET` | `/api/stats/question-types` | Per-question-type accuracy |
+| `POST` | `/api/tests/:id/share` | Generate share link (**admin-only**) |
+| `GET` | `/api/shared/:shareId` | Public test metadata (rate-limited 30/min) |
+| `GET` | `/api/pdf/test/:id?variant=blank\|answerKey` | Export test PDF |
+| `GET` | `/api/pdf/attempt/:attemptId?variant=student\|report` | Export attempt PDF |
 | `GET` | `/api/health` | Health check |
 
 ## Design System
