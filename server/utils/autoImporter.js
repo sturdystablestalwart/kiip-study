@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Test = require('../models/Test');
+const { classifyTest } = require('./classifier');
 const logger = require('./logger');
 
 const autoImportTests = async (parseFunction) => {
@@ -10,7 +11,9 @@ const autoImportTests = async (parseFunction) => {
         return;
     }
 
-    const files = fs.readdirSync(testsDir).filter(file => file.endsWith('.md') || file.endsWith('.txt'));
+    const files = fs.readdirSync(testsDir).filter(
+        file => file.endsWith('.md') || file.endsWith('.txt')
+    );
 
     for (const file of files) {
         const filePath = path.join(testsDir, file);
@@ -20,27 +23,24 @@ const autoImportTests = async (parseFunction) => {
         try {
             const content = fs.readFileSync(filePath, 'utf-8');
             const parsedData = await parseFunction(content);
-
-            // Extract level from title or filename (e.g. "Level 2", "2단계")
             const title = parsedData.title || fileName;
-            const levelMatch = title.match(/Level\s*(\d)/i) || title.match(/(\d)\s*단계/);
-            const level = levelMatch ? `Level ${levelMatch[1]}` : undefined;
 
-            // Check if test already exists by parsed title (exact match)
             const existing = await Test.findOne({ title });
             if (existing) {
                 console.log(`  Skipping "${title}" — already exists`);
                 continue;
             }
 
+            const classification = await classifyTest(parsedData.questions, title);
+
             const newTest = new Test({
                 title,
-                category: 'Auto-Imported',
-                level,
+                source: 'auto-imported',
+                ...classification,
                 questions: parsedData.questions
             });
             await newTest.save();
-            console.log(`  Successfully imported "${title}"`);
+            console.log(`  Imported "${title}" → level=${classification.level}, unit=${classification.unitNumber}, type=${classification.contentType}`);
         } catch (err) {
             logger.error({ err }, `Failed to import ${fileName}`);
         }

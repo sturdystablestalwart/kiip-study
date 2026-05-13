@@ -86,13 +86,13 @@ router.get('/', requireAuth, async (req, res) => {
             { $match: { ...matchStage, testId: { $exists: true, $ne: null } } },
             { $lookup: {
                 from: 'tests', localField: 'testId', foreignField: '_id', as: 'test',
-                pipeline: [{ $project: { unit: 1, level: 1 } }]
+                pipeline: [{ $project: { unitNumber: 1, level: 1, section: 1 } }]
             } },
             { $unwind: '$test' },
             ...(level ? [{ $match: { 'test.level': level } }] : []),
             {
                 $group: {
-                    _id: '$test.unit',
+                    _id: '$test.unitNumber',
                     totalCorrect: { $sum: '$score' },
                     totalQuestions: { $sum: '$totalQuestions' },
                     attempts: { $sum: 1 },
@@ -101,7 +101,7 @@ router.get('/', requireAuth, async (req, res) => {
             { $sort: { _id: 1 } },
             {
                 $project: {
-                    unit: '$_id', _id: 0,
+                    unitNumber: '$_id', _id: 0,
                     avgScore: { $round: [{ $multiply: [{ $divide: ['$totalCorrect', '$totalQuestions'] }, 100] }, 1] },
                     attempts: 1,
                 },
@@ -111,7 +111,7 @@ router.get('/', requireAuth, async (req, res) => {
         const weakest = unitBreakdown.length > 0
             ? unitBreakdown.reduce((min, u) => (u.avgScore < min.avgScore ? u : min))
             : null;
-        kpis.weakestUnit = weakest ? { unit: weakest.unit, avgScore: weakest.avgScore } : null;
+        kpis.weakestUnit = weakest ? { unitNumber: weakest.unitNumber, avgScore: weakest.avgScore } : null;
 
         res.json({ kpis, accuracyTrend, unitBreakdown });
     } catch (err) {

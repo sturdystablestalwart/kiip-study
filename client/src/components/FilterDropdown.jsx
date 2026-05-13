@@ -23,9 +23,11 @@ function FilterDropdown({ label, value, options, onChange }) {
   return (
     <Select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
       <option value="">{label}</option>
-      {options.map(opt => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
+      {options.map(opt => {
+        const val = typeof opt === 'string' ? opt : opt.value;
+        const lbl = typeof opt === 'string' ? opt : opt.label;
+        return <option key={val} value={val}>{lbl}</option>;
+      })}
     </Select>
   );
 }

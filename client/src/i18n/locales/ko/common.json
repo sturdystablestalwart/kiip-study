@@ -245,5 +245,18 @@
     "hintSearch": "필터를 사용하여 단계와 단원별로 시험을 찾으세요",
     "hintEndless": "무한 연습으로 계속 문제를 풀어보세요",
     "dismiss": "알겠습니다!"
+  },
+  "classification": {
+    "contentType": "유형",
+    "mockExam": "모의시험",
+    "mockexam": "모의시험",
+    "topicdrill": "주제 연습",
+    "topicDrill": "주제 연습",
+    "vocabulary": "어휘",
+    "grammar": "문법",
+    "general": "일반",
+    "section": "영역",
+    "allContentTypes": "전체 유형",
+    "unclassified": "미분류"
   }
 }

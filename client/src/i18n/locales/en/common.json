@@ -249,5 +249,18 @@
     "hintSearch": "Use filters to find tests by level and unit",
     "hintEndless": "Try Endless Practice for continuous drilling",
     "dismiss": "Got it!"
+  },
+  "classification": {
+    "contentType": "Content Type",
+    "mockExam": "Mock Exam",
+    "mockexam": "Mock Exam",
+    "topicdrill": "Topic Drill",
+    "topicDrill": "Topic Drill",
+    "vocabulary": "Vocabulary",
+    "grammar": "Grammar",
+    "general": "General",
+    "section": "Section",
+    "allContentTypes": "All Types",
+    "unclassified": "Unclassified"
   }
 }

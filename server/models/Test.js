@@ -20,20 +20,33 @@ const QuestionSchema = new mongoose.Schema({
 
 const TestSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    category: { type: String, default: 'General' },
+    contentType: {
+        type: String,
+        enum: ['mock-exam', 'topic-drill', 'vocabulary', 'grammar', 'general'],
+        default: 'general'
+    },
+    source: {
+        type: String,
+        enum: ['ai-generated', 'file-upload', 'manual-import', 'auto-imported', 'bulk-import'],
+        default: 'ai-generated'
+    },
     description: { type: String },
-    level: { type: String },
-    unit: { type: String },
+    level: {
+        type: String,
+        enum: ['0', '1', '2', '3', '4', '5-basic', '5-advanced']
+    },
+    unitNumber: { type: Number },
+    section: { type: String },
     shareId: { type: String, unique: true, sparse: true },
     questions: [QuestionSchema],
     createdAt: { type: Date, default: Date.now }
 });
 
-// Full-text search index on title, category, description
-TestSchema.index({ title: 'text', category: 'text', description: 'text' });
+// Full-text search index on title, description
+TestSchema.index({ title: 'text', description: 'text' });
 
 // Compound index for filtering + sorting
-TestSchema.index({ level: 1, unit: 1, createdAt: -1 });
+TestSchema.index({ level: 1, unitNumber: 1, contentType: 1, createdAt: -1 });
 
 // Compound index for cursor pagination by (createdAt desc, _id desc)
 TestSchema.index({ createdAt: -1, _id: -1 });

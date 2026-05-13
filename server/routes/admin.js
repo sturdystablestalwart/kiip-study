@@ -13,6 +13,7 @@ const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
+const { classifyTest } = require('../utils/classifier');
 const sharp = require('sharp');
 const AuditLog = require('../models/AuditLog');
 const safeError = require('../utils/safeError');
@@ -136,10 +137,12 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
             });
         }
 
+        const classification = await classifyTest(data.questions, data.title || 'Generated Test');
         const newTest = new Test({
             title: data.title || 'Generated Test',
             questions: data.questions,
-            category: 'Text Input'
+            source: 'ai-generated',
+            ...classification
         });
 
         const savedTest = await newTest.save();
@@ -268,10 +271,13 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
             });
         }
 
+        const fileName = req.file.originalname.replace(/\.[^/.]+$/, '');
+        const classification = await classifyTest(data.questions, data.title || fileName);
         const newTest = new Test({
-            title: data.title || req.file.originalname.replace(/\.[^/.]+$/, ''),
+            title: data.title || fileName,
             questions: data.questions,
-            category: 'File Upload'
+            source: 'file-upload',
+            ...classification
         });
         const savedTest = await newTest.save();
         fs.unlinkSync(filePath);
@@ -294,7 +300,7 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
 // POST /api/admin/tests/import
 router.post('/tests/import', async (req, res) => {
     try {
-        const { title, category, description, level, unit, questions } = req.body;
+        const { title, description, level, unitNumber, section, contentType, questions } = req.body;
 
         if (!title || !questions || !questions.length) {
             return res.status(400).json({ message: 'Title and at least one question are required' });
@@ -302,10 +308,12 @@ router.post('/tests/import', async (req, res) => {
 
         const newTest = new Test({
             title,
-            category: category || 'Import',
             description,
+            source: 'manual-import',
             level,
-            unit,
+            unitNumber,
+            section,
+            contentType: contentType || 'general',
             questions
         });
 
@@ -331,12 +339,14 @@ router.patch('/tests/:id', async (req, res) => {
             return res.status(404).json({ message: 'Test not found' });
         }
 
-        const { title, category, description, level, unit, questions } = req.body;
+        const { title, description, level, unitNumber, section, contentType, source, questions } = req.body;
         if (title !== undefined) test.title = title;
-        if (category !== undefined) test.category = category;
         if (description !== undefined) test.description = description;
+        if (contentType !== undefined) test.contentType = contentType;
+        if (source !== undefined) test.source = source;
         if (level !== undefined) test.level = level;
-        if (unit !== undefined) test.unit = unit;
+        if (unitNumber !== undefined) test.unitNumber = unitNumber;
+        if (section !== undefined) test.section = section;
         if (questions !== undefined) test.questions = questions;
 
         const savedTest = await test.save();

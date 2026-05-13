@@ -99,6 +99,14 @@ if (!fs.existsSync(documentsDir)) {
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app')
 .then(async () => {
     console.log('MongoDB Connected');
+    // Seed KIIP curriculum if empty
+    const Curriculum = require('./models/Curriculum');
+    const curriculumSeed = require('./utils/curriculumSeed');
+    const currCount = await Curriculum.countDocuments();
+    if (currCount === 0) {
+        await Curriculum.insertMany(curriculumSeed);
+        console.log(`Seeded KIIP curriculum: ${curriculumSeed.length} levels`);
+    }
     // Run Auto-Importer
     const autoImportTests = require('./utils/autoImporter');
     const { parseTextWithLLM } = require('./routes/tests');
@@ -139,6 +147,9 @@ app.use('/api/admin/duplicates', duplicatesRoutes);
 
 const reviewRoutes = require('./routes/review');
 app.use('/api/review', reviewRoutes);
+
+const curriculumRoutes = require('./routes/curriculum');
+app.use('/api/curriculum', curriculumRoutes);
 
 app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');

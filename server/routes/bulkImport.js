@@ -132,8 +132,8 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
     if (testData.errors && testData.errors.length > 0) { results.skipped++; continue; }
     try {
       const test = new Test({
-        title: testData.title, level: testData.level, unit: testData.unit,
-        category: 'Imported', questions: testData.questions,
+        title: testData.title, level: testData.level, unitNumber: testData.unitNumber,
+        source: 'bulk-import', questions: testData.questions,
       });
       await test.save();
       results.imported++;
@@ -186,7 +186,7 @@ function validateAndGroup(rows) {
     if (!testsMap.has(title)) {
       testsMap.set(title, {
         title, level: row['Level'] ? String(row['Level']).trim() : undefined,
-        unit: row['Unit'] ? String(row['Unit']).trim() : undefined,
+        unitNumber: row['Unit'] ? parseInt(row['Unit']) : undefined,
         questions: [], errors: [],
       });
     }

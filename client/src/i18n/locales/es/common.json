@@ -245,5 +245,18 @@
     "hintSearch": "Usa los filtros para encontrar exámenes por nivel y unidad",
     "hintEndless": "Prueba la práctica infinita para entrenamiento continuo",
     "dismiss": "¡Entendido!"
+  },
+  "classification": {
+    "contentType": "Tipo",
+    "mockExam": "Examen de prueba",
+    "mockexam": "Examen de prueba",
+    "topicdrill": "Ejercicio por tema",
+    "topicDrill": "Ejercicio por tema",
+    "vocabulary": "Vocabulario",
+    "grammar": "Gramática",
+    "general": "General",
+    "section": "Sección",
+    "allContentTypes": "Todos los tipos",
+    "unclassified": "Sin clasificar"
   }
 }

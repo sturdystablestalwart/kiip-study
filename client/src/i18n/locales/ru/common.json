@@ -245,5 +245,18 @@
     "hintSearch": "Используйте фильтры для поиска тестов по уровню и разделу",
     "hintEndless": "Попробуйте бесконечную практику для непрерывной тренировки",
     "dismiss": "Понятно!"
+  },
+  "classification": {
+    "contentType": "Тип",
+    "mockExam": "Пробный экзамен",
+    "mockexam": "Пробный экзамен",
+    "topicdrill": "Упражнение по теме",
+    "topicDrill": "Упражнение по теме",
+    "vocabulary": "Лексика",
+    "grammar": "Грамматика",
+    "general": "Общий",
+    "section": "Раздел",
+    "allContentTypes": "Все типы",
+    "unclassified": "Без категории"
   }
 }

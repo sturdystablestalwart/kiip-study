@@ -16,7 +16,7 @@ const logger = require('../utils/logger');
 // GET all tests with last attempt (aggregation + cursor pagination + search)
 router.get('/', async (req, res) => {
     try {
-        const { q, level, unit, cursor, limit: rawLimit } = req.query;
+        const { q, level, unit, contentType, cursor, limit: rawLimit } = req.query;
         const limit = Math.min(Math.max(parseInt(rawLimit) || 20, 1), 50);
 
         // Build match stage
@@ -25,7 +25,8 @@ router.get('/', async (req, res) => {
             match.$text = { $search: q.trim() };
         }
         if (level && typeof level === 'string') match.level = level;
-        if (unit && typeof unit === 'string') match.unit = unit;
+        if (unit && !isNaN(parseInt(unit))) match.unitNumber = parseInt(unit);
+        if (contentType && typeof contentType === 'string') match.contentType = contentType;
 
         // Cursor pagination: fetch items older than cursor
         if (cursor) {
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
             { $limit: limit + 1 },
             // Exclude questions array from list response (save bandwidth)
             { $project: {
-                title: 1, category: 1, description: 1, level: 1, unit: 1,
+                title: 1, contentType: 1, source: 1, description: 1, level: 1, unitNumber: 1, section: 1,
                 createdAt: 1, questionCount: { $size: '$questions' }
             }},
             // Join last attempt per test
@@ -107,7 +108,7 @@ router.get('/attempts', requireAuth, async (req, res) => {
         const nextCursor = hasMore ? page[page.length - 1]._id : null;
 
         const testIds = [...new Set(page.filter(a => a.testId).map(a => a.testId.toString()))];
-        const tests = await Test.find({ _id: { $in: testIds } }, { title: 1, level: 1, unit: 1 }).lean();
+        const tests = await Test.find({ _id: { $in: testIds } }, { title: 1, level: 1, unitNumber: 1, section: 1, contentType: 1 }).lean();
         const testMap = Object.fromEntries(tests.map(t => [t._id.toString(), t]));
 
         const enriched = page.map(a => ({
@@ -139,7 +140,7 @@ router.get('/recent-attempts', requireAuth, async (req, res) => {
         )];
         const tests = await Test.find(
             { _id: { $in: testIds } },
-            { title: 1, level: 1, unit: 1 }
+            { title: 1, level: 1, unitNumber: 1, section: 1, contentType: 1 }
         ).lean();
         const testMap = Object.fromEntries(tests.map(t => [t._id.toString(), t]));
 
@@ -168,7 +169,7 @@ router.get('/endless', requireAuth, async (req, res) => {
         // Build match for tests
         const match = {};
         if (level && typeof level === 'string') match.level = level;
-        if (unit && typeof unit === 'string') match.unit = unit;
+        if (unit && !isNaN(parseInt(unit))) match.unitNumber = parseInt(unit);
 
         // Fetch matching tests with their questions
         const tests = await Test.find(match, { questions: 1, title: 1 }).lean();
