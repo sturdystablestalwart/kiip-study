@@ -9,6 +9,17 @@ import { below } from '../theme/breakpoints';
 import { Button, Card, EmptyState } from '../components/ui';
 import 'anychart';
 
+// Optional: apply commercial AnyChart license key to remove the watermark.
+// The key is stored in `client/.env` as `VITE_ANYCHART_LICENSE_KEY=…` and Vite
+// substitutes it at build time. NOTE: the license key does NOT suppress the
+// rolldown `direct eval` build warning — that warning comes from the minified
+// anychart bundle itself (anychart-base.min.js / anychart-bundle.min.js) and is
+// independent of licensing. It is a benign build-time scan, not a runtime issue.
+const ANYCHART_LICENSE_KEY = import.meta.env.VITE_ANYCHART_LICENSE_KEY;
+if (ANYCHART_LICENSE_KEY && typeof window !== 'undefined' && window.anychart) {
+  window.anychart.licenseKey(ANYCHART_LICENSE_KEY);
+}
+
 /* ───────── Styled Components ───────── */
 
 const PageHeader = styled.div`
