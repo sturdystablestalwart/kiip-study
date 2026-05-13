@@ -41,7 +41,7 @@ router.get('/:shareId', shareLimiter, async (req, res) => {
       { $match: { shareId: req.params.shareId } },
       { $limit: 1 },
       { $project: {
-        title: 1, description: 1, level: 1, unit: 1, shareId: 1,
+        title: 1, description: 1, level: 1, unitNumber: 1, section: 1, contentType: 1, shareId: 1,
         questionCount: { $size: '$questions' }
       }},
     ]);

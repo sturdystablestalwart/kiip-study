@@ -4,7 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const Attempt = require('../models/Attempt');
 const Test = require('../models/Test');
 const mongoose = require('mongoose');
-const { safeError } = require('../utils/safeError');
+const safeError = require('../utils/safeError');
 
 // GET /api/review/failed — Questions the user got wrong recently
 router.get('/failed', requireAuth, async (req, res) => {
