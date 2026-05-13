@@ -59,7 +59,7 @@ describe('findDuplicates', () => {
     ];
     const clusters = findDuplicates(questions);
     expect(clusters.length).toBe(1);
-    expect(clusters[0].length).toBe(2);
+    expect(clusters[0].questions.length).toBe(2);
   });
 
   it('clusters similar texts above threshold', () => {
@@ -101,15 +101,15 @@ describe('findDuplicates', () => {
     expect(Array.isArray(lowThreshold)).toBe(true);
   });
 
-  it('includes score in cluster entries', () => {
+  it('includes similarity score on the cluster', () => {
     const questions = [
       { text: 'What is the capital of Korea?' },
       { text: 'What is the capital of Korea?' },
     ];
     const clusters = findDuplicates(questions);
-    expect(clusters[0][1]).toHaveProperty('score');
-    expect(typeof clusters[0][1].score).toBe('number');
-    expect(clusters[0][1].score).toBe(100);
+    expect(clusters[0]).toHaveProperty('similarity');
+    expect(typeof clusters[0].similarity).toBe('number');
+    expect(clusters[0].similarity).toBe(1); // identical texts → 1.0
   });
 
   it('handles multiple clusters', () => {

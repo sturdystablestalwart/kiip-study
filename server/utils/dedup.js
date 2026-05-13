@@ -21,8 +21,12 @@ function findDuplicates(questions, threshold = 0.75) {
 
     for (let j = i + 1; j < questions.length; j++) {
       if (seen.has(j)) continue;
-      // Skip comparing a question with itself (same test, same index)
-      if (String(questions[i].testId) === String(questions[j].testId)
+      // Skip comparing a question with itself (same test, same index).
+      // Only gate on testId when both questions have one defined — otherwise we
+      // would skip every comparison in tests/data without testId fields.
+      if (questions[i].testId != null
+          && questions[j].testId != null
+          && String(questions[i].testId) === String(questions[j].testId)
           && questions[i].questionIndex === questions[j].questionIndex) continue;
       const score = stringSimilarity.compareTwoStrings(normalized[i], normalized[j]);
       if (score >= threshold) {
