@@ -36,7 +36,9 @@ test-failure.png
 
 # Claude Code / AI assistant files
 .claude/
+.claude-octopus/
 .gemini/
+.planning/
 .playwright-mcp/
 CLAUDE.md
 docs/
