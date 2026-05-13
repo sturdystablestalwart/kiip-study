@@ -49,6 +49,11 @@ additionalContext/
 # Manual test documentation
 test-docs/
 
+# Local screenshot scratch dirs (action-driven manual captures, never committed)
+screenshots/
+client/visual-test-screenshots/
+tmp_*.png
+
 # IDE and editor files
 .vscode/
 !.vscode/extensions.json
