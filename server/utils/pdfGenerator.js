@@ -681,4 +681,87 @@ function generateTestPdf(doc, test, options = {}) {
     addPageNumbers(doc);
 }
 
-module.exports = { generateTestPdf };
+// ---------------------------------------------------------------------------
+// Timeout-bounded streaming helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Default PDF generation timeout — bounds rendering + streaming of one PDF
+ * to keep a malformed/oversized test from holding a worker indefinitely.
+ */
+const DEFAULT_PDF_TIMEOUT_MS = 30_000;
+
+/**
+ * generateTestPdfWithTimeout(doc, res, test, options, timeoutMs)
+ *
+ * Runs generateTestPdf(doc, test, options), calls doc.end(), and resolves
+ * when the response 'finish'/'close' event fires. Rejects on doc 'error',
+ * synchronous render exceptions, or when the timeout elapses first.
+ *
+ * On timeout the pdfkit doc is destroyed (or doc.end() called if destroy is
+ * unavailable). The caller is responsible for translating the rejection into
+ * an HTTP response (404/500/504) and for logging.
+ *
+ * @param {PDFDocument}      doc       pdfkit Document (bufferPages: true)
+ * @param {http.ServerResponse} res    Express response, already piped from doc
+ * @param {Object}           test      Test document
+ * @param {Object}           options   See generateTestPdf options
+ * @param {number}           [timeoutMs=30_000]
+ * @returns {Promise<void>}
+ */
+function generateTestPdfWithTimeout(doc, res, test, options = {}, timeoutMs = DEFAULT_PDF_TIMEOUT_MS) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+
+        const finish = (fn) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            fn();
+        };
+
+        const timer = setTimeout(() => {
+            finish(() => {
+                // Best-effort teardown of the pdfkit doc.
+                try {
+                    if (typeof doc.destroy === 'function') {
+                        doc.destroy();
+                    } else if (typeof doc.end === 'function') {
+                        doc.end();
+                    }
+                } catch (_) { /* swallow */ }
+                const err = new Error('PDF generation timed out');
+                err.code = 'PDF_TIMEOUT';
+                reject(err);
+            });
+        }, timeoutMs);
+
+        // Response lifecycle — 'finish' = all bytes flushed; 'close' may fire
+        // first if client aborts. Either way the work is done from our side.
+        if (res && typeof res.once === 'function') {
+            res.once('finish', () => finish(resolve));
+            res.once('close',  () => finish(resolve));
+        }
+
+        if (doc && typeof doc.on === 'function') {
+            doc.on('error', (err) => finish(() => reject(err)));
+        }
+
+        // Kick off rendering. generateTestPdf is synchronous; pdfkit then
+        // asynchronously flushes pages to the piped stream when doc.end()
+        // is called. Call via module.exports so tests can vi.spyOn() the
+        // renderer without touching this helper.
+        try {
+            module.exports.generateTestPdf(doc, test, options);
+            doc.end();
+        } catch (err) {
+            finish(() => reject(err));
+        }
+    });
+}
+
+module.exports = {
+    generateTestPdf,
+    generateTestPdfWithTimeout,
+    DEFAULT_PDF_TIMEOUT_MS,
+};
