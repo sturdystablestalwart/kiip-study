@@ -49,6 +49,11 @@ jobs:
         env:
           MONGO_URI: mongodb://localhost:27017/kiip_test_app
           GEMINI_API_KEY: test_key_not_used_in_ci
+          # server/middleware/auth.js throws on boot if JWT_SECRET is unset.
+          # The ≥32-char check only applies when NODE_ENV=production (which
+          # we deliberately don't set in CI), so any non-empty value works;
+          # using a 40-char placeholder for clarity.
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
 
       - name: Start client dev server
         run: cd client && npm run dev &
