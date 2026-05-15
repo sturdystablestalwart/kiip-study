@@ -7,7 +7,7 @@ const logger = require('./logger');
 const autoImportTests = async (parseFunction) => {
     const testsDir = path.join(__dirname, '../../additionalContext/tests');
     if (!fs.existsSync(testsDir)) {
-        console.log('Tests directory not found, skipping auto-import.');
+        logger.info('Tests directory not found, skipping auto-import.');
         return;
     }
 
@@ -19,7 +19,7 @@ const autoImportTests = async (parseFunction) => {
         const filePath = path.join(testsDir, file);
         const fileName = path.parse(file).name;
 
-        console.log(`Auto-import: checking ${fileName}...`);
+        logger.info({ fileName }, 'Auto-import: checking');
         try {
             const content = fs.readFileSync(filePath, 'utf-8');
             const parsedData = await parseFunction(content);
@@ -27,7 +27,7 @@ const autoImportTests = async (parseFunction) => {
 
             const existing = await Test.findOne({ title });
             if (existing) {
-                console.log(`  Skipping "${title}" — already exists`);
+                logger.info({ title }, 'Skipping — already exists');
                 continue;
             }
 
@@ -40,7 +40,7 @@ const autoImportTests = async (parseFunction) => {
                 questions: parsedData.questions
             });
             await newTest.save();
-            console.log(`  Imported "${title}" → level=${classification.level}, unit=${classification.unitNumber}, type=${classification.contentType}`);
+            logger.info({ title, classification }, 'Imported test');
         } catch (err) {
             logger.error({ err }, `Failed to import ${fileName}`);
         }

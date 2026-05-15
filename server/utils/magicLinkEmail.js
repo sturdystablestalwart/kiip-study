@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const logger = require('./logger');
 
 const subjects = {
     en: 'Your sign-in link for KIIP Study',
@@ -66,7 +67,7 @@ async function sendMagicLinkEmail(email, token, lang = 'en') {
 
     const transport = getTransporter();
     if (!transport) {
-        console.warn('[magic-link] SMTP not configured — email NOT sent. Check SMTP_USER/SMTP_PASS/SMTP_FROM env vars.');
+        logger.warn({ smtp_user: !!process.env.SMTP_USER }, '[magic-link] SMTP not configured — email NOT sent');
         return { sent: false, reason: 'smtp-not-configured' };
     }
 
