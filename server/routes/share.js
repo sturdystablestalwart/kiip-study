@@ -1,9 +1,21 @@
 const express = require('express');
-const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// Issue #135 — share routes are split into two routers so the caller cannot
+// accidentally dual-mount and expose the public no-auth GET handler under a
+// path it doesn't belong on (previously `app.use('/api/tests', shareRoutes)`
+// was mounted alongside `app.use('/api/shared', shareRoutes)`, silently
+// creating `GET /api/tests/:shareId` shadowed by tests.js `GET /:id`).
+//
+// Mount these in server/index.js as:
+//     app.use('/api/shared', publicRouter);   // public GET
+//     app.use('/api/tests',  adminRouter);    // admin POST :id/share
+
+const publicRouter = express.Router();
+const adminRouter = express.Router();
 
 // Rate limit public share endpoint to prevent brute-force enumeration
 const shareLimiter = rateLimit({
@@ -14,8 +26,8 @@ const shareLimiter = rateLimit({
     message: { error: 'Too many requests, please try again later.' },
 });
 
-// POST /api/tests/:id/share — generate share ID (requires auth)
-router.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
+// ─── Admin: POST /api/tests/:id/share — generate share ID (requires auth + admin) ───
+adminRouter.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
   try {
     const test = await Test.findById(req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
@@ -34,8 +46,8 @@ router.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/shared/:shareId — public test view (no auth required)
-router.get('/:shareId', shareLimiter, async (req, res) => {
+// ─── Public: GET /api/shared/:shareId — public test view (no auth required) ───
+publicRouter.get('/:shareId', shareLimiter, async (req, res) => {
   try {
     const results = await Test.aggregate([
       { $match: { shareId: req.params.shareId } },
@@ -56,4 +68,4 @@ router.get('/:shareId', shareLimiter, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = { publicRouter, adminRouter };

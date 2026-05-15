@@ -136,9 +136,13 @@ app.use('/api/pdf', pdfRoutes);
 const statsRoutes = require('./routes/stats');
 app.use('/api/stats', statsRoutes);
 
-const shareRoutes = require('./routes/share');
-app.use('/api/shared', shareRoutes);   // GET /api/shared/:shareId (public)
-app.use('/api/tests', shareRoutes);    // POST /api/tests/:id/share
+// Issue #135 — share routes split into public + admin to eliminate the
+// dual-mount footgun. publicRouter only handles GET /:shareId; adminRouter
+// only handles POST /:id/share. This prevents accidentally exposing the
+// no-auth aggregation under /api/tests if mount order is later refactored.
+const { publicRouter: sharePublicRouter, adminRouter: shareAdminRouter } = require('./routes/share');
+app.use('/api/shared', sharePublicRouter);   // GET /api/shared/:shareId (public)
+app.use('/api/tests', shareAdminRouter);     // POST /api/tests/:id/share (admin)
 
 const bulkImportRoutes = require('./routes/bulkImport');
 const duplicatesRoutes = require('./routes/duplicates');
