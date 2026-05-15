@@ -146,7 +146,9 @@ test.describe('Home Page — Full Audit', () => {
     await page.goto(BASE_URL);
     await page.waitForTimeout(500);
 
-    const endlessCard = page.getByText('Endless Practice').first();
+    // Use a role-scoped locator so we click the link, not the onboarding
+    // hint span that also contains "Endless Practice". Refs #222.
+    const endlessCard = page.getByRole('link', { name: /Endless Practice/i });
     if (await endlessCard.count() > 0) {
       await endlessCard.click();
       await expect(page).toHaveURL(/endless/);
