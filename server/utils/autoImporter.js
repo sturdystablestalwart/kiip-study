@@ -31,7 +31,21 @@ const autoImportTests = async (parseFunction) => {
                 continue;
             }
 
-            const classification = await classifyTest(parsedData.questions, title);
+            // Classification is non-fatal: if Gemini fails (e.g. CI placeholder
+            // key, network error, schema mismatch) we still save the test with
+            // the Test schema's own defaults (contentType: 'general', level
+            // unset) rather than dropping it on the floor and leaving CI / dev
+            // with an empty DB. Refs #222.
+            let classification;
+            try {
+                classification = await classifyTest(parsedData.questions, title);
+            } catch (classifyErr) {
+                logger.warn(
+                    { err: classifyErr, title },
+                    'Classifier failed; saving test with default classification'
+                );
+                classification = {};
+            }
 
             const newTest = new Test({
                 title,

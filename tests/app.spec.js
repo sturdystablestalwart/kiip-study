@@ -25,7 +25,10 @@ test.describe('Home Page', () => {
 
   test('shows Endless Practice card', async ({ page }) => {
     await page.goto(BASE_URL);
-    await expect(page.getByText('Endless Practice')).toBeVisible();
+    // Scope to the link that navigates to /endless to avoid strict-mode
+    // collision with the onboarding hint text "Try Endless Practice for
+    // continuous drilling". Refs #222.
+    await expect(page.getByRole('link', { name: /Endless Practice/i })).toBeVisible();
   });
 
   test('shows All Tests section with filter dropdowns', async ({ page }) => {
@@ -806,7 +809,11 @@ test.describe('Magic Link Verify', () => {
 test.describe('Magic Link API', () => {
 
   test('send endpoint returns success for valid email', async ({ request }) => {
+    // Origin header required: /api/* is protected by originCheck middleware
+    // which 403s state-changing requests without an allow-listed origin.
+    // 'http://localhost:5173' matches the default ALLOWED_ORIGINS. Refs #222.
     const response = await request.post(`${API_URL}/api/auth/magic/send`, {
+      headers: { Origin: 'http://localhost:5173' },
       data: { email: 'test@example.com', lang: 'en' },
     });
     expect(response.ok()).toBeTruthy();
@@ -816,6 +823,7 @@ test.describe('Magic Link API', () => {
 
   test('send endpoint rejects invalid email', async ({ request }) => {
     const response = await request.post(`${API_URL}/api/auth/magic/send`, {
+      headers: { Origin: 'http://localhost:5173' },
       data: { email: 'notanemail', lang: 'en' },
     });
     expect(response.status()).toBe(400);
@@ -865,6 +873,7 @@ test.describe('Anonymous Progress', () => {
 
   test('migration endpoint requires authentication', async ({ request }) => {
     const response = await request.post(`${API_URL}/api/tests/attempts/migrate`, {
+      headers: { Origin: 'http://localhost:5173' },
       data: { attempts: [{ testId: 'abc', score: 5, totalQuestions: 10 }] },
     });
     expect(response.status()).toBe(401);
