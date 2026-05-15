@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const Attempt = require('../models/Attempt');
 const mongoose = require('mongoose');
-const { safeError } = require('../utils/safeError');
+const safeError = require('../utils/safeError');
 
 // GET /api/stats — KPIs + accuracy trend + unit breakdown
 router.get('/', requireAuth, async (req, res) => {
