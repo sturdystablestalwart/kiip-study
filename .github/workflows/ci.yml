@@ -47,6 +47,12 @@ jobs:
       - name: Start server
         run: cd server && node index.js &
         env:
+          # NODE_ENV=test raises the express-rate-limit ceiling from 100 to
+          # 10000 req/min (server/index.js:45); Playwright fires many parallel
+          # requests and would otherwise hit 429s on /api/tests, /api/tests/endless,
+          # etc. It also keeps cookies non-secure for HTTP and skips the ≥32-char
+          # JWT_SECRET production check.
+          NODE_ENV: test
           MONGO_URI: mongodb://localhost:27017/kiip_test_app
           GEMINI_API_KEY: test_key_not_used_in_ci
           # server/middleware/auth.js throws on boot if JWT_SECRET is unset.

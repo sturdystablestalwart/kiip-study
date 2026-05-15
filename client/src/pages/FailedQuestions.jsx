@@ -76,7 +76,7 @@ const EmptyState = styled.div`
   padding: ${({ theme }) => theme.layout.space[9]}px;
   color: ${({ theme }) => theme.colors.text.muted};
 
-  h2 {
+  h1 {
     margin-bottom: ${({ theme }) => theme.layout.space[3]}px;
   }
 `;
@@ -137,7 +137,7 @@ export default function FailedQuestions() {
   if (!user)
     return (
       <EmptyState>
-        <h2>{t('common.loginRequired')}</h2>
+        <h1>{t('common.loginRequired')}</h1>
       </EmptyState>
     );
   if (loading)
@@ -149,7 +149,7 @@ export default function FailedQuestions() {
   if (questions.length === 0)
     return (
       <EmptyState>
-        <h2>{t('review.noFailed')}</h2>
+        <h1>{t('review.noFailed')}</h1>
         <p>{t('review.noFailedDesc')}</p>
         <NavButton onClick={() => navigate('/')}>{t('test.goHome')}</NavButton>
       </EmptyState>
