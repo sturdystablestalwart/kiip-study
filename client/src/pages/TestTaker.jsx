@@ -503,34 +503,6 @@ function TestTaker() {
           timeout: 10000, signal: controller.signal
         });
         setTest(res.data);
-
-        if (user) {
-          try {
-            const sessionRes = await api.post('/api/sessions/start', { testId: id, mode }, {
-              signal: controller.signal
-            });
-            const session = sessionRes.data.session;
-            setSessionId(session._id);
-
-            if (sessionRes.data.resumed && session.answers && session.answers.length > 0) {
-              const restoredAnswers = {};
-              session.answers.forEach(ans => {
-                restoredAnswers[ans.questionIndex] = {
-                  selectedOptions: ans.selectedOptions || [],
-                  textAnswer: ans.textAnswer || '',
-                  orderedItems: ans.orderedItems || [],
-                  blankAnswers: ans.blankAnswers || []
-                };
-              });
-              setAnswers(restoredAnswers);
-              if (session.currentQuestion != null) setCurrentQ(session.currentQuestion);
-              if (session.remainingTime != null) setTimeLeft(session.remainingTime);
-            }
-          } catch (sessionErr) {
-            if (sessionErr.name === 'CanceledError') return;
-            console.error('Failed to start/resume session', sessionErr);
-          }
-        }
       } catch (err) {
         if (err.name === 'CanceledError') return;
         if (!err.response || err.response.status >= 500) {
@@ -543,6 +515,44 @@ function TestTaker() {
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Session start (issue #114): separated from the test-fetch effect so that
+  // a cold-load with a still-resolving AuthContext (`user` initially null)
+  // doesn't permanently skip the session POST. Re-runs the moment `user`
+  // populates; the `sessionId` guard makes it a one-shot per session.
+  useEffect(() => {
+    if (!user || sessionId || isSubmitted) return;
+    const controller = new AbortController();
+    const startSession = async () => {
+      try {
+        const sessionRes = await api.post('/api/sessions/start', { testId: id, mode }, {
+          signal: controller.signal
+        });
+        const session = sessionRes.data.session;
+        setSessionId(session._id);
+
+        if (sessionRes.data.resumed && session.answers && session.answers.length > 0) {
+          const restoredAnswers = {};
+          session.answers.forEach(ans => {
+            restoredAnswers[ans.questionIndex] = {
+              selectedOptions: ans.selectedOptions || [],
+              textAnswer: ans.textAnswer || '',
+              orderedItems: ans.orderedItems || [],
+              blankAnswers: ans.blankAnswers || []
+            };
+          });
+          setAnswers(restoredAnswers);
+          if (session.currentQuestion != null) setCurrentQ(session.currentQuestion);
+          if (session.remainingTime != null) setTimeLeft(session.remainingTime);
+        }
+      } catch (sessionErr) {
+        if (sessionErr.name === 'CanceledError') return;
+        console.error('Failed to start/resume session', sessionErr);
+      }
+    };
+    startSession();
+    return () => controller.abort();
+  }, [user, sessionId, isSubmitted, id, mode]);
 
   useEffect(() => {
     if (isSubmitted || !test) return;
