@@ -54,6 +54,13 @@ jobs:
           # we deliberately don't set in CI), so any non-empty value works;
           # using a 40-char placeholder for clarity.
           JWT_SECRET: ci-test-secret-not-used-in-production-xx
+          # server/routes/auth.js:50 constructs passport-google-oauth20 at
+          # module-load time; passport-oauth2 throws
+          # `OAuth2Strategy requires a clientID option` if clientID is undefined.
+          # CI exercises neither the OAuth flow nor the callback URL, so
+          # placeholders are safe.
+          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
+          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
 
       - name: Start client dev server
         run: cd client && npm run dev &
