@@ -8,6 +8,13 @@ const api = axios.create({
     withCredentials: true
 });
 
+// Module-scoped latch: when the session cookie expires, every in-flight
+// request returns 401 simultaneously. Without this, each one would fire its
+// own "session expired" toast and `auth:expired` event, flooding the viewport
+// and clearing AuthContext N times. We allow the first 401 wave to fire side
+// effects, then suppress duplicates for 5s before re-arming. See issue #121.
+let sessionExpiredShown = false;
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -16,9 +23,11 @@ api.interceptors.response.use(
         const status = error.response?.status;
         const url = error.config?.url || '';
 
-        if (status === 401 && !url.includes('/api/auth/me')) {
+        if (status === 401 && !url.includes('/api/auth/me') && !sessionExpiredShown) {
+            sessionExpiredShown = true;
             window.dispatchEvent(new CustomEvent('auth:expired'));
             showToast(i18n.t('common.sessionExpired'), 'warning', 6000);
+            setTimeout(() => { sessionExpiredShown = false; }, 5000);
         } else if (!error.response && error.code !== 'ECONNABORTED') {
             showToast(i18n.t('common.networkError'), 'error', 8000);
         }
