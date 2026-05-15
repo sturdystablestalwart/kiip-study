@@ -57,11 +57,16 @@ router.get('/failed', requireAuth, async (req, res) => {
     }
 });
 
-// GET /api/review/difficulty — Average accuracy per test
+// GET /api/review/difficulty — Average accuracy per test, scoped to the
+// current user. The map is consumed by the Home page to badge tests with the
+// caller's own historical performance, so it MUST NOT aggregate across users
+// (issue #127 — would otherwise leak per-test attempt counts + mean scores
+// for the entire user base to any authenticated caller).
 router.get('/difficulty', requireAuth, async (req, res) => {
     try {
+        const userId = new mongoose.Types.ObjectId(req.user._id);
         const result = await Attempt.aggregate([
-            { $match: { testId: { $exists: true, $ne: null } } },
+            { $match: { userId, testId: { $exists: true, $ne: null } } },
             {
                 $group: {
                     _id: '$testId',
