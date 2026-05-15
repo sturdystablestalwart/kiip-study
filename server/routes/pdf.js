@@ -23,8 +23,15 @@ const safeError = require('../utils/safeError');
 const Test    = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const { requireAuth } = require('../middleware/auth');
-const { generateTestPdf } = require('../utils/pdfGenerator');
+const {
+    generateTestPdfWithTimeout,
+    DEFAULT_PDF_TIMEOUT_MS,
+} = require('../utils/pdfGenerator');
 const logger = require('../utils/logger');
+
+// Hard cap on questions per PDF. Anything beyond this is rejected before
+// streaming starts so a malformed/oversized test cannot hold a worker.
+const MAX_QUESTIONS_PER_PDF = 500;
 
 // All PDF routes require a logged-in user
 router.use(requireAuth);
@@ -41,10 +48,11 @@ function safeFilename(str) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: create a PDFDocument, set response headers, stream, and finalise.
-// Calls contentFn(doc) to write content, then flushes page numbers and ends.
+// Helper: open a pdfkit document, attach response headers, pipe to res, and
+// run the bounded generator. Translates timeout / error rejections into HTTP
+// status codes when headers have not yet been flushed.
 // ---------------------------------------------------------------------------
-function streamPdf(res, filename, contentFn) {
+async function streamTestPdf(res, filename, test, options, logCtx) {
     const doc = new PDFDocument({
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
@@ -66,15 +74,25 @@ function streamPdf(res, filename, contentFn) {
     doc.pipe(res);
 
     try {
-        contentFn(doc);
-        doc.end();
+        await generateTestPdfWithTimeout(doc, res, test, options, DEFAULT_PDF_TIMEOUT_MS);
     } catch (err) {
-        // If content generation throws mid-stream, end gracefully
-        if (!res.headersSent) {
-            doc.end();
-            throw err;
+        if (err && err.code === 'PDF_TIMEOUT') {
+            logger.warn(logCtx, 'pdf generation timed out');
+            if (!res.headersSent) {
+                res.status(504).json({ message: 'PDF generation timed out' });
+            } else {
+                // Headers already flushed — best we can do is terminate the body.
+                try { res.end(); } catch (_) { /* noop */ }
+            }
+            return;
         }
-        doc.end();
+
+        logger.error({ ...logCtx, err }, 'pdf generation failed');
+        if (!res.headersSent) {
+            res.status(500).json({ message: safeError('pdf generation', err) });
+        } else {
+            try { res.end(); } catch (_) { /* noop */ }
+        }
     }
 }
 
@@ -99,24 +117,36 @@ router.get('/test/:id', async (req, res) => {
             return res.status(404).json({ message: 'Test not found' });
         }
 
+        // Cap input size BEFORE we start the stream, so a malformed/oversized
+        // test cannot tie up a worker on pdfkit rendering.
+        if ((test.questions?.length ?? 0) > MAX_QUESTIONS_PER_PDF) {
+            return res.status(413).json({
+                error: `Test too large for PDF (max ${MAX_QUESTIONS_PER_PDF} questions)`,
+            });
+        }
+
         const showAnswers      = (variant === 'answerKey');
         const showExplanations = (variant === 'answerKey');
 
         const filename = `${safeFilename(test.title)}_${variant}`;
 
-        streamPdf(res, filename, (doc) => {
-            generateTestPdf(doc, test, {
+        await streamTestPdf(
+            res,
+            filename,
+            test,
+            {
                 showAnswers,
                 showExplanations,
                 userAnswers: [],
                 attempt: null,
                 showReportSummary: false,
-            });
-        });
+            },
+            { testId: id, variant }
+        );
     } catch (err) {
         logger.error({ err }, '[PDF] /test/:id error');
         if (!res.headersSent) {
-            res.status(500).json({ message: safeError('Failed to generate PDF', err) });
+            res.status(500).json({ message: safeError('pdf generation', err) });
         }
     }
 });
@@ -154,25 +184,36 @@ router.get('/attempt/:attemptId', async (req, res) => {
             return res.status(404).json({ message: 'Associated test not found' });
         }
 
+        // Same hard cap as /test/:id — protect workers from oversized renders.
+        if ((test.questions?.length ?? 0) > MAX_QUESTIONS_PER_PDF) {
+            return res.status(413).json({
+                error: `Test too large for PDF (max ${MAX_QUESTIONS_PER_PDF} questions)`,
+            });
+        }
+
         const showAnswers      = true;                    // always show answers on attempt PDFs
         const showExplanations = (variant === 'report');  // explanations only on full report
         const showReportSummary = (variant === 'report');
 
         const filename = `${safeFilename(test.title)}_${variant}_${attemptId.slice(-6)}`;
 
-        streamPdf(res, filename, (doc) => {
-            generateTestPdf(doc, test, {
+        await streamTestPdf(
+            res,
+            filename,
+            test,
+            {
                 showAnswers,
                 showExplanations,
                 userAnswers: attempt.answers || [],
                 attempt,
                 showReportSummary,
-            });
-        });
+            },
+            { attemptId, testId: attempt.testId, variant }
+        );
     } catch (err) {
         logger.error({ err }, '[PDF] /attempt/:attemptId error');
         if (!res.headersSent) {
-            res.status(500).json({ message: safeError('Failed to generate PDF', err) });
+            res.status(500).json({ message: safeError('pdf generation', err) });
         }
     }
 });
