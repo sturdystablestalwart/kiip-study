@@ -49,6 +49,18 @@ jobs:
         env:
           MONGO_URI: mongodb://localhost:27017/kiip_test_app
           GEMINI_API_KEY: test_key_not_used_in_ci
+          # server/middleware/auth.js throws on boot if JWT_SECRET is unset.
+          # The ≥32-char check only applies when NODE_ENV=production (which
+          # we deliberately don't set in CI), so any non-empty value works;
+          # using a 40-char placeholder for clarity.
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+          # server/routes/auth.js:50 constructs passport-google-oauth20 at
+          # module-load time; passport-oauth2 throws
+          # `OAuth2Strategy requires a clientID option` if clientID is undefined.
+          # CI exercises neither the OAuth flow nor the callback URL, so
+          # placeholders are safe.
+          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
+          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
 
       - name: Start client dev server
         run: cd client && npm run dev &
