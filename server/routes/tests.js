@@ -8,6 +8,7 @@ const { parseTextWithLLM } = require('../utils/llm');
 const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
 const logger = require('../utils/logger');
+const publicTestProjection = require('../utils/publicTestProjection');
 
 // ============================================
 // ROUTES
@@ -198,8 +199,16 @@ router.get('/endless', requireAuth, async (req, res) => {
 
         const selected = pool.slice(0, limit);
 
+        // Issue #107 — strip answer-key fields before sending to the client.
+        // Server-side scoring (POST /endless/attempt) re-fetches the source
+        // Test from the DB, so this projection is purely about the wire payload.
+        // The internal `_sourceTestId` / `_sourceIndex` / `_sourceKey` markers
+        // are NOT answer keys (the score endpoint needs them to look the
+        // original question up again) and are preserved by the projection.
+        const sanitized = publicTestProjection(selected);
+
         res.json({
-            questions: selected,
+            questions: sanitized,
             remaining: pool.length - selected.length
         });
     } catch (err) {
@@ -253,11 +262,15 @@ router.post('/endless/attempt', requireAuth, async (req, res) => {
 });
 
 // GET specific test
-router.get('/:id', async (req, res) => {
+// Issue #108 — now requires authentication AND strips answer-key fields for
+// non-admin users. Admins still receive the full document so the admin editor
+// (client/src/pages/AdminTestEditor.jsx) can render existing answer keys.
+router.get('/:id', requireAuth, async (req, res) => {
     try {
         const test = await Test.findById(req.params.id).lean();
         if (!test) return res.status(404).json({ message: 'Test not found' });
-        res.json(test);
+        const payload = req.user?.isAdmin ? test : publicTestProjection(test);
+        res.json(payload);
     } catch (err) {
         if (err.name === 'CastError') {
             return res.status(404).json({ message: 'Test not found' });
@@ -299,7 +312,11 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
     }
 });
 
-// POST /api/attempts/migrate — migrate anonymous localStorage attempts to DB
+// POST /api/attempts/migrate — migrate anonymous localStorage attempts to DB.
+// Issue #109 — do NOT trust client-supplied score / totalQuestions / answers /
+// createdAt. Re-score every answer server-side against the source Test,
+// reject rows whose testId does not resolve to a real test, clamp createdAt
+// to the [0, now] interval, and always take the userId from req.user.
 router.post('/attempts/migrate', requireAuth, async (req, res) => {
     try {
         const { attempts } = req.body;
@@ -308,22 +325,59 @@ router.post('/attempts/migrate', requireAuth, async (req, res) => {
         }
 
         const toMigrate = attempts.slice(0, 50);
+
+        // Collect all unique testIds (string form) and fetch the source tests
+        // in a single round-trip; ignore rows with no testId outright.
+        const rawIds = toMigrate
+            .map(a => a && a.testId)
+            .filter(Boolean)
+            .map(id => String(id));
+        const uniqueIds = [...new Set(rawIds)];
+
+        // Filter to valid-shape ObjectIds when possible; let the rest fall
+        // through to .find which simply won't match them. We rely on the
+        // model layer here rather than re-implementing ObjectId validation.
+        const tests = uniqueIds.length > 0
+            ? await Test.find({ _id: { $in: uniqueIds } }).lean()
+            : [];
+        const testMap = Object.fromEntries(tests.map(t => [String(t._id), t]));
+
+        const now = Date.now();
         const docs = [];
 
         for (const att of toMigrate) {
-            if (!att.testId || typeof att.score !== 'number' || typeof att.totalQuestions !== 'number') {
-                continue;
-            }
+            if (!att || !att.testId) continue;
+            const test = testMap[String(att.testId)];
+            if (!test) continue; // unresolved testId — skip silently
+
+            // Re-score every answer against the actual test definition.
+            const submittedAnswers = Array.isArray(att.answers) ? att.answers : [];
+            let serverScore = 0;
+            const verifiedAnswers = submittedAnswers.map((ans, idx) => {
+                const question = test.questions?.[idx];
+                if (!question) return { ...(ans || {}), isCorrect: false };
+                const isCorrect = scoreQuestion(question, ans || {});
+                if (isCorrect) serverScore++;
+                return { ...(ans || {}), isCorrect };
+            });
+
+            // Clamp createdAt to [0, now]. Future-dated values are pulled
+            // back to now; invalid / NaN dates default to now as well.
+            const rawCreatedAt = att.createdAt ? +new Date(att.createdAt) : now;
+            const safeCreatedAt = Number.isFinite(rawCreatedAt)
+                ? new Date(Math.min(now, Math.max(0, rawCreatedAt)))
+                : new Date(now);
+
             docs.push({
                 testId: att.testId,
                 userId: req.user._id,
-                score: att.score,
-                totalQuestions: att.totalQuestions,
-                duration: att.duration || 0,
-                overdueTime: att.overdueTime || 0,
-                answers: att.answers || [],
+                score: serverScore,
+                totalQuestions: test.questions?.length || 0,
+                duration: typeof att.duration === 'number' ? att.duration : 0,
+                overdueTime: typeof att.overdueTime === 'number' ? att.overdueTime : 0,
+                answers: verifiedAnswers,
                 mode: ['Practice', 'Test', 'Endless'].includes(att.mode) ? att.mode : 'Test',
-                createdAt: att.createdAt ? new Date(att.createdAt) : new Date(),
+                createdAt: safeCreatedAt,
             });
         }
 
