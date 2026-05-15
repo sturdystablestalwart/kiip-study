@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 const slideIn = keyframes`
@@ -73,6 +73,14 @@ const DismissButton = styled.button`
 
 let toastIdCounter = 0;
 
+// Maximum number of visible toasts at any time. Prevents a 401/retry storm
+// from filling the viewport (#120B).
+const MAX_TOASTS = 5;
+// Window during which identical (message, type) pairs are deduped (#120C).
+const DEDUP_WINDOW_MS = 1000;
+// Exit-animation duration; must match keyframes timing above.
+const EXIT_ANIM_MS = 160;
+
 export function showToast(message, type = 'info', duration = 5000) {
   window.dispatchEvent(new CustomEvent('toast:show', {
     detail: { id: ++toastIdCounter, message, type, duration }
@@ -82,28 +90,78 @@ export function showToast(message, type = 'info', duration = 5000) {
 export default function Toast() {
   const [toasts, setToasts] = useState([]);
 
+  // Track every active setTimeout so we can clear them on unmount and avoid
+  // setState-after-unmount + memory leaks (#120A).
+  const timersRef = useRef(new Set());
+  // Track recently-shown (type|message) -> timestamp for dedup (#120C).
+  const recentRef = useRef(new Map());
+  // Guard so timer callbacks don't setState after unmount.
+  const mountedRef = useRef(true);
+
+  const scheduleTimer = useCallback((fn, ms) => {
+    const id = setTimeout(() => {
+      timersRef.current.delete(id);
+      if (mountedRef.current) fn();
+    }, ms);
+    timersRef.current.add(id);
+    return id;
+  }, []);
+
+  const startExit = useCallback((id) => {
+    if (!mountedRef.current) return;
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+    scheduleTimer(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, EXIT_ANIM_MS);
+  }, [scheduleTimer]);
+
   useEffect(() => {
+    mountedRef.current = true;
+    // Capture ref values inside the effect so ESLint's exhaustive-deps rule is
+    // satisfied and cleanup operates on the same Set/Map instances.
+    const timers = timersRef.current;
+    const recent = recentRef.current;
+
     const handler = (e) => {
       const { id, message, type, duration } = e.detail;
-      setToasts(prev => [...prev, { id, message, type, exiting: false }]);
+
+      // Dedup: drop if an identical (message, type) was shown within
+      // DEDUP_WINDOW_MS. Opportunistically prune stale entries.
+      const key = `${type}::${message}`;
+      const now = Date.now();
+      for (const [k, ts] of recent) {
+        if (now - ts > DEDUP_WINDOW_MS) recent.delete(k);
+      }
+      if (recent.has(key)) return;
+      recent.set(key, now);
+
+      setToasts(prev => {
+        const next = [...prev, { id, message, type, exiting: false }];
+        // Cap the visible queue — drop the oldest entries first.
+        if (next.length > MAX_TOASTS) {
+          return next.slice(next.length - MAX_TOASTS);
+        }
+        return next;
+      });
 
       if (duration > 0) {
-        setTimeout(() => {
-          setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
-          setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-          }, 160);
-        }, duration);
+        scheduleTimer(() => startExit(id), duration);
       }
     };
 
     window.addEventListener('toast:show', handler);
-    return () => window.removeEventListener('toast:show', handler);
-  }, []);
+    return () => {
+      window.removeEventListener('toast:show', handler);
+      mountedRef.current = false;
+      // Clear every pending timer so they can't fire after unmount (#120A).
+      for (const tid of timers) clearTimeout(tid);
+      timers.clear();
+      recent.clear();
+    };
+  }, [scheduleTimer, startExit]);
 
   const dismiss = (id) => {
-    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 160);
+    startExit(id);
   };
 
   return (
