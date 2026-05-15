@@ -61,27 +61,61 @@ router.post('/start', requireAuth, async (req, res) => {
 });
 
 // PATCH /api/sessions/:id
-// Update answers, currentQuestion, remainingTime for an active session
+// Update answers, currentQuestion, remainingTime for an active session.
+//
+// Issue #143 — Optimistic concurrency:
+// If the client supplies `expectedLastSavedAt` (ISO date string), the update
+// only succeeds when the DB's current `lastSavedAt` matches. On mismatch we
+// return 409 with `{ error: 'CONCURRENCY_CONFLICT', currentLastSavedAt }` so
+// the client can reconcile (e.g. surface a "another tab saved newer state"
+// prompt). When `expectedLastSavedAt` is absent we fall back to last-writer-
+// wins for back-compat with pre-fix clients. The response always includes
+// the new `lastSavedAt` so updated clients can roll it forward.
 router.patch('/:id', requireAuth, async (req, res) => {
     try {
-        const { answers, currentQuestion, remainingTime } = req.body;
+        const { answers, currentQuestion, remainingTime, expectedLastSavedAt } = req.body;
 
-        const session = await TestSession.findOne({
+        const set = { lastSavedAt: new Date() };
+        if (answers !== undefined) set.answers = answers;
+        if (currentQuestion !== undefined) set.currentQuestion = currentQuestion;
+        if (remainingTime !== undefined) set.remainingTime = remainingTime;
+
+        const filter = {
             _id: req.params.id,
             userId: req.user._id,
             status: 'active'
-        });
+        };
 
-        if (!session) {
-            return res.status(404).json({ message: 'Active session not found' });
+        if (expectedLastSavedAt !== undefined && expectedLastSavedAt !== null) {
+            const parsed = new Date(expectedLastSavedAt);
+            if (Number.isNaN(parsed.getTime())) {
+                return res.status(400).json({ message: 'expectedLastSavedAt must be a valid date' });
+            }
+            filter.lastSavedAt = parsed;
         }
 
-        if (answers !== undefined) session.answers = answers;
-        if (currentQuestion !== undefined) session.currentQuestion = currentQuestion;
-        if (remainingTime !== undefined) session.remainingTime = remainingTime;
-        session.lastSavedAt = new Date();
+        const session = await TestSession.findOneAndUpdate(filter, { $set: set }, { new: true });
 
-        await session.save();
+        if (!session) {
+            // Either the session genuinely doesn't exist / is not active / not
+            // owned by this user, or the lastSavedAt guard rejected the write.
+            // Disambiguate by re-querying without the guard.
+            if (expectedLastSavedAt !== undefined && expectedLastSavedAt !== null) {
+                const current = await TestSession.findOne({
+                    _id: req.params.id,
+                    userId: req.user._id,
+                    status: 'active'
+                });
+                if (current) {
+                    return res.status(409).json({
+                        error: 'CONCURRENCY_CONFLICT',
+                        message: 'Session was updated by another client',
+                        currentLastSavedAt: current.lastSavedAt
+                    });
+                }
+            }
+            return res.status(404).json({ message: 'Active session not found' });
+        }
 
         return res.status(200).json({ session });
     } catch (err) {
