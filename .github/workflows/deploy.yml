@@ -1,8 +1,20 @@
 name: Deploy
 
+# Production deploys are gated on signed annotated tags (refs/tags/v*).
+# A push to main alone CANNOT trigger a deploy — a maintainer must create
+# and push a GPG-signed tag, which the deploy host then verifies with
+# `git verify-tag` before checking out the exact tagged commit.
+# Manual escape hatch: workflow_dispatch with an explicit commit SHA.
+# See README "Release & deploy" for the operator runbook.
+
 on:
   push:
-    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA to deploy (overrides tag flow; use sparingly)'
+        required: false
 
 jobs:
   deploy:
@@ -12,13 +24,40 @@ jobs:
     steps:
       - name: Deploy to home server
         uses: appleboy/ssh-action@v1
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          GITHUB_REF: ${{ github.ref }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: INPUT_SHA,GITHUB_REF
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            git pull origin main
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            # Fetch all tags so we can verify signatures and check out by tag/SHA.
+            git fetch --tags --force origin
+
+            if [ -n "${INPUT_SHA:-}" ]; then
+              # Manual dispatch path: deploy the exact SHA the operator supplied.
+              # Trust comes from GitHub repo permissions on workflow_dispatch.
+              echo "Manual dispatch: deploying SHA ${INPUT_SHA}"
+              git fetch origin "${INPUT_SHA}"
+              git checkout --detach "${INPUT_SHA}"
+            else
+              # Tag-push path: extract refs/tags/<TAG>, require a valid GPG
+              # signature on the annotated tag, then check out the tag's commit.
+              TAG="${GITHUB_REF#refs/tags/}"
+              echo "Tag push: verifying signature on ${TAG}"
+              if ! git verify-tag "${TAG}"; then
+                echo "ERROR: tag signature invalid or missing for ${TAG}" >&2
+                exit 1
+              fi
+              git checkout --detach "refs/tags/${TAG}"
+            fi
+
+            echo "Deploying commit: $(git rev-parse HEAD)"
             docker compose build
             docker compose up -d
             for i in $(seq 1 30); do

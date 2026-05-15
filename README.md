@@ -236,6 +236,20 @@ Japanese Warm Minimalism (Japandi) — design tokens in `client/src/theme/tokens
 - **Radii:** sm 10px, md 14px, lg 18px
 - **Motion:** 120ms fast, 160ms base, ease-out
 
+## Release & Deploy
+
+Production deploys are gated on **signed annotated tags** — a plain push to `main` no longer deploys.
+
+```bash
+# from a clean main, after CI is green
+git tag -s v1.4.0 -m "v1.4.0"   # GPG-signed annotated tag
+git push origin v1.4.0          # triggers .github/workflows/deploy.yml
+```
+
+The workflow SSHes into the deploy host, runs `git fetch --tags --force`, verifies the tag signature with `git verify-tag`, and checks out the tag's exact commit (detached HEAD) before running `docker compose build && up -d`. If the signature is invalid or missing, the deploy aborts before any container is touched.
+
+**Manual escape hatch:** Actions → Deploy → *Run workflow* and supply a commit SHA. The dispatch input bypasses tag verification (trust comes from GitHub repo permissions), so use it only for hotfix rollbacks.
+
 ## License
 
 MIT
