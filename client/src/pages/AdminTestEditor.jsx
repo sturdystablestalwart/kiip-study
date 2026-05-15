@@ -338,7 +338,22 @@ function AdminTestEditor() {
                     setUnitNumber(data.unitNumber != null ? String(data.unitNumber) : '');
                     setSection(data.section || '');
                     setContentType(data.contentType || 'general');
-                    setQuestions(data.questions || []);
+                    // Normalize legacy questions so reads of acceptedAnswers/blanks/
+                    // options/correctOrder never crash when fields are undefined
+                    // (legacy LLM-generated, BulkImport, or pre-schema-additions data).
+                    // See issue #115.
+                    setQuestions((data.questions || []).map(q => ({
+                        ...q,
+                        acceptedAnswers: Array.isArray(q.acceptedAnswers) ? q.acceptedAnswers : [],
+                        blanks: Array.isArray(q.blanks)
+                            ? q.blanks.map(b => ({
+                                ...b,
+                                acceptedAnswers: Array.isArray(b?.acceptedAnswers) ? b.acceptedAnswers : [],
+                            }))
+                            : [],
+                        options: Array.isArray(q.options) ? q.options : [],
+                        correctOrder: Array.isArray(q.correctOrder) ? q.correctOrder : [],
+                    })));
                 })
                 .catch(err => {
                     if (err.name === 'CanceledError') return;
@@ -356,7 +371,7 @@ function AdminTestEditor() {
     const updateOption = (qIdx, oIdx, updates) => {
         setQuestions(prev => prev.map((q, i) => {
             if (i !== qIdx) return q;
-            const options = q.options.map((o, j) => j === oIdx ? { ...o, ...updates } : o);
+            const options = (q.options || []).map((o, j) => j === oIdx ? { ...o, ...updates } : o);
             return { ...q, options };
         }));
     };
@@ -364,7 +379,7 @@ function AdminTestEditor() {
     const toggleCorrect = (qIdx, oIdx) => {
         setQuestions(prev => prev.map((q, i) => {
             if (i !== qIdx) return q;
-            const options = q.options.map((o, j) => {
+            const options = (q.options || []).map((o, j) => {
                 if (q.type === 'mcq-single') {
                     return { ...o, isCorrect: j === oIdx };
                 }
@@ -376,13 +391,13 @@ function AdminTestEditor() {
 
     const addOption = (qIdx) => {
         setQuestions(prev => prev.map((q, i) =>
-            i === qIdx ? { ...q, options: [...q.options, { text: '', isCorrect: false }] } : q
+            i === qIdx ? { ...q, options: [...(q.options || []), { text: '', isCorrect: false }] } : q
         ));
     };
 
     const removeOption = (qIdx, oIdx) => {
         setQuestions(prev => prev.map((q, i) =>
-            i === qIdx ? { ...q, options: q.options.filter((_, j) => j !== oIdx) } : q
+            i === qIdx ? { ...q, options: (q.options || []).filter((_, j) => j !== oIdx) } : q
         ));
     };
 
@@ -396,7 +411,7 @@ function AdminTestEditor() {
 
     const removeAcceptedAnswer = (qIdx, aIdx) => {
         setQuestions(prev => prev.map((q, i) =>
-            i === qIdx ? { ...q, acceptedAnswers: q.acceptedAnswers.filter((_, j) => j !== aIdx) } : q
+            i === qIdx ? { ...q, acceptedAnswers: (q.acceptedAnswers || []).filter((_, j) => j !== aIdx) } : q
         ));
     };
 
@@ -624,9 +639,9 @@ function AdminTestEditor() {
                                                 <ChipRemove onClick={() => {
                                                     setQuestions(prev => prev.map((q2, i) => {
                                                         if (i !== qIdx) return q2;
-                                                        const blanks = q2.blanks.map((b, j) => {
+                                                        const blanks = (q2.blanks || []).map((b, j) => {
                                                             if (j !== bIdx) return b;
-                                                            return { ...b, acceptedAnswers: b.acceptedAnswers.filter((_, k) => k !== aIdx) };
+                                                            return { ...b, acceptedAnswers: (b.acceptedAnswers || []).filter((_, k) => k !== aIdx) };
                                                         });
                                                         return { ...q2, blanks };
                                                     }));
@@ -645,9 +660,9 @@ function AdminTestEditor() {
                                                     if (!val) return;
                                                     setQuestions(prev => prev.map((q2, i) => {
                                                         if (i !== qIdx) return q2;
-                                                        const blanks = q2.blanks.map((b, j) => {
+                                                        const blanks = (q2.blanks || []).map((b, j) => {
                                                             if (j !== bIdx) return b;
-                                                            return { ...b, acceptedAnswers: [...b.acceptedAnswers, val] };
+                                                            return { ...b, acceptedAnswers: [...(b.acceptedAnswers || []), val] };
                                                         });
                                                         return { ...q2, blanks };
                                                     }));
