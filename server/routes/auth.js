@@ -244,7 +244,12 @@ router.get('/magic/verify', async (req, res) => {
 
         let user = await User.findOne({ email: record.email });
         if (user) {
-            if (!user.authMethods.includes('magic')) {
+            // Issue #110: legacy users created before `authMethods` existed
+            // (e.g. Google-only users from earlier deploys) may have
+            // `authMethods` === undefined/null. Guard before calling .includes.
+            // Mirrors the defensive pattern in the Google strategy above.
+            if (!user.authMethods || !user.authMethods.includes('magic')) {
+                user.authMethods = user.authMethods || [];
                 user.authMethods.push('magic');
                 await user.save();
             }

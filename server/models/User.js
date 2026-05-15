@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
     googleId: { type: String, default: null },
     displayName: { type: String },
     isAdmin: { type: Boolean, default: false },
-    authMethods: [{ type: String, enum: ['google', 'magic'] }],
+    authMethods: { type: [{ type: String, enum: ['google', 'magic'] }], default: [] },
     preferences: {
         language: { type: String, enum: ['en', 'ko', 'ru', 'es'], default: 'en' },
         theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
