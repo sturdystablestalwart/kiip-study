@@ -679,7 +679,7 @@ function Home() {
     setDeleting(true);
     try {
       await api.delete(`/api/admin/tests/${deleteModal.testId}`);
-      setTests(tests.filter(t => t._id !== deleteModal.testId));
+      setTests(prev => prev.filter(t => t._id !== deleteModal.testId));
       setDeleteModal({ show: false, testId: null, testTitle: '' });
     } catch (err) {
       console.error(err);
