@@ -123,8 +123,8 @@ RULES:
                 }
             });
 
-            const result = await model.generateContent(prompt);
-            const parsed = JSON.parse(result.response.text());
+            const llmResponse = await model.generateContent(prompt);
+            const parsed = JSON.parse(llmResponse.response.text());
 
             // Validate level against curriculum
             const validLevels = curriculum.map(c => c.level);
