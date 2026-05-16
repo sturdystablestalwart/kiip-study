@@ -90,7 +90,14 @@ export default function FailedQuestions() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState({});
-  const [correctCount, setCorrectCount] = useState(0);
+
+  // Derived from showFeedback + answers so a future flow that allows
+  // re-answering can't double-count and a "Check, then Check again" sequence
+  // is idempotent (closes #167).
+  const correctCount = Object.keys(showFeedback).reduce((sum, idx) => {
+    const i = Number(idx);
+    return sum + (scoreQuestion(questions[i], answers[i]) ? 1 : 0);
+  }, 0);
 
   useEffect(() => {
     if (!user) return;
@@ -119,10 +126,6 @@ export default function FailedQuestions() {
   );
 
   const handleCheck = () => {
-    const q = questions[currentIdx];
-    const ans = answers[currentIdx];
-    const isCorrect = scoreQuestion(q, ans);
-    if (isCorrect) setCorrectCount(prev => prev + 1);
     setShowFeedback(prev => ({ ...prev, [currentIdx]: true }));
   };
 
