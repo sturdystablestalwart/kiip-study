@@ -34,7 +34,16 @@
     "allUnits": "Все разделы",
     "share": "Поделиться",
     "linkCopied": "Ссылка скопирована!",
-    "downloadPdf": "Скачать PDF"
+    "downloadPdf": "Скачать PDF",
+    "deleteConfirmTitle": "Удалить этот тест?",
+    "deleteConfirmBody": "“{{title}}” и история попыток будут безвозвратно удалены.",
+    "deleteCancel": "Оставить",
+    "deleteConfirm": "Удалить",
+    "deleteRemoving": "Удаление...",
+    "deleteFailed": "Не удалось удалить тест. Попробуйте ещё раз.",
+    "difficultyEasy": "Лёгкий",
+    "difficultyMedium": "Средний",
+    "difficultyHard": "Сложный"
   },
   "test": {
     "practice": "Практика",

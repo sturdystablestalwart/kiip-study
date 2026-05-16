@@ -34,7 +34,16 @@
     "allUnits": "Todas las unidades",
     "share": "Compartir",
     "linkCopied": "¡Enlace copiado!",
-    "downloadPdf": "Descargar PDF"
+    "downloadPdf": "Descargar PDF",
+    "deleteConfirmTitle": "¿Eliminar esta prueba?",
+    "deleteConfirmBody": "“{{title}}” y su historial de intentos se eliminarán permanentemente.",
+    "deleteCancel": "Conservar",
+    "deleteConfirm": "Eliminar",
+    "deleteRemoving": "Eliminando...",
+    "deleteFailed": "No se pudo eliminar esta prueba. Inténtalo de nuevo.",
+    "difficultyEasy": "Fácil",
+    "difficultyMedium": "Medio",
+    "difficultyHard": "Difícil"
   },
   "test": {
     "practice": "Práctica",
