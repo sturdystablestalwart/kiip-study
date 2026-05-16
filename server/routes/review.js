@@ -12,9 +12,12 @@ router.get('/failed', requireAuth, async (req, res) => {
         const userId = new mongoose.Types.ObjectId(req.user._id);
         const limit = Math.min(parseInt(req.query.limit) || 20, 50);
 
+        // Scan recent attempts wider than the requested `limit` so the
+        // de-dup pass has room to return `limit` distinct failed questions
+        // even when several attempts cover the same test.
         const attempts = await Attempt.find({ userId, testId: { $ne: null } })
             .sort({ createdAt: -1 })
-            .limit(20)
+            .limit(Math.max(limit * 3, 50))
             .lean();
 
         const failedRefs = [];
