@@ -4,7 +4,7 @@ const lightColors = {
   bg: { canvas: '#F7F2E8', surface: '#FFFFFF', surfaceAlt: '#FAF7F1' },
   border: { subtle: '#E6DDCF' },
   text: { primary: '#1F2328', muted: '#5B5F64', faint: '#6B6F74' },
-  accent: { clay: '#A0634A', clayHover: '#8B5340', moss: '#657655', indigo: '#2A536D' },
+  accent: { clay: '#915442', clayHover: '#774032', moss: '#657655', indigo: '#2A536D' },
   state: {
     success: '#2F6B4F', warning: '#B07A2A', danger: '#B43A3A',
     infoBg: '#EEF3F5', correctBg: '#EEF5EF', wrongBg: '#F7EEEE',
