@@ -8,6 +8,7 @@ import { useSearchPalette } from '../context/SearchPaletteContext';
 import { below } from '../theme/breakpoints';
 import FilterDropdown from '../components/FilterDropdown';
 import { Button, Card as UiCard, Badge, Modal, ModalActions, EmptyState } from '../components/ui';
+import { showToast } from '../components/Toast';
 
 /* ───────── Styled Components ───────── */
 
@@ -698,7 +699,7 @@ function Home() {
       setDeleteModal({ show: false, testId: null, testTitle: '' });
     } catch (err) {
       console.error(err);
-      alert('Could not delete this test. Please try again.');
+      showToast(t('home.deleteFailed'), 'error');
     } finally {
       setDeleting(false);
     }
@@ -906,8 +907,8 @@ function Home() {
               <CardMeta>{t('home.questionsCount', { count: test.questionCount })}</CardMeta>
               {difficultyMap[test._id] && (
                 <DifficultyBadge $score={difficultyMap[test._id].avgScore}>
-                  {difficultyMap[test._id].avgScore >= 80 ? 'Easy' :
-                   difficultyMap[test._id].avgScore >= 50 ? 'Medium' : 'Hard'}
+                  {difficultyMap[test._id].avgScore >= 80 ? t('home.difficultyEasy') :
+                   difficultyMap[test._id].avgScore >= 50 ? t('home.difficultyMedium') : t('home.difficultyHard')}
                 </DifficultyBadge>
               )}
               {test.lastAttempt ? (
@@ -958,15 +959,15 @@ function Home() {
       )}
 
       {deleteModal.show && (
-        <Modal onClose={cancelDelete} ariaLabel="Delete confirmation">
-          <h3 style={{ margin: '0 0 12px 0' }}>Remove this test?</h3>
+        <Modal onClose={cancelDelete} ariaLabel={t('home.deleteConfirmTitle')}>
+          <h3 style={{ margin: '0 0 12px 0' }}>{t('home.deleteConfirmTitle')}</h3>
           <p style={{ color: 'inherit', marginBottom: 0 }}>
-            &ldquo;{deleteModal.testTitle}&rdquo; and its attempt history will be permanently removed.
+            {t('home.deleteConfirmBody', { title: deleteModal.testTitle })}
           </p>
           <ModalActions>
-            <Button $variant="secondary" onClick={cancelDelete}>Keep it</Button>
+            <Button $variant="secondary" onClick={cancelDelete}>{t('home.deleteCancel')}</Button>
             <Button $variant="danger" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? 'Removing...' : 'Remove'}
+              {deleting ? t('home.deleteRemoving') : t('home.deleteConfirm')}
             </Button>
           </ModalActions>
         </Modal>

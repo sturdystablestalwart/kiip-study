@@ -131,8 +131,10 @@ describe('Home: confirmDelete does not drop tests loaded after modal opens (#117
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     // Click "Remove" — kicks off confirmDelete (api.delete is pending).
+    // Button label now comes from t('home.deleteConfirm'); the test mock
+    // returns the key unchanged.
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      fireEvent.click(screen.getByRole('button', { name: 'home.deleteConfirm' }));
     });
 
     // While delete is pending, click Load More — tests grows to 15.
