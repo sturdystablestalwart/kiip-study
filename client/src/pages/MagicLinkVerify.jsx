@@ -36,10 +36,21 @@ export default function MagicLinkVerify() {
         if (errorParam) return;
 
         let cancelled = false;
+        let navTimer = null;
         refreshUser()
-            .then(() => { if (!cancelled) { setStatus('success'); setTimeout(() => navigate('/'), 1000); } })
+            .then(() => {
+                if (cancelled) return;
+                setStatus('success');
+                // Hold the timer id so unmount/cleanup can cancel it — otherwise
+                // a user who navigates manually within 1s is bounced back to /
+                // (closes #170).
+                navTimer = setTimeout(() => navigate('/'), 1000);
+            })
             .catch(() => { if (!cancelled) { setStatus('error'); setErrorCode('TOKEN_INVALID'); } });
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+            if (navTimer) clearTimeout(navTimer);
+        };
     }, [errorParam, refreshUser, navigate]);
 
     const errorMessages = {
