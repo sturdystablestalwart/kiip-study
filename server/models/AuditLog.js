@@ -13,10 +13,12 @@ const AuditLogSchema = new mongoose.Schema({
             'test.edit',
             'test.delete',
             'flag.resolve',
-            'flag.dismiss'
+            'flag.dismiss',
+            'user.admin-grant',
+            'user.admin-revoke'
         ]
     },
-    targetType: { type: String, required: true, enum: ['Test', 'Flag'] },
+    targetType: { type: String, required: true, enum: ['Test', 'Flag', 'User'] },
     targetId: { type: mongoose.Schema.Types.ObjectId, required: true },
     details: { type: mongoose.Schema.Types.Mixed }, // contextual info e.g. { title: '...' }
     createdAt: { type: Date, default: Date.now }
