@@ -5,7 +5,14 @@ const SessionAnswerSchema = new mongoose.Schema(
         questionIndex: { type: Number, required: true },
         selectedOptions: [{ type: Number }],
         textAnswer: { type: String },
-        orderedItems: [{ type: String }],
+        // Indices into the question's `items` array. Must stay `[Number]`
+        // to match Attempt.AnswerSchema.orderedItems and the strict `===`
+        // comparison in utils/scoring.js (issue #106). Declaring this as
+        // `[String]` causes Mongoose to cast every submitted index to a
+        // string, which then never compares equal to the numeric
+        // question.correctOrder values — silently scoring every ordering
+        // question wrong on the session-submit path.
+        orderedItems: [{ type: Number }],
         blankAnswers: [{ type: String }]
     },
     { _id: false } // subdoc — no separate _id needed
