@@ -120,24 +120,31 @@ function SharedTest() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchSharedTest = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await api.get(`/api/shared/${shareId}`);
+        const res = await api.get(`/api/shared/${shareId}`, { signal: controller.signal });
         setTest(res.data);
       } catch (err) {
+        if (err.name === 'CanceledError') return;
         if (err.response?.status === 404) {
           setError('notFound');
         } else {
           setError('generic');
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSharedTest();
+
+    return () => controller.abort();
   }, [shareId]);
 
   if (loading) {
