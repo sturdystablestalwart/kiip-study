@@ -250,6 +250,11 @@ function EndlessMode() {
   const timerRef = useRef(null);
   const sessionDurationRef = useRef(0);
   const fetchControllerRef = useRef(null);
+  // Mirror of `answers` for synchronous reads in handleNext/handleEnd → submitChunk.
+  // setAnswers is async (batched within a synthetic event), so a Next-click that
+  // batches with a question's onBlur/onChange would otherwise submit a chunk with
+  // the previous render's answers (closes #112).
+  const answersRef = useRef({});
 
   // Keep ref in sync for use in submitChunk
   useEffect(() => {
@@ -293,6 +298,7 @@ function EndlessMode() {
       setRemaining(res.data.remaining);
       setCurrentIdx(0);
       setAnswers({});
+      answersRef.current = {};
     } catch (err) {
       if (err.name === 'CanceledError') return;
       if (err.response?.status === 401) {
@@ -345,12 +351,13 @@ function EndlessMode() {
   };
 
   const handleAnswer = (answerData) => {
-    setAnswers(prev => ({ ...prev, [currentIdx]: answerData }));
+    answersRef.current = { ...answersRef.current, [currentIdx]: answerData };
+    setAnswers(answersRef.current);
   };
 
   const handleNext = () => {
     const q = questions[currentIdx];
-    const ans = answers[currentIdx];
+    const ans = answersRef.current[currentIdx];
     const correct = ans ? scoreQuestion(q, ans) : false;
     setTotalAnswered(prev => prev + 1);
     if (correct) setTotalCorrect(prev => prev + 1);
@@ -363,7 +370,7 @@ function EndlessMode() {
 
     // Check if batch complete
     if (currentIdx >= questions.length - 1) {
-      submitChunk();
+      submitChunk(questions, answersRef.current);
       fetchBatch(trimmedKeys);
     } else {
       setCurrentIdx(prev => prev + 1);
@@ -371,8 +378,8 @@ function EndlessMode() {
   };
 
   const handleEnd = () => {
-    if (Object.keys(answers).length > 0) {
-      submitChunk();
+    if (Object.keys(answersRef.current).length > 0) {
+      submitChunk(questions, answersRef.current);
     }
     setEnded(true);
   };
