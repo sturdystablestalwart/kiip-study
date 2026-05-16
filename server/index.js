@@ -159,15 +159,10 @@ app.get('/', (req, res) => {
     res.send('KIIP Test App API is running');
 });
 
-const healthHandler = (req, res) => {
-    const mongoState = mongoose.connection.readyState;
-    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
-    res.json({
-        status: mongoState === 1 ? 'ok' : 'degraded',
-        mongo: states[mongoState] || 'unknown',
-        uptime: process.uptime(),
-    });
-};
+// /health gates HTTP status on mongoose.connection.readyState so external
+// monitors (StatusCake, Docker compose wget healthcheck) detect degraded
+// mongo as unhealthy instead of always-200. See utils/healthHandler.js.
+const healthHandler = require('./utils/healthHandler');
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
