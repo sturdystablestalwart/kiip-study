@@ -1,10 +1,14 @@
 const stringSimilarity = require('string-similarity');
 
 function normalize(text) {
+  // Strip only punctuation. Keep every Unicode letter (\p{L}) and number
+  // (\p{N}) \u2014 including Hangul, CJK, fullwidth digits \u2014 and whitespace.
+  // The pre-#144 ASCII-only `\w` class quietly dropped fullwidth digits,
+  // making "1\uACFC" and "2\uACFC" collapse to the same string.
   return text
     .toLowerCase()
     .replace(/\s+/g, ' ')
-    .replace(/[^\w\s\uAC00-\uD7AF\u3130-\u318F]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
     .trim();
 }
 
