@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import FilterDropdown from '../components/FilterDropdown';
 import { below } from '../theme/breakpoints';
 import { Button, Card, Badge, EmptyState } from '../components/ui';
+import { LEVEL_OPTIONS } from '../constants/levels';
 
 /* ───────── Styled Components ───────── */
 
@@ -153,8 +154,6 @@ function AdminDuplicates() {
   const [clusters, setClusters] = useState(null);
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [error, setError] = useState(null);
-
-  const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
 
   const handleScan = useCallback(async () => {
     setScanning(true);
