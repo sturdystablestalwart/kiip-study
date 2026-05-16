@@ -190,7 +190,10 @@
     "unknown": "Unknown",
     "saving": "Saving...",
     "saved": "Saved",
-    "saveError": "Save failed"
+    "saveError": "Save failed",
+    "updateAvailable": "A new version is available",
+    "reloadNow": "Reload",
+    "offlineReady": "App ready to work offline"
   },
   "shared": {
     "notFound": "Test not found",

@@ -12,6 +12,7 @@ import api from './utils/api';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingFallback from './components/LoadingFallback';
 import Toast from './components/Toast';
+import UpdatePrompt from './components/UpdatePrompt';
 
 // Lazy-load routes that aren't needed on initial page load
 const CreateTest = React.lazy(() => import('./pages/CreateTest'));
@@ -524,6 +525,7 @@ function AppInner() {
           </Router>
         </SearchPaletteContext.Provider>
         <Toast />
+        <UpdatePrompt />
       </AuthProvider>
     </ThemeProvider>
   );
