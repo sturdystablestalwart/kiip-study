@@ -186,7 +186,10 @@
     "sessionExpired": "La sesión expiró — inicia sesión de nuevo",
     "networkError": "No se puede conectar al servidor. Revisa tu conexión.",
     "loadMore": "Cargar más",
-    "unknown": "Desconocido"
+    "unknown": "Desconocido",
+    "updateAvailable": "Hay una nueva versión disponible",
+    "reloadNow": "Recargar",
+    "offlineReady": "La aplicación está lista para usar sin conexión"
   },
   "shared": {
     "notFound": "Prueba no encontrada",

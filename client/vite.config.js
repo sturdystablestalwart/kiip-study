@@ -13,7 +13,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Use 'prompt' so the user-facing UpdatePrompt banner (see
+      // src/components/UpdatePrompt.jsx) controls when the new SW takes
+      // over. With 'autoUpdate' the SW would activate silently on the next
+      // navigation, which leaves long-running test sessions on stale code
+      // until the user closes every tab. See issue #122.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'KIIP Study',
