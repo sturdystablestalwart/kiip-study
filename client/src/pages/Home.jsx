@@ -646,18 +646,33 @@ function Home() {
     if (!user) return;
     const controller = new AbortController();
 
-    // Fetch recent attempts, active sessions, and difficulty data in parallel
-    Promise.all([
+    // Fetch recent attempts, active sessions, and difficulty data in parallel.
+    // Use allSettled so a single failing feed (e.g. transient 500 on
+    // /api/review/difficulty) does not hide the other two from the UI.
+    Promise.allSettled([
       api.get('/api/tests/recent-attempts?limit=5', { timeout: 10000, signal: controller.signal }),
       api.get('/api/sessions/active', { signal: controller.signal }),
       api.get('/api/review/difficulty', { signal: controller.signal })
-    ]).then(([recentRes, sessionsRes, diffRes]) => {
-      setRecentAttempts(recentRes.data);
-      setActiveSessions((sessionsRes.data.sessions || []).filter(s => s.testId));
-      setDifficultyMap(diffRes.data.difficulty || {});
-    }).catch(err => {
-      if (err.name === 'CanceledError') return;
-      console.error('Failed to fetch user data:', err);
+    ]).then(([recent, sessions, diff]) => {
+      const isCanceled = (reason) => reason && reason.name === 'CanceledError';
+
+      if (recent.status === 'fulfilled') {
+        setRecentAttempts(recent.value.data);
+      } else if (!isCanceled(recent.reason)) {
+        console.error('Failed to fetch recent attempts:', recent.reason);
+      }
+
+      if (sessions.status === 'fulfilled') {
+        setActiveSessions((sessions.value.data.sessions || []).filter(s => s.testId));
+      } else if (!isCanceled(sessions.reason)) {
+        console.error('Failed to fetch active sessions:', sessions.reason);
+      }
+
+      if (diff.status === 'fulfilled') {
+        setDifficultyMap(diff.value.data.difficulty || {});
+      } else if (!isCanceled(diff.reason)) {
+        console.error('Failed to fetch difficulty data:', diff.reason);
+      }
     });
 
     return () => controller.abort();
