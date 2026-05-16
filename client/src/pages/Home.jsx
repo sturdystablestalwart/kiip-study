@@ -664,7 +664,14 @@ function Home() {
       }
 
       if (sessions.status === 'fulfilled') {
-        setActiveSessions((sessions.value.data.sessions || []).filter(s => s.testId));
+        // Drop sessions whose testId is missing OR not a populated test object —
+        // raw ObjectId strings indicate the underlying Test was deleted and the
+        // populate returned null, which would crash the render below (closes #150).
+        setActiveSessions(
+          (sessions.value.data.sessions || []).filter(
+            s => s.testId && typeof s.testId === 'object' && s.testId.title
+          )
+        );
       } else if (!isCanceled(sessions.reason)) {
         console.error('Failed to fetch active sessions:', sessions.reason);
       }
