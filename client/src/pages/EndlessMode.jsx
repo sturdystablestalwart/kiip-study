@@ -8,6 +8,7 @@ import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import FilterDropdown from '../components/FilterDropdown';
 import { Button, Card } from '../components/ui';
+import { LEVEL_OPTIONS } from '../constants/levels';
 
 /* ───────── Styled Components ───────── */
 
@@ -212,7 +213,6 @@ const EmptyStateCard = styled(Card)`
 
 /* ───────── Helpers ───────── */
 
-const LEVEL_OPTIONS = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
 const UNIT_OPTIONS = Array.from({ length: 20 }, (_, i) => `Unit ${i + 1}`);
 
 function formatDuration(seconds) {
