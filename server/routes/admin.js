@@ -180,6 +180,9 @@ router.post('/tests/upload', imageUpload.single('image'), async (req, res) => {
             .webp({ quality: 82 })
             .toFile(optimizedPath);
 
+        try { fs.unlinkSync(originalPath); }
+        catch (delErr) { logger.warn({ err: delErr, path: originalPath }, 'Failed to delete original after webp conversion'); }
+
         res.json({
             imageUrl: '/uploads/images/' + optimizedFilename,
             filename: optimizedFilename,
@@ -212,6 +215,10 @@ router.post('/tests/upload-multiple', imageUpload.array('images', 20), async (re
                 .resize({ width: 1200, withoutEnlargement: true })
                 .webp({ quality: 82 })
                 .toFile(optimizedPath);
+
+            try { fs.unlinkSync(file.path); }
+            catch (delErr) { logger.warn({ err: delErr, path: file.path }, 'Failed to delete original after webp conversion'); }
+
             uploadedFiles.push({
                 imageUrl: '/uploads/images/' + optimizedFilename,
                 filename: optimizedFilename,
