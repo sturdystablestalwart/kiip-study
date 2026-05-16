@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const MagicLink = require('../models/MagicLink');
 const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
 const logger = require('../utils/logger');
+const AuditLog = require('../models/AuditLog');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -113,8 +114,21 @@ passport.use(new GoogleStrategy({
             // Sync admin status on every login (allows revoking/granting via env var)
             const shouldBeAdmin = email === process.env.ADMIN_EMAIL;
             if (user.isAdmin !== shouldBeAdmin) {
+                const wasAdmin = user.isAdmin;
                 user.isAdmin = shouldBeAdmin;
                 await user.save();
+                // Audit the auto-sync grant/revoke (closes #149)
+                try {
+                    await AuditLog.create({
+                        userId: user._id,
+                        action: shouldBeAdmin ? 'user.admin-grant' : 'user.admin-revoke',
+                        targetType: 'User',
+                        targetId: user._id,
+                        details: { email, via: 'google-oauth', wasAdmin, reason: 'env_admin_email_sync' },
+                    });
+                } catch (auditErr) {
+                    logger.warn({ err: auditErr, userId: user._id }, 'Failed to write admin-sync AuditLog');
+                }
             }
 
             // Ensure google is in authMethods
@@ -367,8 +381,21 @@ router.get('/magic/verify', async (req, res) => {
 
         const shouldBeAdmin = record.email === process.env.ADMIN_EMAIL;
         if (user.isAdmin !== shouldBeAdmin) {
+            const wasAdmin = user.isAdmin;
             user.isAdmin = shouldBeAdmin;
             await user.save();
+            // Audit the auto-sync grant/revoke (closes #149)
+            try {
+                await AuditLog.create({
+                    userId: user._id,
+                    action: shouldBeAdmin ? 'user.admin-grant' : 'user.admin-revoke',
+                    targetType: 'User',
+                    targetId: user._id,
+                    details: { email: record.email, via: 'magic-link', wasAdmin, reason: 'env_admin_email_sync' },
+                });
+            } catch (auditErr) {
+                logger.warn({ err: auditErr, userId: user._id }, 'Failed to write admin-sync AuditLog');
+            }
         }
 
         const jwtToken = jwt.sign(
