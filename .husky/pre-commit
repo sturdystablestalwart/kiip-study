@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Issue #30 — fail the commit if lint-staged finds ESLint errors on
+# any staged client file.  Bypass with `git commit --no-verify` for
+# emergencies; the CI lint step still gates the PR.
+npx --no-install lint-staged
