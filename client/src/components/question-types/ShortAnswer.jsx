@@ -145,12 +145,12 @@ function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
 
       <div aria-live="polite">
         {showFeedback && isCorrect && (
-          <FeedbackMessage $correct>Correct!</FeedbackMessage>
+          <FeedbackMessage $correct>{t('test.feedbackCorrect')}</FeedbackMessage>
         )}
 
         {showFeedback && !isCorrect && textAnswer.length > 0 && accepted.length > 0 && (
           <>
-            <FeedbackMessage>Incorrect. Accepted answers:</FeedbackMessage>
+            <FeedbackMessage>{t('test.feedbackIncorrectAccepted')}</FeedbackMessage>
             <AcceptedList>
               {accepted.map((a, idx) => (
                 <li key={idx}>{a}</li>
