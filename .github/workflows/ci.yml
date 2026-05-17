@@ -45,6 +45,9 @@ jobs:
       - name: Lint client
         run: cd client && npm run lint
 
+      - name: i18n coverage check (#34)
+        run: cd client && npm run i18n:check
+
       - name: Build client
         run: cd client && npm run build
 

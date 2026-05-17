@@ -31,6 +31,16 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
     },
+    // Issue #34 — surface missing-key drift loudly in dev so a
+    // KO/RU/ES user reading an English fallback isn't the first
+    // signal we have.  CI gate is enforced by client/scripts/i18n-coverage.cjs.
+    saveMissing: import.meta.env.DEV,
+    missingKeyHandler: (lngs, _ns, key) => {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn(`[i18n] Missing key "${key}" for ${lngs.join(',')}`);
+      }
+    },
   });
 
 // Keep <html lang> in sync with the active UI language (WCAG 3.1.1 / 3.1.2):
