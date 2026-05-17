@@ -1,6 +1,7 @@
 services:
   mongo:
-    image: mongo:7
+    # SHA-pinned (#51) so `docker compose pull` is reproducible across redeploys.
+    image: mongo:7@sha256:4b5bf3c2bb7516164f6dcb44acce4fdcb428abfe5771a1128304a0f34ab9ff7c
     container_name: kiip-mongo
     restart: unless-stopped
     init: true
@@ -86,7 +87,8 @@ services:
     cpus: '0.5'
 
   caddy:
-    image: caddy:2-alpine
+    # SHA-pinned (#51).
+    image: caddy:2-alpine@sha256:86deaf5e3d3408a6ccec08fbb79989783dd26e206ae10bcf78a801dc8c9ab794
     container_name: kiip-caddy
     restart: unless-stopped
     init: true
@@ -120,7 +122,8 @@ services:
     cpus: '0.25'
 
   backup:
-    image: mongo:7
+    # SHA-pinned (#51) to the same mongo:7 digest used by the mongo service.
+    image: mongo:7@sha256:4b5bf3c2bb7516164f6dcb44acce4fdcb428abfe5771a1128304a0f34ab9ff7c
     container_name: kiip-backup
     init: true
     depends_on:
