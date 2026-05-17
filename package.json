@@ -26,6 +26,10 @@
   },
   "author": "Alex Reznitskii",
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/mcp": "^0.0.64",
