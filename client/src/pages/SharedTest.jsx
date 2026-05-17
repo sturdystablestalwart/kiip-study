@@ -174,7 +174,7 @@ function SharedTest() {
         {test.description && <Description>{test.description}</Description>}
         <MetaRow>
           {test.level && <MetaBadge>{test.level}</MetaBadge>}
-          {test.unitNumber != null && <MetaBadge>Unit {test.unitNumber}</MetaBadge>}
+          {test.unitNumber != null && <MetaBadge>{t('test.unit', { count: test.unitNumber })}</MetaBadge>}
           {test.section && <MetaBadge>{test.section}</MetaBadge>}
           <MetaBadge>{t('home.questionsCount', { count: test.questionCount })}</MetaBadge>
         </MetaRow>

@@ -77,7 +77,8 @@
     "selectAllThatApplyAriaLabel": "답안 선택지 — 해당하는 항목 모두 선택",
     "charCount": "{{count}}자",
     "feedbackCorrect": "정답입니다!",
-    "feedbackIncorrectAccepted": "오답입니다. 정답:"
+    "feedbackIncorrectAccepted": "오답입니다. 정답:",
+    "unit": "{{count}}과"
   },
   "create": {
     "title": "시험 만들기",

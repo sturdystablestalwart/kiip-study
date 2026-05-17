@@ -77,7 +77,8 @@
     "selectAllThatApplyAriaLabel": "Варианты ответа — выберите все подходящие",
     "charCount": "{{count}} симв.",
     "feedbackCorrect": "Правильно!",
-    "feedbackIncorrectAccepted": "Неправильно. Допустимые ответы:"
+    "feedbackIncorrectAccepted": "Неправильно. Допустимые ответы:",
+    "unit": "Раздел {{count}}"
   },
   "create": {
     "title": "Создать тест",
