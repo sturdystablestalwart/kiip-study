@@ -12,8 +12,12 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Issue #192 — within a single shard, run worker-parallel on CI too.
+     We previously pinned `workers: 1` defensively but the suite is now
+     stable enough to use the runner's full CPU.  Combined with the
+     `--shard=N/M` matrix in .github/workflows/ci.yml this gets E2E
+     wall-clock well under the 15-min job timeout. */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
