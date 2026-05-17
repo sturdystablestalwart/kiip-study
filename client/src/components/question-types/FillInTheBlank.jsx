@@ -40,11 +40,9 @@ const TextSegment = styled.span`
 
 const BlankInput = styled.input`
   display: inline-block;
-  /* Issue #188 — 120px was too narrow for Korean noun phrases and
-     compound words; the field clipped text and forced horizontal
-     scroll inside a single-line input.  ch-units track the actual
-     character width of the user's font and CJK glyphs render as
-     ~2ch, so a `min-width: 8ch` is roughly 4 CJK characters wide. */
+  /* Issue #188 — old fixed 120px clipped Korean noun phrases / longer
+     English. 8ch min-width gives ~4 CJK chars baseline; auto width +
+     max-width 100% lets the field grow with the size attribute. */
   min-width: 8ch;
   width: auto;
   max-width: 100%;
@@ -172,9 +170,6 @@ function FillInTheBlank({ question, answer, onAnswer, showFeedback, disabled }) 
                     $incorrect={isIncorrect}
                     placeholder={t('test.blankPlaceholder', { index: currentBlankIdx + 1 })}
                     aria-label={t('test.blankAriaLabel', { index: currentBlankIdx + 1 })}
-                    /* Issue #188 — size attribute auto-grows the field
-                       to fit the user's input (or the first accepted
-                       answer when empty), with a sensible floor. */
                     size={Math.max(
                       8,
                       (userVal.length || ((blankDef?.acceptedAnswers?.[0] ?? blankDef?.answer ?? '').length)) + 2
