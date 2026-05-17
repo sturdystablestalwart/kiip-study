@@ -99,7 +99,7 @@ describe('AdminTestEditor: legacy questions with missing array fields (#115)', (
     // and then exercise the non-defensive removeAcceptedAnswer path. But the
     // crash we are guarding against is BEFORE that — anything that reads
     // `q.acceptedAnswers.X` directly. Demonstrate by adding an answer + removing.
-    const input = screen.getByPlaceholderText('Type answer and press Enter');
+    const input = screen.getByPlaceholderText('admin.editorPlaceholder.answerEnter');
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Seoul' } });
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
@@ -147,7 +147,8 @@ describe('AdminTestEditor: legacy questions with missing array fields (#115)', (
     expect(card).toBeInTheDocument();
 
     // Click "+ Add blank".
-    const addBlankBtn = screen.getByRole('button', { name: /Add blank/ });
+    // Button text is now the i18n key after #116; mock t() returns the key verbatim.
+    const addBlankBtn = screen.getByRole('button', { name: /addBlank/ });
     await act(async () => {
       fireEvent.click(addBlankBtn);
     });
@@ -157,7 +158,7 @@ describe('AdminTestEditor: legacy questions with missing array fields (#115)', (
     // to [{acceptedAnswers:[]}] from the previous click. Without the fix at that
     // line specifically, the .map and the inner `[...b.acceptedAnswers, val]`
     // could still crash if acceptedAnswers was undefined inside the blank.
-    const blankInput = screen.getByPlaceholderText('Type answer and press Enter');
+    const blankInput = screen.getByPlaceholderText('admin.editorPlaceholder.answerEnter');
     await act(async () => {
       fireEvent.change(blankInput, { target: { value: 'rose' } });
       fireEvent.keyDown(blankInput, { key: 'Enter', code: 'Enter' });
@@ -202,13 +203,17 @@ describe('AdminTestEditor: legacy questions with missing array fields (#115)', (
     expect(card).toBeInTheDocument();
 
     // Add an option — uses [...q.options, ...]. Must not crash.
-    const addOptionBtn = screen.getByRole('button', { name: /Add option/ });
+    // Button text is now the i18n key after #116; mock t() returns the key verbatim.
+    const addOptionBtn = screen.getByRole('button', { name: /addOption/ });
     await act(async () => {
       fireEvent.click(addOptionBtn);
     });
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Option 1')).toBeInTheDocument();
+      // Placeholder is now interpolated from `admin.editorPlaceholder.option`
+      // with {n: 1}; mock t() formats opts.count but doesn't substitute {n}, so
+      // the literal key with placeholder markers comes through.
+      expect(screen.getByPlaceholderText(/editorPlaceholder.option/)).toBeInTheDocument();
     });
   });
 });
