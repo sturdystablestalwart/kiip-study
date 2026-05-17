@@ -55,6 +55,16 @@ jobs:
       - name: Build client
         run: cd client && npm run build
 
+      # Issue #193 — bundle-size regression guard.  Reads client/dist
+      # after the build step and fails if any of the documented budgets
+      # (entry / anychart / lazy) is exceeded.  Override by setting the
+      # `bundle-size-ok` PR label, which exports BUNDLE_BUDGET_OK=1
+      # so the script no-ops and the run still passes.
+      - name: Bundle size budget (#193)
+        run: cd client && npm run bundle:check
+        env:
+          BUNDLE_BUDGET_OK: ${{ contains(github.event.pull_request.labels.*.name, 'bundle-size-ok') && '1' || '' }}
+
       # Issue #14 — gate PRs on vitest too, not just lint+build+E2E.
       # Server tests use mongodb-memory-server; client uses jsdom; neither
       # needs the live Mongo / Express used by the E2E shards.
