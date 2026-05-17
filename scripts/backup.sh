@@ -37,6 +37,48 @@ else
   mongodump --uri="${MONGO_URI}" --out="${BACKUP_PATH}"
 fi
 
+# Issue #89 — verify the dump bytes parse cleanly before we tar + delete.
+# Same rationale as the in-container ops/backup.sh: catch corruption at
+# backup time, not during recovery.  bsondump ships with mongodb-tools
+# (local install) or via `docker exec ${CONTAINER} bsondump ...`.
+echo "[backup] Verifying dump integrity"
+verify_cmd() {
+  if [ "${MODE}" = "--docker" ]; then
+    docker exec "${CONTAINER}" bsondump --quiet "$1" >/dev/null 2>&1
+  else
+    bsondump --quiet "$1" >/dev/null 2>&1
+  fi
+}
+# Inside --docker we copied the dump out to BACKUP_PATH on the host
+# already, so we point find at the host path either way.
+VERIFIED=0
+for bson in $(find "${BACKUP_PATH}" -name '*.bson' 2>/dev/null); do
+  # Local mode: bsondump on host path.  Docker mode: copy single file
+  # back into container temp, dump, clean up.  Avoids host needing the
+  # mongo-tools binary even when --docker is used.
+  if [ "${MODE}" = "--docker" ]; then
+    INNER="/tmp/verify_$(basename "$bson")"
+    docker cp "$bson" "${CONTAINER}:${INNER}" >/dev/null
+    if ! docker exec "${CONTAINER}" bsondump --quiet "${INNER}" >/dev/null 2>&1; then
+      docker exec "${CONTAINER}" rm -f "${INNER}" || true
+      echo "[backup] ERROR: corrupted dump file: $bson" >&2
+      exit 1
+    fi
+    docker exec "${CONTAINER}" rm -f "${INNER}" || true
+  else
+    if ! bsondump --quiet "$bson" >/dev/null 2>&1; then
+      echo "[backup] ERROR: corrupted dump file: $bson" >&2
+      exit 1
+    fi
+  fi
+  VERIFIED=$((VERIFIED + 1))
+done
+if [ "${VERIFIED}" -eq 0 ]; then
+  echo "[backup] ERROR: dump produced no .bson files — was the DB empty or unreachable?" >&2
+  exit 1
+fi
+echo "[backup] Verified ${VERIFIED} bson file(s)"
+
 # Compress
 tar -czf "${BACKUP_PATH}.tar.gz" -C "${BACKUP_DIR}" "kiip_backup_${TIMESTAMP}"
 rm -rf "${BACKUP_PATH}"
