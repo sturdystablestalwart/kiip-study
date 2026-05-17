@@ -356,10 +356,14 @@ function EndlessMode() {
     fetchBatch([]);
   };
 
-  const handleAnswer = (answerData) => {
+  // Issue #158 — useCallback so QuestionRenderer's React.memo (if any)
+  // sees a stable reference and isn't forced to re-render every 1s
+  // when setSessionDuration ticks the timer.  Without this, textareas
+  // inside the question subtree drop keystrokes during typing.
+  const handleAnswer = useCallback((answerData) => {
     answersRef.current = { ...answersRef.current, [currentIdx]: answerData };
     setAnswers(answersRef.current);
-  };
+  }, [currentIdx]);
 
   const handleNext = () => {
     const q = questions[currentIdx];
