@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const TestSession = require('../models/TestSession');
 const Attempt = require('../models/Attempt');
@@ -14,7 +14,8 @@ const safeError = require('../utils/safeError');
 // is too coarse for these authenticated user-facing paths.  All
 // limiters are no-ops in NODE_ENV=test so existing session-flow
 // integration tests don't 429.
-const userKey = (req) => String(req.user?._id || req.ip);
+// Issue #23 — v8 IPv6-safe IP fallback via ipKeyGenerator.
+const userKey = (req) => req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip);
 const noOpLimiter = (req, res, next) => next();
 const isTest = process.env.NODE_ENV === 'test';
 const mkLimiter = (opts) => isTest ? noOpLimiter : rateLimit({
