@@ -180,6 +180,18 @@
     "days30": "Últimos 30 días",
     "days90": "Últimos 90 días",
     "allTime": "Todo el tiempo",
+    "compare": "Comparar",
+    "testComparison": "Comparación de pruebas",
+    "reviewFailedLink": "Repasar preguntas falladas →",
+    "streakDays_one": "{{count}} día",
+    "streakDays_other": "{{count}} días",
+    "qtype": {
+      "mcqSingle": "Opción única",
+      "mcqMultiple": "Opciones múltiples",
+      "shortAnswer": "Respuesta corta",
+      "ordering": "Ordenar",
+      "fillInTheBlank": "Rellenar"
+    },
     "noData": "Haz pruebas para ver tu progreso aquí.",
     "recentAttempts": "Intentos recientes",
     "loadMore": "Cargar más"

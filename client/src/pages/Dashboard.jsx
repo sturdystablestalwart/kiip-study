@@ -276,12 +276,15 @@ const ReviewLink = styled(Link)`
 
 /* ───────── Helpers ───────── */
 
-const QUESTION_TYPE_LABELS = {
-  'mcq-single': 'MCQ Single',
-  'mcq-multiple': 'MCQ Multiple',
-  'short-answer': 'Short Answer',
-  'ordering': 'Ordering',
-  'fill-in-the-blank': 'Fill in Blank',
+// Issue #166 — was a static English dictionary.  Now resolved via
+// t() against the dashboard.qtype.* keys at render time so the
+// chart re-labels follow the active UI language.
+const QUESTION_TYPE_KEYS = {
+  'mcq-single': 'dashboard.qtype.mcqSingle',
+  'mcq-multiple': 'dashboard.qtype.mcqMultiple',
+  'short-answer': 'dashboard.qtype.shortAnswer',
+  'ordering': 'dashboard.qtype.ordering',
+  'fill-in-the-blank': 'dashboard.qtype.fillInTheBlank',
 };
 
 function applyChartTheme(chart, theme) {
@@ -518,7 +521,7 @@ function Dashboard() {
     radarChartRef.current = chart;
 
     const data = typeStats.types.map(qt => [
-      QUESTION_TYPE_LABELS[qt.type] || qt.type,
+      QUESTION_TYPE_KEYS[qt.type] ? t(QUESTION_TYPE_KEYS[qt.type]) : qt.type,
       qt.accuracy,
     ]);
 
@@ -660,9 +663,7 @@ function Dashboard() {
           <KpiLabel>{t('dashboard.streak')}</KpiLabel>
           <KpiValue>{kpis.currentStreak}</KpiValue>
           <KpiSub>
-            {kpis.currentStreak === 1
-              ? '1 day'
-              : `${kpis.currentStreak} days`}
+            {t('dashboard.streakDays', { count: kpis.currentStreak })}
           </KpiSub>
         </KpiCard>
         <KpiCard $padding="md" $radius="sm">
@@ -675,7 +676,7 @@ function Dashboard() {
           )}
         </KpiCard>
       </KpiGrid>
-      <ReviewLink to="/review">Review Failed Questions →</ReviewLink>
+      <ReviewLink to="/review">{t('dashboard.reviewFailedLink')}</ReviewLink>
 
       {/* Line chart: Accuracy Over Time */}
       {accuracyTrend && accuracyTrend.length > 0 && (
@@ -730,7 +731,7 @@ function Dashboard() {
                       setCompareAttempts(attemptsByTest[key].slice(0, 5));
                     }}
                   >
-                    Compare
+                    {t('dashboard.compare')}
                   </CompareButton>
                 )}
               </AttemptRow>
@@ -749,7 +750,7 @@ function Dashboard() {
           {compareTestId && compareAttempts.length > 0 && (
             <ComparePanel>
               <ComparePanelHeader>
-                <h3>{compareAttempts[0]?.test?.title || 'Test Comparison'}</h3>
+                <h3>{compareAttempts[0]?.test?.title || t('dashboard.testComparison')}</h3>
                 <CloseCompareBtn onClick={() => setCompareTestId(null)}>&times;</CloseCompareBtn>
               </ComparePanelHeader>
               <CompareGrid>

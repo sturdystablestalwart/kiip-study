@@ -180,6 +180,20 @@
     "days30": "30 дней",
     "days90": "90 дней",
     "allTime": "Всё время",
+    "compare": "Сравнить",
+    "testComparison": "Сравнение тестов",
+    "reviewFailedLink": "Разбор ошибок →",
+    "streakDays_one": "{{count}} день",
+    "streakDays_few": "{{count}} дня",
+    "streakDays_many": "{{count}} дней",
+    "streakDays_other": "{{count}} дней",
+    "qtype": {
+      "mcqSingle": "Один вариант",
+      "mcqMultiple": "Несколько вариантов",
+      "shortAnswer": "Краткий ответ",
+      "ordering": "Порядок",
+      "fillInTheBlank": "Заполнить пропуск"
+    },
     "noData": "Пройдите тесты, чтобы увидеть свою статистику.",
     "recentAttempts": "Последние попытки",
     "loadMore": "Загрузить ещё"
