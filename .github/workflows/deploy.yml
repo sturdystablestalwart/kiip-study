@@ -16,6 +16,12 @@ on:
         description: 'Commit SHA to deploy (overrides tag flow; use sparingly)'
         required: false
 
+# Least-privilege: the deploy job SSHes to a remote host. It does not
+# call the GitHub API and never needs write access to repo contents,
+# issues, or PRs.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
