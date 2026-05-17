@@ -200,7 +200,8 @@ describe('POST /api/tests/:id/share — admin path preserved', () => {
             .send({});
         expect(res.status).toBe(200);
         expect(typeof res.body.shareId).toBe('string');
-        expect(res.body.shareId.length).toBeGreaterThan(0);
+        // Issue #65 — new shareIds must be 21 chars (~126 entropy bits).
+        expect(res.body.shareId.length).toBe(21);
         expect(res.body.shareUrl).toContain(res.body.shareId);
     });
 });

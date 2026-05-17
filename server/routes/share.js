@@ -34,7 +34,10 @@ adminRouter.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
 
     if (!test.shareId) {
       const { nanoid } = await import('nanoid');
-      test.shareId = nanoid(10);
+      // 21 chars of the default URL-safe alphabet = ~126 entropy bits,
+      // far above what the 30 req/min public rate-limit can practically enumerate.
+      // Older 10-char shareIds keep working because the schema accepts any string.
+      test.shareId = nanoid(21);
       await test.save();
     }
 
