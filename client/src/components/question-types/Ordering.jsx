@@ -86,8 +86,8 @@ const ItemText = styled.span`
 `;
 
 const ArrowButton = styled.button`
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
