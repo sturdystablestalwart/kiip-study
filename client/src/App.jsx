@@ -483,6 +483,18 @@ function AppInner() {
   const searchCtx = React.useMemo(() => ({ openPalette }), [openPalette]);
 
   const handleGlobalKeyDown = useCallback((e) => {
+    // Issue #176 — bail when an editable field has focus so we don't
+    // hijack the browser's Print shortcut (Ctrl+P) while the user is
+    // typing.  contenteditable covers rich-text editors.
+    const ae = document.activeElement;
+    const inEditable = !!ae && (
+      ae.tagName === 'INPUT' ||
+      ae.tagName === 'TEXTAREA' ||
+      ae.tagName === 'SELECT' ||
+      ae.isContentEditable
+    );
+    if (inEditable) return;
+
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
       e.preventDefault();
       setShowPalette(prev => !prev);
