@@ -147,8 +147,18 @@ services:
     cpus: '0.25'
 
   backup:
-    # SHA-pinned (#51) to the same mongo:7 digest used by the mongo service.
-    image: mongo:7@sha256:4b5bf3c2bb7516164f6dcb44acce4fdcb428abfe5771a1128304a0f34ab9ff7c
+    # Issue #201 — purpose-built ~88MB alpine + mongodb-tools image
+    # instead of the full ~700MB `mongo:7`.  Backup only needs
+    # mongodump + tar/gzip, no mongod/mongosh.  Dockerfile lives in
+    # ops/backup/ and is built locally — no registry push needed.
+    image: kiip-backup:latest
+    build:
+      context: ./ops/backup
+      dockerfile: Dockerfile
+      cache_from:
+        - kiip-backup:latest
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
     container_name: kiip-backup
     init: true
     depends_on:
