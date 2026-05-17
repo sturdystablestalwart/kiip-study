@@ -1,7 +1,20 @@
 /**
- * One-time migration: classify existing tests via LLM and migrate old fields.
- * Run: node server/scripts/migrateLegacyTests.js
+ * One-time migration (issue #11): classify existing tests via LLM and
+ * migrate old `category` / `unit` fields to the new `source` /
+ * `unitNumber` shape.  Status: completed against production.
+ *
+ * Run: MIGRATE_CONFIRM=YES node server/scripts/migrateLegacyTests.js
+ * See ops/MIGRATIONS.md for the full runbook.
  */
+if (process.env.MIGRATE_CONFIRM !== 'YES') {
+    console.error(
+        'REFUSING TO RUN: this migration was completed on 2026-04-XX.\n' +
+        'If you genuinely need to re-run, set MIGRATE_CONFIRM=YES.\n' +
+        'See ops/MIGRATIONS.md for context.'
+    );
+    process.exit(2);
+}
+
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const Test = require('../models/Test');
