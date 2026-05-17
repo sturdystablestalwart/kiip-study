@@ -1,3 +1,8 @@
+// Issue #130 — single recursive sanitize() applies the same rules at
+// every depth (root, body, params, query, arbitrarily nested objects).
+// Previously the middleware re-implemented the root-level rules inline
+// for req.query, creating two sets of rules a future contributor had to
+// reason about.  Now there's exactly one rule set, expressed once.
 const MONGO_OPS = new Set(['$gt','$gte','$lt','$lte','$ne','$in','$nin','$regex','$exists','$or','$and','$not','$nor','$where','$elemMatch','$size','$type','$mod','$text','$all']);
 const PROTO_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -24,23 +29,11 @@ function sanitize(obj) {
 function sanitizeMiddleware(req, _res, next) {
     if (req.body) sanitize(req.body);
     if (req.params) sanitize(req.params);
-    // Express 5: req.query is a getter, so sanitize the parsed values in-place
-    if (req.query && typeof req.query === 'object') {
-        for (const key of Object.keys(req.query)) {
-            if (key.startsWith('$') || key.includes('.')) {
-                delete req.query[key];
-            } else if (typeof req.query[key] === 'object' && req.query[key] !== null) {
-                if (!Array.isArray(req.query[key])) {
-                    const valueKeys = Object.keys(req.query[key]);
-                    if (valueKeys.some(k => MONGO_OPS.has(k))) {
-                        delete req.query[key];
-                        continue;
-                    }
-                }
-                sanitize(req.query[key]);
-            }
-        }
-    }
+    // Express 5: req.query is a getter that caches its parsed result on
+    // first access.  Mutating that cached object in-place persists for
+    // the rest of the request lifecycle, so we can delegate to the same
+    // sanitize() instead of re-implementing the rules here.
+    if (req.query && typeof req.query === 'object') sanitize(req.query);
     next();
 }
 
