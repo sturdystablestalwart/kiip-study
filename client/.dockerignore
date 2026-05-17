@@ -3,6 +3,20 @@ npm-debug.log
 .env
 .env.*
 dist
+
+# Tests, coverage, reports, editor and docs shouldn't bloat the layer
+# cache or the runtime image (issue #198).
+__tests__
+**/__tests__
+**/*.test.js
+**/*.test.jsx
+coverage
+playwright-report
+test-results
+.vscode
+*.md
+dist/bundle-report.html
+
 *.log
 .git
 .gitignore

@@ -2,11 +2,28 @@ node_modules
 npm-debug.log
 .env
 .env.*
+
+# Uploads volume is mounted at runtime; never bake user content into the image.
 uploads/images/*
 uploads/documents/*
 !uploads/.gitkeep
 !uploads/images/.gitkeep
 !uploads/documents/.gitkeep
+
+# Tests, coverage, editor and docs shouldn't bloat the layer cache or
+# the runtime image (issue #198).
+__tests__
+**/__tests__
+**/*.test.js
+**/*.test.mjs
+coverage
+.vscode
+*.md
+
+# One-time migration scripts run from a developer machine, not in the
+# running container — keep them out of the image.
+scripts/migrate*.js
+
 *.log
 .git
 .gitignore
