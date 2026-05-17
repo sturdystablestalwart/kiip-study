@@ -145,8 +145,13 @@ services:
       - ./ops/backup.sh:/usr/local/bin/backup.sh:ro
       - ./backups:/backups
     entrypoint: ["/bin/sh", "-c"]
+    # Issue #202 — invert the loop so the FIRST backup runs immediately
+    # on container start (no 24h gap on a fresh deploy) and a container
+    # that crashes-and-restarts daily before the sleep completes still
+    # produces backups.  Also guards backup.sh failure so an upstream
+    # mongodump error doesn't crash the loop.
     command: >
-      "while true; do sleep 86400; /usr/local/bin/backup.sh; done"
+      "while true; do /usr/local/bin/backup.sh || echo 'backup failed, will retry in 24h'; sleep 86400; done"
     restart: unless-stopped
     networks:
       - kiip-network
