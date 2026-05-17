@@ -10,6 +10,7 @@ const TestTaker = React.lazy(() => import('./pages/TestTaker'));
 import { AuthProvider, useAuth } from './context/AuthContext';
 import api from './utils/api';
 import ErrorBoundary from './components/ErrorBoundary';
+import useFocusOnRouteChange from './hooks/useFocusOnRouteChange';
 import LoadingFallback from './components/LoadingFallback';
 import Toast from './components/Toast';
 import UpdatePrompt from './components/UpdatePrompt';
@@ -473,6 +474,12 @@ export function Navigation({ onSignIn }) {
   );
 }
 
+// Issue #43 — must live INSIDE <Router> so useLocation works.
+function RouteFocusManager() {
+  useFocusOnRouteChange();
+  return null;
+}
+
 function AppInner() {
   const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
@@ -517,6 +524,7 @@ function AppInner() {
       <AuthProvider>
         <SearchPaletteContext.Provider value={searchCtx}>
           <Router>
+            <RouteFocusManager />
             <ErrorBoundary>
               <AppShell>
                 <Navigation onSignIn={() => setShowAuthModal(true)} />
