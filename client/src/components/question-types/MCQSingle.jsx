@@ -107,7 +107,11 @@ function MCQSingle({ question, answer, onAnswer, showFeedback, disabled }) {
       <OptionsGrid role="radiogroup" aria-label="Answer options">
         {question.options.map((opt, idx) => (
           <OptionButton
-            key={idx}
+            // Issue #40 — Mongoose subdocs ship an _id; fall back to a
+            // text-derived key for in-editor options that haven't been
+            // persisted yet so React doesn't reuse the wrong DOM node
+            // when answers are shuffled / filtered / animated.
+            key={opt._id ?? `idx-${idx}-${opt.text}`}
             role="radio"
             aria-checked={selectedIndex === idx}
             $selected={selectedIndex === idx}

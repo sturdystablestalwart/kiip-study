@@ -148,7 +148,8 @@ function MCQMultiple({ question, answer, onAnswer, showFeedback, disabled }) {
           const isSelected = selected.includes(idx);
           return (
             <OptionButton
-              key={idx}
+              // Issue #40 — see MCQSingle.jsx for context on stable keys.
+              key={opt._id ?? `idx-${idx}-${opt.text}`}
               role="checkbox"
               aria-checked={isSelected}
               $selected={isSelected}
