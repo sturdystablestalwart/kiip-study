@@ -108,8 +108,10 @@ const ArrowButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.3;
+    opacity: 0.5;
     cursor: default;
+    border-style: dashed;
+    background: transparent;
   }
 `;
 
