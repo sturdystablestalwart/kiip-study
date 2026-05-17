@@ -19,7 +19,8 @@
     "test:ui": "npx playwright test --ui",
     "test:headed": "npx playwright test --headed --project=chromium",
     "test:report": "npx playwright show-report",
-    "test:unit": "npm run test --prefix client && npm run test --prefix server"
+    "test:unit": "npm run test --prefix client && npm run test --prefix server",
+    "prepare": "husky"
   },
   "dependencies": {
     "concurrently": "^8.2.0"
@@ -33,6 +34,13 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/mcp": "^0.0.64",
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.58.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "client/src/**/*.{js,jsx}": [
+      "bash -c 'cd client && npx eslint --max-warnings 0 ' --"
+    ]
   }
 }
