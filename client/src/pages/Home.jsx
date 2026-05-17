@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import useUrlState from '../hooks/useUrlState';
 import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
 import { useSearchPalette } from '../context/SearchPaletteContext';
@@ -568,8 +569,10 @@ function Home() {
   const [error, setError] = useState(null);
   const [nextCursor, setNextCursor] = useState(null);
   const [total, setTotal] = useState(0);
-  const [levelFilter, setLevelFilter] = useState('');
-  const [unitFilter, setUnitFilter] = useState('');
+  // Issue #47 — persist filter state in the URL so refresh / share /
+  // back-button preserves what the user was looking at.
+  const [levelFilter, setLevelFilter] = useUrlState('level', '');
+  const [unitFilter, setUnitFilter] = useUrlState('unit', '');
   const [curriculum, setCurriculum] = useState([]);
   const [contentTypeFilter, setContentTypeFilter] = useState('');
   const [recentAttempts, setRecentAttempts] = useState([]);
@@ -587,7 +590,7 @@ function Home() {
     api.get('/api/curriculum').then(res => setCurriculum(res.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { setUnitFilter(''); }, [levelFilter]);
+  useEffect(() => { setUnitFilter(''); }, [levelFilter, setUnitFilter]);
 
   const levelOptions = curriculum.map(c => ({ value: c.level, label: c.levelName.ko }));
   const unitOptions = levelFilter
