@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css } from 'styled-components';
 
 /* ───────── Animations ───────── */
@@ -93,6 +94,7 @@ const ExplanationPanel = styled.div`
 /* ───────── Component ───────── */
 
 function MCQSingle({ question, answer, onAnswer, showFeedback, disabled }) {
+  const { t } = useTranslation();
   const selectedIndex = answer?.selectedOptions?.[0] ?? null;
 
   const handleClick = (idx) => {
@@ -121,7 +123,7 @@ function MCQSingle({ question, answer, onAnswer, showFeedback, disabled }) {
 
       {showFeedback && question.explanation && (
         <ExplanationPanel>
-          <strong>Why?</strong> {question.explanation}
+          <strong>{t('test.whyLabel')}</strong> {question.explanation}
         </ExplanationPanel>
       )}
     </div>
