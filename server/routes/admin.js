@@ -13,6 +13,7 @@ const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
+const geminiQuota = require('../utils/geminiQuota');
 const { classifyTest } = require('../utils/classifier');
 const sharp = require('sharp');
 const AuditLog = require('../models/AuditLog');
@@ -128,6 +129,20 @@ router.post('/tests/generate', apiLimiter, validateTextGeneration, async (req, r
     }
 
     try {
+        // Issue #66 — per-admin daily quota.  Charge the call against the
+        // user's bucket BEFORE invoking Gemini so a 429 doesn't spend
+        // budget.
+        const quota = geminiQuota.consume(req.user?._id);
+        if (!quota.allowed) {
+            logger.warn(
+                { userId: req.user?._id, used: quota.used, limit: quota.limit },
+                'Gemini per-admin daily quota exceeded',
+            );
+            return res.status(429).json({
+                message: `Daily AI generation limit reached (${quota.limit}). Resets at 00:00 UTC.`,
+            });
+        }
+
         const { text } = req.body;
         const data = await parseTextWithLLM(text);
 
@@ -267,6 +282,19 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
 
         if (text.length > 50000) {
             text = text.substring(0, 50000);
+        }
+
+        // Issue #66 — per-admin daily Gemini quota (same as /tests/generate).
+        const quota = geminiQuota.consume(req.user?._id);
+        if (!quota.allowed) {
+            logger.warn(
+                { userId: req.user?._id, used: quota.used, limit: quota.limit },
+                'Gemini per-admin daily quota exceeded (file)',
+            );
+            try { fs.unlinkSync(filePath); } catch { /* ignore */ }
+            return res.status(429).json({
+                message: `Daily AI generation limit reached (${quota.limit}). Resets at 00:00 UTC.`,
+            });
         }
 
         const data = await parseTextWithLLM(text);
