@@ -86,7 +86,14 @@
     "orderingMoveUp": "Subir",
     "orderingMoveDown": "Bajar",
     "orderingMovedTo": "Elemento movido a la posición {{position}}",
-    "unit": "Unidad {{count}}"
+    "unit": "Unidad {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Quedan diez minutos",
+      "fiveMinutes": "Quedan cinco minutos",
+      "oneMinute": "Queda un minuto",
+      "thirtySeconds": "Quedan treinta segundos",
+      "expired": "Se acabó el tiempo"
+    }
   },
   "create": {
     "title": "Crear prueba",

@@ -86,7 +86,14 @@
     "orderingMoveUp": "위로",
     "orderingMoveDown": "아래로",
     "orderingMovedTo": "{{position}}번째 위치로 이동",
-    "unit": "{{count}}과"
+    "unit": "{{count}}과",
+    "timerAnnounce": {
+      "tenMinutes": "10분 남았습니다",
+      "fiveMinutes": "5분 남았습니다",
+      "oneMinute": "1분 남았습니다",
+      "thirtySeconds": "30초 남았습니다",
+      "expired": "시간이 종료되었습니다"
+    }
   },
   "create": {
     "title": "시험 만들기",

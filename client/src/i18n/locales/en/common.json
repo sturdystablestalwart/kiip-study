@@ -86,7 +86,14 @@
     "orderingMoveUp": "Move up",
     "orderingMoveDown": "Move down",
     "orderingMovedTo": "Moved item to position {{position}}",
-    "unit": "Unit {{count}}"
+    "unit": "Unit {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Ten minutes remaining",
+      "fiveMinutes": "Five minutes remaining",
+      "oneMinute": "One minute remaining",
+      "thirtySeconds": "Thirty seconds remaining",
+      "expired": "Time is up"
+    }
   },
   "create": {
     "title": "Create Test",
