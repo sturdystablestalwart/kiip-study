@@ -81,6 +81,11 @@
     "feedbackCorrect": "Правильно!",
     "feedbackIncorrectAccepted": "Неправильно. Допустимые ответы:",
     "whyLabel": "Почему?",
+    "answerOptionsAriaLabel": "Варианты ответа",
+    "shortAnswerPlaceholder": "Введите ответ...",
+    "orderingMoveUp": "Вверх",
+    "orderingMoveDown": "Вниз",
+    "orderingMovedTo": "Элемент перемещён на позицию {{position}}",
     "unit": "Раздел {{count}}"
   },
   "create": {

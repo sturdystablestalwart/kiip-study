@@ -159,9 +159,9 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
       next[fromIdx] = next[toIdx];
       next[toIdx] = temp;
       onAnswer({ orderedItems: next });
-      setAriaMessage(`Moved item to position ${toIdx + 1}`);
+      setAriaMessage(t('test.orderingMovedTo', { position: toIdx + 1 }));
     },
-    [disabled, orderedItems, onAnswer]
+    [disabled, orderedItems, onAnswer, t]
   );
 
   const handleDragStart = (e, idx) => {
@@ -190,7 +190,7 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
     const moved = next.splice(fromIdx, 1)[0];
     next.splice(dropIdx, 0, moved);
     onAnswer({ orderedItems: next });
-    setAriaMessage(`Moved item to position ${dropIdx + 1}`);
+    setAriaMessage(t('test.orderingMovedTo', { position: dropIdx + 1 }));
     setDraggingIdx(null);
     setDragOverIdx(null);
     dragItem.current = null;
@@ -235,14 +235,14 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
                   <ArrowButton
                     onClick={() => swap(position, position - 1)}
                     disabled={position === 0}
-                    aria-label="Move up"
+                    aria-label={t('test.orderingMoveUp')}
                   >
                     &#8593;
                   </ArrowButton>
                   <ArrowButton
                     onClick={() => swap(position, position + 1)}
                     disabled={position === orderedItems.length - 1}
-                    aria-label="Move down"
+                    aria-label={t('test.orderingMoveDown')}
                   >
                     &#8595;
                   </ArrowButton>

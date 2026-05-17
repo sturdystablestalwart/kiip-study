@@ -104,7 +104,7 @@ function MCQSingle({ question, answer, onAnswer, showFeedback, disabled }) {
 
   return (
     <div>
-      <OptionsGrid role="radiogroup" aria-label="Answer options">
+      <OptionsGrid role="radiogroup" aria-label={t('test.answerOptionsAriaLabel')}>
         {question.options.map((opt, idx) => (
           <OptionButton
             // Issue #40 — Mongoose subdocs ship an _id; fall back to a

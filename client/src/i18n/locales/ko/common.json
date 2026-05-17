@@ -81,6 +81,11 @@
     "feedbackCorrect": "정답입니다!",
     "feedbackIncorrectAccepted": "오답입니다. 정답:",
     "whyLabel": "이유?",
+    "answerOptionsAriaLabel": "답안 선택지",
+    "shortAnswerPlaceholder": "답을 입력하세요...",
+    "orderingMoveUp": "위로",
+    "orderingMoveDown": "아래로",
+    "orderingMovedTo": "{{position}}번째 위치로 이동",
     "unit": "{{count}}과"
   },
   "create": {
