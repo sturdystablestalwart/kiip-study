@@ -11,6 +11,7 @@ const MagicLink = require('../models/MagicLink');
 const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
 const logger = require('../utils/logger');
 const AuditLog = require('../models/AuditLog');
+const safeError = require('../utils/safeError');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -210,19 +211,26 @@ router.get('/me', async (req, res) => {
 
 // PATCH /api/auth/preferences
 router.patch('/preferences', requireAuth, async (req, res) => {
-    const { language, theme } = req.body;
-    const updates = {};
-    if (language && ['en', 'ko', 'ru', 'es'].includes(language)) {
-        updates['preferences.language'] = language;
+    // Issue #59 — try/catch so a Mongo failure returns the standard
+    // `{ message: safeError(...) }` shape the client toast expects.
+    try {
+        const { language, theme } = req.body;
+        const updates = {};
+        if (language && ['en', 'ko', 'ru', 'es'].includes(language)) {
+            updates['preferences.language'] = language;
+        }
+        if (theme && ['light', 'dark', 'system'].includes(theme)) {
+            updates['preferences.theme'] = theme;
+        }
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid preferences provided' });
+        }
+        const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+        res.json({ preferences: user.preferences });
+    } catch (err) {
+        logger.error({ err }, 'PATCH /api/auth/preferences failed');
+        res.status(500).json({ message: safeError('Failed to update preferences', err) });
     }
-    if (theme && ['light', 'dark', 'system'].includes(theme)) {
-        updates['preferences.theme'] = theme;
-    }
-    if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ error: 'No valid preferences provided' });
-    }
-    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
-    res.json({ preferences: user.preferences });
 });
 
 // ─── Magic-link bot protection (issue #20) ──────────────────────────────
