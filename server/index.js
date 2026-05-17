@@ -71,10 +71,22 @@ app.use((req, res, next) => {
 
 // Include the reqId in morgan access logs.
 morgan.token('reqid', (req) => (logger.requestContext.getStore() || {}).reqId || '-');
+
+// Issue #141 — magic-link verification reads the token from
+// req.query.token.  morgan's default :url token would log the full
+// query string, leaking the token to log archives.  This custom
+// :safeurl token strips the value of any param named `token` (or
+// `code`, for future OAuth-ish flows) so logs see `token=REDACTED`
+// instead of the raw value.
+morgan.token('safeurl', (req) => {
+    const url = req.originalUrl || req.url || '';
+    return url.replace(/([?&](?:token|code|access_token|api_key)=)[^&]*/gi, '$1REDACTED');
+});
+
 app.use(morgan(
     process.env.NODE_ENV === 'production'
-        ? ':remote-addr - :method :url :status :res[content-length] - :response-time ms reqId=:reqid'
-        : ':method :url :status :response-time ms reqId=:reqid',
+        ? ':remote-addr - :method :safeurl :status :res[content-length] - :response-time ms reqId=:reqid'
+        : ':method :safeurl :status :response-time ms reqId=:reqid',
 ));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
