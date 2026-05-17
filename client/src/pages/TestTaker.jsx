@@ -573,6 +573,22 @@ function TestTaker() {
 
   // Auto-save session progress every 30 seconds for authenticated users
   const autoSaveFailCount = useRef(0);
+  const flagCloseTimerRef = useRef(null);
+
+  const closeFlagModal = useCallback(() => {
+    if (flagCloseTimerRef.current) {
+      clearTimeout(flagCloseTimerRef.current);
+      flagCloseTimerRef.current = null;
+    }
+    setShowFlagModal(false);
+    setFlagSuccess(false);
+    setFlagReason('');
+    setFlagNote('');
+  }, []);
+
+  useEffect(() => () => {
+    if (flagCloseTimerRef.current) clearTimeout(flagCloseTimerRef.current);
+  }, []);
   useEffect(() => {
     if (!sessionId || isSubmitted) return;
     const controller = new AbortController();
@@ -791,7 +807,9 @@ function TestTaker() {
         note: flagNote
       });
       setFlagSuccess(true);
-      setTimeout(() => {
+      if (flagCloseTimerRef.current) clearTimeout(flagCloseTimerRef.current);
+      flagCloseTimerRef.current = setTimeout(() => {
+        flagCloseTimerRef.current = null;
         setShowFlagModal(false);
         setFlagSuccess(false);
         setFlagReason('');
@@ -1042,7 +1060,7 @@ function TestTaker() {
       )}
 
       {showFlagModal && (
-        <Modal onClose={() => setShowFlagModal(false)} ariaLabel={t('flag.title')}>
+        <Modal onClose={closeFlagModal} ariaLabel={t('flag.title')}>
           <ModalBody>
             <h3>{t('flag.title')}</h3>
           </ModalBody>
@@ -1067,7 +1085,7 @@ function TestTaker() {
                 maxLength={500}
               />
               <ModalActions>
-                <Button $variant="secondary" onClick={() => setShowFlagModal(false)}>
+                <Button $variant="secondary" onClick={closeFlagModal}>
                   {t('common.cancel')}
                 </Button>
                 <Button
