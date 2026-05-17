@@ -56,6 +56,13 @@ export default defineConfig({
     host: true,
   },
   build: {
+    // Issue #207 — pin the JS+CSS target explicitly instead of relying on
+    // Vite's 'modules' default, which drifts across versions and is muddier
+    // under the rolldown-vite override.  es2022 + chrome91 covers all
+    // evergreen browsers from 2021 onward (top-level await, class fields,
+    // private methods, optional chaining, nullish coalescing).
+    target: 'es2022',
+    cssTarget: 'chrome91',
     sourcemap: false,
     rollupOptions: {
       output: {
