@@ -58,7 +58,24 @@ app.use(cors({
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// Issue #33 — request-ID context.  Reuse caller-supplied
+// X-Request-Id when present (lets a calling proxy / load balancer
+// propagate its own trace IDs), otherwise mint a UUID.  The pino
+// logger wrapper reads from logger.requestContext on every log call.
+const { randomUUID } = require('crypto');
+app.use((req, res, next) => {
+    const reqId = req.get('x-request-id') || randomUUID();
+    res.set('x-request-id', reqId);
+    logger.requestContext.run({ reqId, userId: null }, () => next());
+});
+
+// Include the reqId in morgan access logs.
+morgan.token('reqid', (req) => (logger.requestContext.getStore() || {}).reqId || '-');
+app.use(morgan(
+    process.env.NODE_ENV === 'production'
+        ? ':remote-addr - :method :url :status :res[content-length] - :response-time ms reqId=:reqid'
+        : ':method :url :status :response-time ms reqId=:reqid',
+));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());

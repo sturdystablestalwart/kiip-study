@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
@@ -26,6 +27,10 @@ const requireAuth = async (req, res, next) => {
         }
 
         req.user = user;
+        // Issue #33 — propagate userId into the request-scoped log
+        // context so every subsequent log line on this request shares
+        // both reqId and userId.
+        logger.setContextField('userId', String(user._id));
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
