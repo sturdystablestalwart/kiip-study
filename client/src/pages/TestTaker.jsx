@@ -593,11 +593,27 @@ function TestTaker() {
   useEffect(() => () => {
     if (flagCloseTimerRef.current) clearTimeout(flagCloseTimerRef.current);
   }, []);
+  // Issue #72 — the previous dep array
+  //   [sessionId, answers, currentQ, timeLeft, isSubmitted]
+  // tore down + recreated the 30s setInterval on every keystroke and
+  // every 1s timer tick.  Each interval fired at most once before being
+  // cleaned up — auto-save reliability was effectively random.
+  //
+  // Decouple the interval from the changing state via a ref so the
+  // effect only re-runs when the *interval lifecycle* actually changes
+  // (sessionId / isSubmitted), and the interval callback reads the
+  // latest snapshot via the ref.
+  const autoSaveLatest = useRef({ answers, currentQ, timeLeft });
+  useEffect(() => {
+    autoSaveLatest.current = { answers, currentQ, timeLeft };
+  });
+
   useEffect(() => {
     if (!sessionId || isSubmitted) return;
     const controller = new AbortController();
     const interval = setInterval(() => {
-      const answerArray = Object.entries(answers).map(([idx, ans]) => ({
+      const snap = autoSaveLatest.current;
+      const answerArray = Object.entries(snap.answers).map(([idx, ans]) => ({
         questionIndex: parseInt(idx),
         selectedOptions: ans.selectedOptions || [],
         textAnswer: ans.textAnswer || '',
@@ -607,8 +623,8 @@ function TestTaker() {
       setSaveStatus('saving');
       api.patch(`/api/sessions/${sessionId}`, {
         answers: answerArray,
-        currentQuestion: currentQ,
-        remainingTime: timeLeft
+        currentQuestion: snap.currentQ,
+        remainingTime: snap.timeLeft
       }, { signal: controller.signal }).then(() => {
         autoSaveFailCount.current = 0;
         setSaveStatus('saved');
@@ -623,7 +639,7 @@ function TestTaker() {
       });
     }, 30000);
     return () => { clearInterval(interval); controller.abort(); };
-  }, [sessionId, answers, currentQ, timeLeft, isSubmitted]);
+  }, [sessionId, isSubmitted]);
 
   const hasProgress = Object.keys(answers).length > 0;
 
