@@ -83,6 +83,13 @@ jobs:
               fi
             done
 
+            # Issue #191 — explicitly enable BuildKit + compose CLI build
+            # so docker-compose `cache_from` + BUILDKIT_INLINE_CACHE=1 args
+            # actually populate / consume layer cache from the previously
+            # built local image.  Default-on for Docker 23+ but pinning
+            # here makes the deploy host-version-independent.
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
             docker compose build
             docker compose up -d
 

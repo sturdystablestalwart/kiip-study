@@ -1,16 +1,29 @@
+# Issue #199 — multi-stage so the runtime layer ships only node + the
+# already-installed node_modules + app source.  No npm, no lockfile, no
+# apk metadata reach the production image.  Matches client/Dockerfile.
+#
 # SHA-pinned base for reproducible/secure builds.
 # To refresh: `docker pull node:20-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine`
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS deps
 
 WORKDIR /app
 
-# Copy package files
+# Only the lockfile is needed for `npm ci` — copying just package*.json
+# means an unrelated app-source edit won't bust this layer's cache.
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy source code
+# ---------- runtime stage ----------
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
+
+WORKDIR /app
+
+# Pull only the resolved production node_modules; npm + lockfile stay
+# in the `deps` layer and never reach the final image.
+COPY --from=deps /app/node_modules ./node_modules
+
+# Application source (filtered by .dockerignore).
 COPY . .
 
 # Create uploads directories (build-time stub — the entrypoint re-creates
@@ -27,7 +40,6 @@ RUN chmod +x /app/entrypoint.sh
 RUN chown -R node:node /app
 USER node
 
-# Expose port
 EXPOSE 5000
 
 # Image-level liveness signal (#200). Compose adds its own healthcheck,

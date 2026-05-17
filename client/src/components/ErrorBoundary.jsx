@@ -41,14 +41,27 @@ const ButtonRow = styled.div`
  * route change (typically the URL pathname).  Reload stays as the
  * nuclear option.
  */
+// Issue #49 — detect chunk-load failures so a deploy that swapped
+// hashed JS out from under an open session can offer a hard reload
+// instead of a generic error.  React's ChunkLoadError extends Error
+// with name 'ChunkLoadError'; Vite/rolldown emit it too.
+function isChunkLoadError(err) {
+  if (!err) return false;
+  if (err.name === 'ChunkLoadError') return true;
+  const msg = String(err.message || '');
+  return /Loading chunk \d+ failed/i.test(msg) ||
+         /Failed to fetch dynamically imported module/i.test(msg) ||
+         /Importing a module script failed/i.test(msg);
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, isChunkError: false };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, isChunkError: isChunkLoadError(error) };
   }
 
   componentDidCatch(error, info) {
@@ -78,29 +91,44 @@ class ErrorBoundary extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, isChunkError: false });
     }
   }
 
   handleReset = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, isChunkError: false });
   };
 
   render() {
     if (this.state.hasError) {
+      // Issue #49 — chunk-load failure (most common after a deploy
+      // swapped hashed JS) needs a hard reload to fetch the new
+      // chunk; Retry-in-place can't recover.  Promote Reload to the
+      // primary action.
+      const chunk = this.state.isChunkError;
       return (
         <ErrorWrapper>
-          <ErrorTitle>{i18n.t('common.error')}</ErrorTitle>
+          <ErrorTitle>
+            {chunk ? i18n.t('common.updateAvailable') : i18n.t('common.error')}
+          </ErrorTitle>
           <ErrorMessage>
-            {i18n.t('common.errorDesc')}
+            {chunk ? i18n.t('common.errorDesc') : i18n.t('common.errorDesc')}
           </ErrorMessage>
           <ButtonRow>
-            <Button onClick={this.handleReset}>
-              {i18n.t('common.retry')}
-            </Button>
-            <Button $variant="secondary" onClick={() => window.location.reload()}>
-              {i18n.t('common.reload')}
-            </Button>
+            {chunk ? (
+              <Button onClick={() => window.location.reload()}>
+                {i18n.t('common.reload')}
+              </Button>
+            ) : (
+              <>
+                <Button onClick={this.handleReset}>
+                  {i18n.t('common.retry')}
+                </Button>
+                <Button $variant="secondary" onClick={() => window.location.reload()}>
+                  {i18n.t('common.reload')}
+                </Button>
+              </>
+            )}
           </ButtonRow>
         </ErrorWrapper>
       );

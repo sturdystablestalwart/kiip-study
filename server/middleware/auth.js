@@ -1,8 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
+const loadSecret = require('../utils/loadSecret');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+// Issue #9 — JWT_SECRET resolves from /run/secrets/jwt_secret first
+// (Docker Secrets), env var second.  The error message is unchanged so
+// the existing boot-time guard test still matches.
+const JWT_SECRET = loadSecret('JWT_SECRET');
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 if (process.env.NODE_ENV === 'production' && JWT_SECRET.length < 32) {
     throw new Error('JWT_SECRET must be at least 32 characters in production');

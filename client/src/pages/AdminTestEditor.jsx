@@ -287,13 +287,16 @@ const ModalBody = styled.div`
   p { color: ${({ theme }) => theme.colors.text.muted}; margin: 0 0 ${({ theme }) => theme.layout.space[2]}px 0; }
 `;
 
-const QUESTION_TYPES = [
-    { value: 'mcq-single', label: 'MCQ (single)' },
-    { value: 'mcq-multiple', label: 'MCQ (multiple)' },
-    { value: 'short-answer', label: 'Short answer' },
-    { value: 'ordering', label: 'Ordering' },
-    { value: 'fill-in-the-blank', label: 'Fill in the blank' }
-];
+// Issue #116 — labels now resolve through t() at render time so the
+// editor follows the active UI language.  See `admin.editorQuestionType.*`.
+const QUESTION_TYPE_KEYS = {
+    'mcq-single': 'admin.editorQuestionType.mcqSingle',
+    'mcq-multiple': 'admin.editorQuestionType.mcqMultiple',
+    'short-answer': 'admin.editorQuestionType.shortAnswer',
+    'ordering': 'admin.editorQuestionType.ordering',
+    'fill-in-the-blank': 'admin.editorQuestionType.fillInTheBlank',
+};
+const QUESTION_TYPE_VALUES = Object.keys(QUESTION_TYPE_KEYS);
 
 function AdminTestEditor() {
     const { id } = useParams();
@@ -358,11 +361,15 @@ function AdminTestEditor() {
                 })
                 .catch(err => {
                     if (err.name === 'CanceledError') return;
-                    setError('Failed to load test');
+                    setError(t('admin.editorError.loadFailed'));
                 })
                 .finally(() => setLoading(false));
             return () => controller.abort();
         }
+        // Issue #116 — `t` is stable per i18next and only used in the
+        // error branch; listing it would re-fire the fetch on language
+        // switch which we don't want (current test data stays usable).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, adminReady]);
 
     const updateQuestion = (idx, updates) => {
@@ -433,6 +440,20 @@ function AdminTestEditor() {
     };
 
     const requestDeleteQuestion = (idx) => {
+        // Issue #164 — commit any in-flight IME composition (Korean
+        // Hangul, Japanese, Chinese) BEFORE the modal portal mounts
+        // and steals focus.  Without the explicit blur, the
+        // compositionend event doesn't fire and the half-typed jamo
+        // is dropped.  We re-focus after the next microtask so the
+        // visible cursor doesn't jump.
+        if (
+            document.activeElement &&
+            typeof document.activeElement.blur === 'function' &&
+            (document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA')
+        ) {
+            document.activeElement.blur();
+        }
         setDeleteQModal({ show: true, idx });
     };
 
@@ -460,19 +481,20 @@ function AdminTestEditor() {
 
     const handleSave = async () => {
         setError(null);
-        if (!title.trim()) { setError('Title is required'); return; }
-        if (questions.length === 0) { setError('At least one question is required'); return; }
+        if (!title.trim()) { setError(t('admin.editorError.titleRequired')); return; }
+        if (questions.length === 0) { setError(t('admin.editorError.atLeastOneQuestion')); return; }
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
-            if (!q.text.trim()) { setError(`Question ${i + 1} has no text`); return; }
+            const n = i + 1;
+            if (!q.text.trim()) { setError(t('admin.editorError.questionNoText', { n })); return; }
             if ((q.type === 'mcq-single' || q.type === 'mcq-multiple') && (!q.options || q.options.length < 2)) {
-                setError(`Question ${i + 1} needs at least 2 options`); return;
+                setError(t('admin.editorError.questionNeeds2Options', { n })); return;
             }
             if ((q.type === 'mcq-single' || q.type === 'mcq-multiple') && !q.options.some(o => o.isCorrect)) {
-                setError(`Question ${i + 1} needs at least one correct option`); return;
+                setError(t('admin.editorError.questionNeedsCorrect', { n })); return;
             }
             if (q.type === 'short-answer' && (!q.acceptedAnswers || q.acceptedAnswers.length === 0)) {
-                setError(`Question ${i + 1} needs at least one accepted answer`); return;
+                setError(t('admin.editorError.questionNeedsAcceptedAnswer', { n })); return;
             }
         }
 
@@ -490,7 +512,7 @@ function AdminTestEditor() {
             });
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to save');
+            setError(err.response?.data?.message || t('admin.editorError.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -502,15 +524,15 @@ function AdminTestEditor() {
         <div>
             <BackLink onClick={() => navigate('/')}>&larr; {t('test.goHome')}</BackLink>
 
-            <TitleInput value={title} onChange={e => setTitle(e.target.value)} placeholder="Test title" aria-label="Test title" />
+            <TitleInput value={title} onChange={e => setTitle(e.target.value)} placeholder={t('admin.editorPlaceholder.testTitle')} aria-label={t('admin.editorAria.testTitle')} />
 
             <MetaRow>
-                <MetaInput value={category} onChange={e => setCategory(e.target.value)} placeholder="Category" aria-label="Category" />
+                <MetaInput value={category} onChange={e => setCategory(e.target.value)} placeholder={t('admin.editorPlaceholder.category')} aria-label={t('admin.editorAria.category')} />
             </MetaRow>
 
             <MetaRow>
                 <label>{t('home.level')}</label>
-                <MetaSelect value={level} onChange={e => { setLevel(e.target.value); setUnitNumber(''); setSection(''); }} aria-label="Level">
+                <MetaSelect value={level} onChange={e => { setLevel(e.target.value); setUnitNumber(''); setSection(''); }} aria-label={t('admin.editorAria.level')}>
                     <option value="">{t('home.allLevels')}</option>
                     {curriculum.map(c => (
                         <option key={c.level} value={c.level}>{c.levelName.ko} ({c.levelName.en})</option>
@@ -520,7 +542,7 @@ function AdminTestEditor() {
 
             <MetaRow>
                 <label>{t('home.unit')}</label>
-                <MetaSelect value={unitNumber} onChange={e => setUnitNumber(e.target.value)} aria-label="Unit">
+                <MetaSelect value={unitNumber} onChange={e => setUnitNumber(e.target.value)} aria-label={t('admin.editorAria.unit')}>
                     <option value="">{t('home.allUnits')}</option>
                     {(curriculum.find(c => c.level === level)?.units || []).filter(u => !u.isReview).map(u => (
                         <option key={u.number} value={String(u.number)}>{u.number}과 — {u.titleKo}</option>
@@ -531,7 +553,7 @@ function AdminTestEditor() {
             {level && level.startsWith('5') && (
                 <MetaRow>
                     <label>{t('classification.section')}</label>
-                    <MetaSelect value={section} onChange={e => setSection(e.target.value)} aria-label="Section">
+                    <MetaSelect value={section} onChange={e => setSection(e.target.value)} aria-label={t('admin.editorAria.section')}>
                         <option value="">—</option>
                         {[...new Set((curriculum.find(c => c.level === level)?.units || []).map(u => u.section).filter(Boolean))].map(s => (
                             <option key={s} value={s}>{s}</option>
@@ -542,7 +564,7 @@ function AdminTestEditor() {
 
             <MetaRow>
                 <label>{t('classification.contentType')}</label>
-                <MetaSelect value={contentType} onChange={e => setContentType(e.target.value)} aria-label="Content type">
+                <MetaSelect value={contentType} onChange={e => setContentType(e.target.value)} aria-label={t('admin.editorAria.contentType')}>
                     <option value="general">{t('classification.general')}</option>
                     <option value="mock-exam">{t('classification.mockExam')}</option>
                     <option value="topic-drill">{t('classification.topicDrill')}</option>
@@ -551,7 +573,7 @@ function AdminTestEditor() {
                 </MetaSelect>
             </MetaRow>
 
-            <DescTextarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" aria-label="Description" />
+            <DescTextarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('admin.editorPlaceholder.description')} aria-label={t('admin.editorAria.description')} />
 
             {error && <ErrorMsg>{error}</ErrorMsg>}
 
@@ -559,21 +581,21 @@ function AdminTestEditor() {
                 <QuestionCard key={qIdx} data-testid="question-card">
                     <QuestionHeader>
                         <QuestionNum>Q{qIdx + 1}</QuestionNum>
-                        <TypeSelect value={q.type || 'mcq-single'} onChange={e => changeType(qIdx, e.target.value)} aria-label={`Question ${qIdx + 1} type`}>
-                            {QUESTION_TYPES.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
+                        <TypeSelect value={q.type || 'mcq-single'} onChange={e => changeType(qIdx, e.target.value)} aria-label={`${t('admin.questionType')} ${qIdx + 1}`}>
+                            {QUESTION_TYPE_VALUES.map(value => (
+                                <option key={value} value={value}>{t(QUESTION_TYPE_KEYS[value])}</option>
                             ))}
                         </TypeSelect>
-                        <DeleteQBtn onClick={() => requestDeleteQuestion(qIdx)} aria-label={`Delete question ${qIdx + 1}`} data-testid="delete-question-btn">
+                        <DeleteQBtn onClick={() => requestDeleteQuestion(qIdx)} aria-label={`${t('admin.removeQuestion')} ${qIdx + 1}`} data-testid="delete-question-btn">
                             &times;
                         </DeleteQBtn>
                     </QuestionHeader>
 
-                    <QTextarea value={q.text} onChange={e => updateQuestion(qIdx, { text: e.target.value })} placeholder="Question text" aria-label={`Question ${qIdx + 1} text`} />
+                    <QTextarea value={q.text} onChange={e => updateQuestion(qIdx, { text: e.target.value })} placeholder={t('admin.editorPlaceholder.questionText')} aria-label={`${t('admin.editorPlaceholder.questionText')} ${qIdx + 1}`} />
 
                     {(q.type === 'mcq-single' || q.type === 'mcq-multiple') && (
                         <>
-                            <SectionLabel>Options (check = correct)</SectionLabel>
+                            <SectionLabel>{t('admin.editorSection.options')}</SectionLabel>
                             {(q.options || []).map((opt, oIdx) => (
                                 <OptionRow key={oIdx}>
                                     <OptionCheck
@@ -582,17 +604,17 @@ function AdminTestEditor() {
                                         checked={opt.isCorrect}
                                         onChange={() => toggleCorrect(qIdx, oIdx)}
                                     />
-                                    <OptionInput value={opt.text} onChange={e => updateOption(qIdx, oIdx, { text: e.target.value })} placeholder={`Option ${oIdx + 1}`} />
+                                    <OptionInput value={opt.text} onChange={e => updateOption(qIdx, oIdx, { text: e.target.value })} placeholder={t('admin.editorPlaceholder.option', { n: oIdx + 1 })} />
                                     <SmallBtn onClick={() => removeOption(qIdx, oIdx)}>&times;</SmallBtn>
                                 </OptionRow>
                             ))}
-                            <AddBtn onClick={() => addOption(qIdx)}>+ Add option</AddBtn>
+                            <AddBtn onClick={() => addOption(qIdx)}>{t('admin.editorAction.addOption')}</AddBtn>
                         </>
                     )}
 
                     {q.type === 'short-answer' && (
                         <>
-                            <SectionLabel>Accepted answers</SectionLabel>
+                            <SectionLabel>{t('admin.editorSection.acceptedAnswers')}</SectionLabel>
                             <ChipRow>
                                 {(q.acceptedAnswers || []).map((ans, aIdx) => (
                                     <Chip key={aIdx}>
@@ -606,33 +628,33 @@ function AdminTestEditor() {
                                     value={chipInputs[qIdx] || ''}
                                     onChange={e => setChipInputs(prev => ({ ...prev, [qIdx]: e.target.value }))}
                                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAcceptedAnswer(qIdx, chipInputs[qIdx] || ''); } }}
-                                    placeholder="Type answer and press Enter"
+                                    placeholder={t('admin.editorPlaceholder.answerEnter')}
                                 />
-                                <SmallBtn onClick={() => addAcceptedAnswer(qIdx, chipInputs[qIdx] || '')}>Add</SmallBtn>
+                                <SmallBtn onClick={() => addAcceptedAnswer(qIdx, chipInputs[qIdx] || '')}>{t('admin.editorAction.addAnswer')}</SmallBtn>
                             </OptionRow>
                         </>
                     )}
 
                     {q.type === 'ordering' && (
                         <>
-                            <SectionLabel>Items (in correct order)</SectionLabel>
+                            <SectionLabel>{t('admin.editorSection.orderedItems')}</SectionLabel>
                             {(q.options || []).map((opt, oIdx) => (
                                 <OptionRow key={oIdx}>
                                     <OrderNum>{oIdx + 1}.</OrderNum>
-                                    <OptionInput value={opt.text} onChange={e => updateOption(qIdx, oIdx, { text: e.target.value })} placeholder={`Item ${oIdx + 1}`} />
+                                    <OptionInput value={opt.text} onChange={e => updateOption(qIdx, oIdx, { text: e.target.value })} placeholder={t('admin.editorPlaceholder.item', { n: oIdx + 1 })} />
                                     <SmallBtn onClick={() => removeOption(qIdx, oIdx)}>&times;</SmallBtn>
                                 </OptionRow>
                             ))}
-                            <AddBtn onClick={() => addOption(qIdx)}>+ Add item</AddBtn>
+                            <AddBtn onClick={() => addOption(qIdx)}>{t('admin.editorAction.addItem')}</AddBtn>
                         </>
                     )}
 
                     {q.type === 'fill-in-the-blank' && (
                         <>
-                            <SectionLabel>Use ___ in the question text to mark blanks. Add accepted answers for each blank below.</SectionLabel>
+                            <SectionLabel>{t('admin.editorSection.fillBlankHint')}</SectionLabel>
                             {(q.blanks || []).map((blank, bIdx) => (
                                 <BlankSection key={bIdx}>
-                                    <SectionLabel>Blank {bIdx + 1} answers</SectionLabel>
+                                    <SectionLabel>{t('admin.editorSection.blankAnswers', { n: bIdx + 1 })}</SectionLabel>
                                     <ChipRow>
                                         {(blank.acceptedAnswers || []).map((ans, aIdx) => (
                                             <Chip key={aIdx}>
@@ -670,7 +692,7 @@ function AdminTestEditor() {
                                                     setChipInputs(prev => ({ ...prev, [`${qIdx}-blank-${bIdx}`]: '' }));
                                                 }
                                             }}
-                                            placeholder="Type answer and press Enter"
+                                            placeholder={t('admin.editorPlaceholder.answerEnter')}
                                         />
                                     </OptionRow>
                                 </BlankSection>
@@ -679,7 +701,7 @@ function AdminTestEditor() {
                                 setQuestions(prev => prev.map((q2, i) =>
                                     i === qIdx ? { ...q2, blanks: [...(q2.blanks || []), { acceptedAnswers: [] }] } : q2
                                 ));
-                            }}>+ Add blank</AddBtn>
+                            }}>{t('admin.editorAction.addBlank')}</AddBtn>
                         </>
                     )}
 
@@ -695,14 +717,14 @@ function AdminTestEditor() {
             </BottomBar>
 
             {deleteQModal.show && (
-                <Modal onClose={cancelDeleteQuestion} ariaLabel="Delete question confirmation">
+                <Modal onClose={cancelDeleteQuestion} ariaLabel={t('admin.editorAria.deleteConfirm')}>
                     <ModalBody>
-                        <h3>Remove this question?</h3>
-                        <p>Question {deleteQModal.idx + 1} will be removed. This cannot be undone until you save.</p>
+                        <h3>{t('admin.editorModal.title')}</h3>
+                        <p>{t('admin.editorModal.body', { n: deleteQModal.idx + 1 })}</p>
                     </ModalBody>
                     <ModalActions>
-                        <Button $variant="secondary" onClick={cancelDeleteQuestion}>Cancel</Button>
-                        <Button $variant="danger" onClick={confirmDeleteQuestion}>Remove</Button>
+                        <Button $variant="secondary" onClick={cancelDeleteQuestion}>{t('admin.editorAction.cancel')}</Button>
+                        <Button $variant="danger" onClick={confirmDeleteQuestion}>{t('admin.editorAction.remove')}</Button>
                     </ModalActions>
                 </Modal>
             )}

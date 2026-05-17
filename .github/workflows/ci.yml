@@ -17,9 +17,12 @@ permissions:
   contents: read
 
 jobs:
+  # Fast-path: lint / build / vitest don't need a Mongo or Playwright,
+  # so we split them off so the slow E2E shards aren't gated on them
+  # serially (they're gated as `needs:` instead).
   lint-build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -33,20 +36,137 @@ jobs:
             client/package-lock.json
             server/package-lock.json
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install client dependencies
-        run: cd client && npm ci
-
-      - name: Install server dependencies
-        run: cd server && npm ci
+      # Issue #192 — install three workspaces in parallel. setup-node's
+      # `cache: npm` warms ~/.npm so the slow part is hard-link extraction,
+      # which parallelizes well on the 2-core runner.
+      - name: Install all workspaces in parallel
+        run: |
+          npm ci & pid1=$!
+          (cd client && npm ci) & pid2=$!
+          (cd server && npm ci) & pid3=$!
+          wait $pid1 && wait $pid2 && wait $pid3
 
       - name: Lint client
         run: cd client && npm run lint
 
       - name: i18n coverage check (#34)
         run: cd client && npm run i18n:check
+
+      - name: Build client
+        run: cd client && npm run build
+
+      # Issue #193 — bundle-size regression guard.  Reads client/dist
+      # after the build step and fails if any of the documented budgets
+      # (entry / anychart / lazy) is exceeded.  Override by setting the
+      # `bundle-size-ok` PR label, which exports BUNDLE_BUDGET_OK=1
+      # so the script no-ops and the run still passes.
+      - name: Bundle size budget (#193)
+        run: cd client && npm run bundle:check
+        env:
+          BUNDLE_BUDGET_OK: ${{ contains(github.event.pull_request.labels.*.name, 'bundle-size-ok') && '1' || '' }}
+
+      # Issue #14 — gate PRs on vitest too, not just lint+build+E2E.
+      # Server tests use mongodb-memory-server; client uses jsdom; neither
+      # needs the live Mongo / Express used by the E2E shards.
+      - name: Test client (vitest)
+        run: cd client && npm test
+        env:
+          NODE_ENV: test
+
+      - name: Test server (vitest)
+        run: cd server && npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+
+      # Issue #53 — vitest coverage on both workspaces, threshold-gated
+      # in {client,server}/vitest.config.js.  continue-on-error so a
+      # missing @vitest/coverage-v8 doesn't fail the build.
+      - name: Coverage — client
+        continue-on-error: true
+        run: cd client && npm run test:coverage
+      - name: Coverage — server
+        continue-on-error: true
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+        run: cd server && npm run test:coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            client/coverage/
+            server/coverage/
+          retention-days: 7
+
+  # Issue #123 — verify all Dockerfiles + docker-compose.yaml build
+  # successfully BEFORE merge.  Without this, image-level breakages
+  # (Dockerfile syntax, SHA-pin drift, missing .dockerignore entries,
+  # multi-stage misconfigurations) only surface during deploy on the
+  # home server, where they crash-loop instead of failing CI.
+  # No push, no run — pure build verification.  Uses buildx with
+  # GitHub Actions cache so subsequent runs reuse layers and stay
+  # well under the timeout.
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3
+
+      # `compose build --pull` rebuilds all `build:` services in the
+      # compose file (server, client, backup as of #201) and re-pulls
+      # all pinned base images so a stale-SHA typo fails the job.
+      - name: docker compose build (server + client + backup)
+        run: docker compose build --pull
+        env:
+          # Compose interpolates these at parse time even for build-only
+          # services that won't be `up`'d; supply harmless placeholders.
+          GEMINI_API_KEY: ci-not-used
+          GOOGLE_CLIENT_ID: ci-not-used
+          GOOGLE_CLIENT_SECRET: ci-not-used
+          JWT_SECRET: ci-not-used
+          ADMIN_EMAIL: admin@example.com
+          CLIENT_URL: http://localhost
+          GOOGLE_CALLBACK_URL: http://localhost/auth/google/callback
+          CADDY_HOST: localhost
+          CADDY_EMAIL: admin@example.com
+
+  # Issue #192 — split E2E across 3 shards so wall-clock drops from
+  # ~10min to ~4min.  Each shard provisions its own Mongo + Playwright
+  # browser; the matrix elements run in parallel so total runner time
+  # goes up but the gate-time the contributor waits on drops.
+  e2e:
+    needs: lint-build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install all workspaces in parallel
+        run: |
+          npm ci & pid1=$!
+          (cd client && npm ci) & pid2=$!
+          (cd server && npm ci) & pid3=$!
+          wait $pid1 && wait $pid2 && wait $pid3
 
       - name: Build client
         run: cd client && npm run build
@@ -59,47 +179,31 @@ jobs:
         with:
           mongodb-version: "7.0"
 
-      - name: Start server
-        run: cd server && node index.js &
-        env:
-          # NODE_ENV=test raises the express-rate-limit ceiling from 100 to
-          # 10000 req/min (server/index.js:45); Playwright fires many parallel
-          # requests and would otherwise hit 429s on /api/tests, /api/tests/endless,
-          # etc. It also keeps cookies non-secure for HTTP and skips the ≥32-char
-          # JWT_SECRET production check.
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/kiip_test_app
-          GEMINI_API_KEY: test_key_not_used_in_ci
-          # server/middleware/auth.js throws on boot if JWT_SECRET is unset.
-          # The ≥32-char check only applies when NODE_ENV=production (which
-          # we deliberately don't set in CI), so any non-empty value works;
-          # using a 40-char placeholder for clarity.
-          JWT_SECRET: ci-test-secret-not-used-in-production-xx
-          # server/routes/auth.js:50 constructs passport-google-oauth20 at
-          # module-load time; passport-oauth2 throws
-          # `OAuth2Strategy requires a clientID option` if clientID is undefined.
-          # CI exercises neither the OAuth flow nor the callback URL, so
-          # placeholders are safe.
-          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
-          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
-
-      - name: Start client dev server
-        run: cd client && npm run dev &
-
-      - name: Wait for servers
-        run: |
-          npx --yes wait-on http://localhost:5000/health http://localhost:5173 --timeout 30000
-
-      - name: Run Playwright tests
-        run: npx playwright test --project=chromium
+      # Issue #55 — Playwright owns the dev-server lifecycle via the
+      # `webServer` block in playwright.config.js; no manual wait-on
+      # here.  --shard splits the 122-test suite across 3 jobs.
+      - name: Run Playwright tests (shard ${{ matrix.shard }}/3)
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/3
         env:
           CI: true
           BASE_URL: http://localhost:5173
+          NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/kiip_test_app
+          GEMINI_API_KEY: test_key_not_used_in_ci
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
+          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
+          CLIENT_URL: http://localhost:5173
+          ADMIN_EMAIL: admin@example.com
+          # Issue #210 — let the on-boot auto-importer populate Test
+          # fixtures from additionalContext/tests/ so manual-audit.
+          # spec.js has data to query and doesn't silently skip.
+          ENABLE_AUTO_IMPORT: "true"
 
       - name: Upload test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7

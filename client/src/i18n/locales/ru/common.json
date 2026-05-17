@@ -81,7 +81,19 @@
     "feedbackCorrect": "Правильно!",
     "feedbackIncorrectAccepted": "Неправильно. Допустимые ответы:",
     "whyLabel": "Почему?",
-    "unit": "Раздел {{count}}"
+    "answerOptionsAriaLabel": "Варианты ответа",
+    "shortAnswerPlaceholder": "Введите ответ...",
+    "orderingMoveUp": "Вверх",
+    "orderingMoveDown": "Вниз",
+    "orderingMovedTo": "Элемент перемещён на позицию {{position}}",
+    "unit": "Раздел {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Осталось десять минут",
+      "fiveMinutes": "Осталось пять минут",
+      "oneMinute": "Осталась одна минута",
+      "thirtySeconds": "Осталось тридцать секунд",
+      "expired": "Время вышло"
+    }
   },
   "create": {
     "title": "Создать тест",
@@ -159,7 +171,62 @@
     "duplicatesEmpty": "Дубликаты не найдены",
     "duplicatesFromTest": "Из: {{title}}",
     "keepBoth": "Оставить оба",
-    "skip": "Пропустить"
+    "skip": "Пропустить",
+    "editorAria": {
+      "testTitle": "Название теста",
+      "category": "Категория",
+      "level": "Уровень",
+      "unit": "Раздел",
+      "section": "Секция",
+      "contentType": "Тип контента",
+      "description": "Описание",
+      "deleteConfirm": "Подтверждение удаления вопроса"
+    },
+    "editorPlaceholder": {
+      "testTitle": "Название теста",
+      "category": "Категория",
+      "description": "Описание (необязательно)",
+      "questionText": "Текст вопроса",
+      "option": "Вариант {{n}}",
+      "item": "Элемент {{n}}",
+      "answerEnter": "Введите ответ и нажмите Enter"
+    },
+    "editorSection": {
+      "options": "Варианты (отметка = правильный)",
+      "acceptedAnswers": "Допустимые ответы",
+      "orderedItems": "Элементы (в правильном порядке)",
+      "fillBlankHint": "Используйте ___ в тексте вопроса для обозначения пропусков. Добавьте допустимые ответы для каждого пропуска ниже.",
+      "blankAnswers": "Ответы для пропуска {{n}}"
+    },
+    "editorAction": {
+      "addOption": "+ Добавить вариант",
+      "addItem": "+ Добавить элемент",
+      "addBlank": "+ Добавить пропуск",
+      "addAnswer": "Добавить",
+      "cancel": "Отмена",
+      "remove": "Удалить"
+    },
+    "editorError": {
+      "titleRequired": "Название обязательно",
+      "atLeastOneQuestion": "Нужен хотя бы один вопрос",
+      "questionNoText": "У вопроса {{n}} нет текста",
+      "questionNeeds2Options": "Вопросу {{n}} нужно минимум 2 варианта",
+      "questionNeedsCorrect": "Вопросу {{n}} нужен хотя бы один правильный вариант",
+      "questionNeedsAcceptedAnswer": "Вопросу {{n}} нужен хотя бы один допустимый ответ",
+      "saveFailed": "Не удалось сохранить",
+      "loadFailed": "Не удалось загрузить тест"
+    },
+    "editorModal": {
+      "title": "Удалить этот вопрос?",
+      "body": "Вопрос {{n}} будет удалён. Действие нельзя отменить после сохранения."
+    },
+    "editorQuestionType": {
+      "mcqSingle": "Один правильный",
+      "mcqMultiple": "Несколько правильных",
+      "shortAnswer": "Краткий ответ",
+      "ordering": "Упорядочивание",
+      "fillInTheBlank": "Заполнить пропуски"
+    }
   },
   "dashboard": {
     "title": "Мой прогресс",
@@ -175,6 +242,20 @@
     "days30": "30 дней",
     "days90": "90 дней",
     "allTime": "Всё время",
+    "compare": "Сравнить",
+    "testComparison": "Сравнение тестов",
+    "reviewFailedLink": "Разбор ошибок →",
+    "streakDays_one": "{{count}} день",
+    "streakDays_few": "{{count}} дня",
+    "streakDays_many": "{{count}} дней",
+    "streakDays_other": "{{count}} дней",
+    "qtype": {
+      "mcqSingle": "Один вариант",
+      "mcqMultiple": "Несколько вариантов",
+      "shortAnswer": "Краткий ответ",
+      "ordering": "Порядок",
+      "fillInTheBlank": "Заполнить пропуск"
+    },
     "noData": "Пройдите тесты, чтобы увидеть свою статистику.",
     "recentAttempts": "Последние попытки",
     "loadMore": "Загрузить ещё"

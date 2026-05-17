@@ -81,7 +81,19 @@
     "feedbackCorrect": "¡Correcto!",
     "feedbackIncorrectAccepted": "Incorrecto. Respuestas aceptadas:",
     "whyLabel": "¿Por qué?",
-    "unit": "Unidad {{count}}"
+    "answerOptionsAriaLabel": "Opciones de respuesta",
+    "shortAnswerPlaceholder": "Escribe tu respuesta...",
+    "orderingMoveUp": "Subir",
+    "orderingMoveDown": "Bajar",
+    "orderingMovedTo": "Elemento movido a la posición {{position}}",
+    "unit": "Unidad {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Quedan diez minutos",
+      "fiveMinutes": "Quedan cinco minutos",
+      "oneMinute": "Queda un minuto",
+      "thirtySeconds": "Quedan treinta segundos",
+      "expired": "Se acabó el tiempo"
+    }
   },
   "create": {
     "title": "Crear prueba",
@@ -159,7 +171,62 @@
     "duplicatesEmpty": "No se encontraron duplicados",
     "duplicatesFromTest": "De: {{title}}",
     "keepBoth": "Mantener ambos",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "editorAria": {
+      "testTitle": "Título de la prueba",
+      "category": "Categoría",
+      "level": "Nivel",
+      "unit": "Unidad",
+      "section": "Sección",
+      "contentType": "Tipo de contenido",
+      "description": "Descripción",
+      "deleteConfirm": "Confirmación de eliminación de pregunta"
+    },
+    "editorPlaceholder": {
+      "testTitle": "Título de la prueba",
+      "category": "Categoría",
+      "description": "Descripción (opcional)",
+      "questionText": "Texto de la pregunta",
+      "option": "Opción {{n}}",
+      "item": "Elemento {{n}}",
+      "answerEnter": "Escribe la respuesta y pulsa Enter"
+    },
+    "editorSection": {
+      "options": "Opciones (marcar = correcta)",
+      "acceptedAnswers": "Respuestas aceptadas",
+      "orderedItems": "Elementos (en orden correcto)",
+      "fillBlankHint": "Usa ___ en el texto de la pregunta para marcar espacios. Añade las respuestas aceptadas para cada espacio abajo.",
+      "blankAnswers": "Respuestas del espacio {{n}}"
+    },
+    "editorAction": {
+      "addOption": "+ Añadir opción",
+      "addItem": "+ Añadir elemento",
+      "addBlank": "+ Añadir espacio",
+      "addAnswer": "Añadir",
+      "cancel": "Cancelar",
+      "remove": "Eliminar"
+    },
+    "editorError": {
+      "titleRequired": "El título es obligatorio",
+      "atLeastOneQuestion": "Se necesita al menos una pregunta",
+      "questionNoText": "La pregunta {{n}} no tiene texto",
+      "questionNeeds2Options": "La pregunta {{n}} necesita al menos 2 opciones",
+      "questionNeedsCorrect": "La pregunta {{n}} necesita al menos una opción correcta",
+      "questionNeedsAcceptedAnswer": "La pregunta {{n}} necesita al menos una respuesta aceptada",
+      "saveFailed": "Error al guardar",
+      "loadFailed": "No se pudo cargar la prueba"
+    },
+    "editorModal": {
+      "title": "¿Eliminar esta pregunta?",
+      "body": "La pregunta {{n}} se eliminará. No se puede deshacer hasta guardar."
+    },
+    "editorQuestionType": {
+      "mcqSingle": "Opción única",
+      "mcqMultiple": "Opción múltiple",
+      "shortAnswer": "Respuesta corta",
+      "ordering": "Ordenar",
+      "fillInTheBlank": "Rellenar espacios"
+    }
   },
   "dashboard": {
     "title": "Mi progreso",
@@ -175,6 +242,18 @@
     "days30": "Últimos 30 días",
     "days90": "Últimos 90 días",
     "allTime": "Todo el tiempo",
+    "compare": "Comparar",
+    "testComparison": "Comparación de pruebas",
+    "reviewFailedLink": "Repasar preguntas falladas →",
+    "streakDays_one": "{{count}} día",
+    "streakDays_other": "{{count}} días",
+    "qtype": {
+      "mcqSingle": "Opción única",
+      "mcqMultiple": "Opciones múltiples",
+      "shortAnswer": "Respuesta corta",
+      "ordering": "Ordenar",
+      "fillInTheBlank": "Rellenar"
+    },
     "noData": "Haz pruebas para ver tu progreso aquí.",
     "recentAttempts": "Intentos recientes",
     "loadMore": "Cargar más"

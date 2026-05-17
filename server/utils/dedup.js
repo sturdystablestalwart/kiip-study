@@ -1,4 +1,37 @@
-const stringSimilarity = require('string-similarity');
+// Issue #4 — `string-similarity` is deprecated (repo archived, no
+// updates since 2021).  We only used one function from it
+// (compareTwoStrings → Sørensen–Dice coefficient on character
+// bigrams).  Inlining the ~12-line algorithm removes a dead-codeball
+// dependency while preserving the exact same scoring distribution, so
+// the existing 0.75 / 0.5 thresholds in findDuplicates and the
+// /api/duplicates route don't need re-tuning.
+function diceCoefficient(rawA, rawB) {
+    // Match the original string-similarity behaviour byte-for-byte:
+    // strip all internal whitespace before bigramming so the score
+    // distribution stays identical and the 0.75 / 0.5 thresholds in
+    // findDuplicates + /api/duplicates don't need re-tuning.
+    const a = rawA.replace(/\s+/g, '');
+    const b = rawB.replace(/\s+/g, '');
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    const aBigrams = new Map();
+    for (let i = 0; i < a.length - 1; i++) {
+        const bg = a.slice(i, i + 2);
+        aBigrams.set(bg, (aBigrams.get(bg) || 0) + 1);
+    }
+    // Walk b's bigrams; decrement the multiset on each match so
+    // duplicate bigrams aren't double-counted (reference algorithm).
+    let intersection = 0;
+    for (let i = 0; i < b.length - 1; i++) {
+        const bg = b.slice(i, i + 2);
+        const count = aBigrams.get(bg);
+        if (count > 0) {
+            intersection += 1;
+            aBigrams.set(bg, count - 1);
+        }
+    }
+    return (2 * intersection) / (a.length + b.length - 2);
+}
 
 function normalize(text) {
   // Strip only punctuation. Keep every Unicode letter (\p{L}) and number
@@ -38,7 +71,7 @@ async function findDuplicates(questions, threshold = 0.75) {
           && questions[j].testId != null
           && String(questions[i].testId) === String(questions[j].testId)
           && questions[i].questionIndex === questions[j].questionIndex) continue;
-      const score = stringSimilarity.compareTwoStrings(normalized[i], normalized[j]);
+      const score = diceCoefficient(normalized[i], normalized[j]);
       if (score >= threshold) {
         cluster.push({ index: j, question: questions[j], score: Math.round(score * 100) });
         seen.add(j);
@@ -75,7 +108,7 @@ function checkAgainstExisting(newQuestions, existingQuestions, threshold = 0.75)
     const normalizedNew = normalize(nq.text);
     const matches = [];
     for (let i = 0; i < existingQuestions.length; i++) {
-      const score = stringSimilarity.compareTwoStrings(normalizedNew, normalizedExisting[i]);
+      const score = diceCoefficient(normalizedNew, normalizedExisting[i]);
       if (score >= threshold) {
         matches.push({ question: existingQuestions[i], score: Math.round(score * 100) });
       }

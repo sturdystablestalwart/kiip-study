@@ -357,8 +357,11 @@ function AdminDropdown({ flagCount }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
 
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname === '/create';
+  const menuId = 'admin-dropdown-menu';
 
   useEffect(() => {
     if (!open) return;
@@ -366,7 +369,10 @@ function AdminDropdown({ flagCount }) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
     const handleKey = (e) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
@@ -376,30 +382,89 @@ function AdminDropdown({ flagCount }) {
     };
   }, [open]);
 
+  // Issue #76 — focus the first item on open so a keyboard user lands
+  // inside the menu instead of skipping past it.
+  useEffect(() => {
+    if (open && menuRef.current) {
+      const first = menuRef.current.querySelector('a, [role="menuitem"]');
+      if (first) first.focus();
+    }
+  }, [open]);
+
   const handleItemClick = (path) => {
     setOpen(false);
     navigate(path);
   };
 
+  // Issue #76 — arrow-key navigation between items.  Roving tabindex
+  // pattern: only the currently-focused item is in the tab order; the
+  // rest are tabindex=-1 and reachable via ArrowDown/ArrowUp/Home/End.
+  const handleMenuKey = (e) => {
+    const items = Array.from(menuRef.current?.querySelectorAll('a, [role="menuitem"]') || []);
+    if (items.length === 0) return;
+    const currentIdx = items.indexOf(document.activeElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = items[(currentIdx + 1) % items.length];
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = items[(currentIdx - 1 + items.length) % items.length];
+      prev?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    } else if (e.key === 'Tab') {
+      // Tab/Shift+Tab leaves the menu — close it on the way out so
+      // the open state doesn't linger.
+      setOpen(false);
+    }
+  };
+
+  const handleTriggerKey = (e) => {
+    if (e.key === 'ArrowDown' || (e.key === 'Enter' && !open) || e.key === ' ') {
+      e.preventDefault();
+      setOpen(true);
+    }
+  };
+
   return (
     <AdminDropdownWrapper ref={ref}>
-      <AdminTrigger onClick={() => setOpen(prev => !prev)} $active={isAdminRoute} aria-expanded={open}>
+      <AdminTrigger
+        ref={triggerRef}
+        onClick={() => setOpen(prev => !prev)}
+        onKeyDown={handleTriggerKey}
+        $active={isAdminRoute}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+      >
         {t('nav.admin', 'Admin')}
         {flagCount > 0 && <Badge>{flagCount}</Badge>}
       </AdminTrigger>
       {open && (
-        <AdminMenu>
-          <AdminMenuItem to="/create" onClick={() => handleItemClick('/create')}>
+        <AdminMenu
+          id={menuId}
+          ref={menuRef}
+          role="menu"
+          aria-label={t('nav.admin', 'Admin')}
+          onKeyDown={handleMenuKey}
+        >
+          <AdminMenuItem to="/create" role="menuitem" onClick={() => handleItemClick('/create')}>
             {t('nav.create')}
           </AdminMenuItem>
-          <AdminMenuItem to="/admin/flags" onClick={() => handleItemClick('/admin/flags')}>
+          <AdminMenuItem to="/admin/flags" role="menuitem" onClick={() => handleItemClick('/admin/flags')}>
             {t('nav.flags')}
             {flagCount > 0 && <Badge>{flagCount}</Badge>}
           </AdminMenuItem>
-          <AdminMenuItem to="/admin/import" onClick={() => handleItemClick('/admin/import')}>
+          <AdminMenuItem to="/admin/import" role="menuitem" onClick={() => handleItemClick('/admin/import')}>
             {t('nav.import')}
           </AdminMenuItem>
-          <AdminMenuItem to="/admin/duplicates" onClick={() => handleItemClick('/admin/duplicates')}>
+          <AdminMenuItem to="/admin/duplicates" role="menuitem" onClick={() => handleItemClick('/admin/duplicates')}>
             {t('nav.duplicates')}
           </AdminMenuItem>
         </AdminMenu>
@@ -480,6 +545,15 @@ function RouteFocusManager() {
   return null;
 }
 
+// Issue #49 — per-route ErrorBoundary keyed on pathname so a
+// chunk-load failure on one page doesn't keep the whole SPA in an
+// error state after the user navigates away.  The inner boundary
+// catches ChunkLoadError before the outer global one does.
+function RoutedErrorBoundary({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
+
 function AppInner() {
   const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
@@ -529,6 +603,7 @@ function AppInner() {
               <AppShell>
                 <Navigation onSignIn={() => setShowAuthModal(true)} />
                 <Suspense fallback={<LoadingFallback />}>
+                  <RoutedErrorBoundary>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/dashboard" element={<Dashboard />} />
@@ -544,6 +619,7 @@ function AppInner() {
                     <Route path="/review" element={<FailedQuestions />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </RoutedErrorBoundary>
                 </Suspense>
               </AppShell>
               {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}

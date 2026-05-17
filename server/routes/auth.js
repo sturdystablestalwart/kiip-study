@@ -4,13 +4,15 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { requireAuth, JWT_SECRET } = require('../middleware/auth');
 const crypto = require('crypto');
 const MagicLink = require('../models/MagicLink');
 const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
 const logger = require('../utils/logger');
 const AuditLog = require('../models/AuditLog');
+const safeError = require('../utils/safeError');
+const loadSecret = require('../utils/loadSecret');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -25,7 +27,10 @@ const magicLinkLimiter = rateLimit({
 const magicLinkEmailLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: isTest ? 10000 : 3,
-    keyGenerator: (req) => req.body?.email || req.ip,
+    // Issue #23 — v8 requires ipKeyGenerator() for IP fallbacks so
+    // IPv6 normalisation happens correctly (without it, /64 prefix
+    // attackers could bypass the limit by rotating the host suffix).
+    keyGenerator: (req) => req.body?.email || ipKeyGenerator(req.ip),
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests for this email, please try again later.' },
@@ -76,10 +81,11 @@ function isEmailAllowedForSignup(email) {
     return false;
 }
 
-// Configure Passport Google Strategy
+// Configure Passport Google Strategy.
+// Issue #9 — OAuth secrets resolve from /run/secrets/* first, env second.
 passport.use(new GoogleStrategy({
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientID: loadSecret('GOOGLE_CLIENT_ID'),
+        clientSecret: loadSecret('GOOGLE_CLIENT_SECRET'),
         callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
         scope: ['profile', 'email']
     },
@@ -210,19 +216,26 @@ router.get('/me', async (req, res) => {
 
 // PATCH /api/auth/preferences
 router.patch('/preferences', requireAuth, async (req, res) => {
-    const { language, theme } = req.body;
-    const updates = {};
-    if (language && ['en', 'ko', 'ru', 'es'].includes(language)) {
-        updates['preferences.language'] = language;
+    // Issue #59 — try/catch so a Mongo failure returns the standard
+    // `{ message: safeError(...) }` shape the client toast expects.
+    try {
+        const { language, theme } = req.body;
+        const updates = {};
+        if (language && ['en', 'ko', 'ru', 'es'].includes(language)) {
+            updates['preferences.language'] = language;
+        }
+        if (theme && ['light', 'dark', 'system'].includes(theme)) {
+            updates['preferences.theme'] = theme;
+        }
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid preferences provided' });
+        }
+        const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+        res.json({ preferences: user.preferences });
+    } catch (err) {
+        logger.error({ err }, 'PATCH /api/auth/preferences failed');
+        res.status(500).json({ message: safeError('Failed to update preferences', err) });
     }
-    if (theme && ['light', 'dark', 'system'].includes(theme)) {
-        updates['preferences.theme'] = theme;
-    }
-    if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ error: 'No valid preferences provided' });
-    }
-    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
-    res.json({ preferences: user.preferences });
 });
 
 // ─── Magic-link bot protection (issue #20) ──────────────────────────────

@@ -81,7 +81,19 @@
     "feedbackCorrect": "Correct!",
     "feedbackIncorrectAccepted": "Incorrect. Accepted answers:",
     "whyLabel": "Why?",
-    "unit": "Unit {{count}}"
+    "answerOptionsAriaLabel": "Answer options",
+    "shortAnswerPlaceholder": "Type your answer...",
+    "orderingMoveUp": "Move up",
+    "orderingMoveDown": "Move down",
+    "orderingMovedTo": "Moved item to position {{position}}",
+    "unit": "Unit {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Ten minutes remaining",
+      "fiveMinutes": "Five minutes remaining",
+      "oneMinute": "One minute remaining",
+      "thirtySeconds": "Thirty seconds remaining",
+      "expired": "Time is up"
+    }
   },
   "create": {
     "title": "Create Test",
@@ -159,7 +171,62 @@
     "duplicatesEmpty": "No duplicates found",
     "duplicatesFromTest": "From: {{title}}",
     "keepBoth": "Keep Both",
-    "skip": "Skip"
+    "skip": "Skip",
+    "editorAria": {
+      "testTitle": "Test title",
+      "category": "Category",
+      "level": "Level",
+      "unit": "Unit",
+      "section": "Section",
+      "contentType": "Content type",
+      "description": "Description",
+      "deleteConfirm": "Delete question confirmation"
+    },
+    "editorPlaceholder": {
+      "testTitle": "Test title",
+      "category": "Category",
+      "description": "Description (optional)",
+      "questionText": "Question text",
+      "option": "Option {{n}}",
+      "item": "Item {{n}}",
+      "answerEnter": "Type answer and press Enter"
+    },
+    "editorSection": {
+      "options": "Options (check = correct)",
+      "acceptedAnswers": "Accepted answers",
+      "orderedItems": "Items (in correct order)",
+      "fillBlankHint": "Use ___ in the question text to mark blanks. Add accepted answers for each blank below.",
+      "blankAnswers": "Blank {{n}} answers"
+    },
+    "editorAction": {
+      "addOption": "+ Add option",
+      "addItem": "+ Add item",
+      "addBlank": "+ Add blank",
+      "addAnswer": "Add",
+      "cancel": "Cancel",
+      "remove": "Remove"
+    },
+    "editorError": {
+      "titleRequired": "Title is required",
+      "atLeastOneQuestion": "At least one question is required",
+      "questionNoText": "Question {{n}} has no text",
+      "questionNeeds2Options": "Question {{n}} needs at least 2 options",
+      "questionNeedsCorrect": "Question {{n}} needs at least one correct option",
+      "questionNeedsAcceptedAnswer": "Question {{n}} needs at least one accepted answer",
+      "saveFailed": "Failed to save",
+      "loadFailed": "Failed to load test"
+    },
+    "editorModal": {
+      "title": "Remove this question?",
+      "body": "Question {{n}} will be removed. This cannot be undone until you save."
+    },
+    "editorQuestionType": {
+      "mcqSingle": "MCQ (single)",
+      "mcqMultiple": "MCQ (multiple)",
+      "shortAnswer": "Short answer",
+      "ordering": "Ordering",
+      "fillInTheBlank": "Fill in the blank"
+    }
   },
   "dashboard": {
     "title": "My Progress",
@@ -175,6 +242,18 @@
     "days30": "Last 30 days",
     "days90": "Last 90 days",
     "allTime": "All time",
+    "compare": "Compare",
+    "testComparison": "Test Comparison",
+    "reviewFailedLink": "Review Failed Questions →",
+    "streakDays_one": "{{count}} day",
+    "streakDays_other": "{{count}} days",
+    "qtype": {
+      "mcqSingle": "MCQ Single",
+      "mcqMultiple": "MCQ Multiple",
+      "shortAnswer": "Short Answer",
+      "ordering": "Ordering",
+      "fillInTheBlank": "Fill in Blank"
+    },
     "noData": "Take some tests to see your progress here.",
     "recentAttempts": "Recent Attempts",
     "loadMore": "Load more",
