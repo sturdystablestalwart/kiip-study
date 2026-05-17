@@ -308,16 +308,32 @@ function CreateTest() {
     return () => clearInterval(timerRef.current);
   }, [loading, t]);
 
+  // Issue #161 — `[retryCountdown > 0]` was a boolean-expression dep
+  // that needed eslint-disable to silence the exhaustive-deps warning,
+  // and re-created the interval on every 0↔>0 transition (race risk
+  // between cleanup and new effect).  An isActive ref lets us start
+  // the countdown exactly once per cooldown window without depending
+  // on the countdown value itself; setRetryCountdown's functional
+  // setter handles the per-tick math.
+  const retryActiveRef = useRef(false);
   useEffect(() => {
-    if (retryCountdown <= 0) return;
+    if (retryCountdown <= 0 || retryActiveRef.current) return;
+    retryActiveRef.current = true;
     retryTimerRef.current = setInterval(() => {
       setRetryCountdown(prev => {
-        if (prev <= 1) { clearInterval(retryTimerRef.current); return 0; }
+        if (prev <= 1) {
+          clearInterval(retryTimerRef.current);
+          retryActiveRef.current = false;
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(retryTimerRef.current);
-  }, [retryCountdown > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      clearInterval(retryTimerRef.current);
+      retryActiveRef.current = false;
+    };
+  }, [retryCountdown]);
 
   const textLength = text.trim().length;
   const isTextValid = textLength >= MIN_TEXT_LENGTH && textLength <= MAX_TEXT_LENGTH;
