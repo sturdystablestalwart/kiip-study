@@ -52,7 +52,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@65edc22f4b7334080451e277dd338d2732982d8f # 1.11.0
+        uses: supercharge/mongodb-github-action@5a87bd81f88e2a8b195f8b7b656f5cda1350815a # 1.11.0
         with:
           mongodb-version: "7.0"
 
