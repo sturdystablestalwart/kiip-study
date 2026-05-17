@@ -77,7 +77,8 @@
     "selectAllThatApplyAriaLabel": "Opciones de respuesta — selecciona todas las que correspondan",
     "charCount": "{{count}} caracteres",
     "feedbackCorrect": "¡Correcto!",
-    "feedbackIncorrectAccepted": "Incorrecto. Respuestas aceptadas:"
+    "feedbackIncorrectAccepted": "Incorrecto. Respuestas aceptadas:",
+    "unit": "Unidad {{count}}"
   },
   "create": {
     "title": "Crear prueba",
