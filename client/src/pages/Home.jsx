@@ -717,6 +717,33 @@ function Home() {
     setDeleteModal({ show: false, testId: null, testTitle: '' });
   };
 
+  // Issue #152 — fetch the PDF via the axios singleton + blob so the
+  // 401 interceptor fires on expired-session paths.  window.open lost
+  // the SPA context and showed a blank tab with no toast.
+  const handleDownloadPdf = async (e, testId, testTitle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await api.get(`/api/pdf/test/${testId}`, {
+        params: { variant: 'blank' },
+        responseType: 'blob',
+        timeout: 60000,
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(testTitle || 'kiip-test').replace(/[^a-z0-9-_]/gi, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Give the browser a tick to start the download before revoking.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      // 401 is already handled by the axios singleton (#171 toast).
+      console.error('PDF download failed:', err);
+    }
+  };
+
   const handleShare = async (e, testId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -943,7 +970,7 @@ function Home() {
                     </ShareButton>
                     <ExportLink
                       title={t('home.downloadPdf')}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(`${apiBaseUrl}/api/pdf/test/${test._id}?variant=blank`, '_blank', 'noopener'); }}
+                      onClick={(e) => handleDownloadPdf(e, test._id, test.title)}
                     >
                       PDF
                     </ExportLink>
