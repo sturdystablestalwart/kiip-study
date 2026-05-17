@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css } from 'styled-components';
+import { VisuallyHidden } from '../ui';
 
 /* ───────── Animations ───────── */
 
@@ -258,21 +259,9 @@ function Ordering({ question, answer, onAnswer, showFeedback, disabled }) {
         </ExplanationPanel>
       )}
 
-      <span
-        aria-live="polite"
-        style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          border: 0,
-        }}
-      >
-        {ariaMessage}
-      </span>
+      {/* Issue #187 — VisuallyHidden replaces the previous 8 inline
+          style props for the standard screen-reader-only pattern. */}
+      <VisuallyHidden aria-live="polite">{ariaMessage}</VisuallyHidden>
     </div>
   );
 }
