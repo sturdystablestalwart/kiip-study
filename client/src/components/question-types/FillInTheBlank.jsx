@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css } from 'styled-components';
 
 /* ───────── Animations ───────── */
@@ -118,6 +119,7 @@ function checkBlank(userVal, blankDef) {
 /* ───────── Component ───────── */
 
 function FillInTheBlank({ question, answer, onAnswer, showFeedback, disabled }) {
+  const { t } = useTranslation();
   const blanks = question.blanks ?? [];
   const blankAnswers = answer?.blankAnswers ?? blanks.map(() => '');
 
@@ -161,8 +163,8 @@ function FillInTheBlank({ question, answer, onAnswer, showFeedback, disabled }) 
                     disabled={disabled}
                     $correct={isCorrect}
                     $incorrect={isIncorrect}
-                    placeholder={`blank ${currentBlankIdx + 1}`}
-                    aria-label={`Blank ${currentBlankIdx + 1}`}
+                    placeholder={t('test.blankPlaceholder', { index: currentBlankIdx + 1 })}
+                    aria-label={t('test.blankAriaLabel', { index: currentBlankIdx + 1 })}
                   />
                   {showFeedback && isIncorrect && blankDef && (
                     <span aria-live="polite">

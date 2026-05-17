@@ -70,7 +70,9 @@
     "exportBlank": "Blank Test",
     "exportAnswerKey": "Answer Key",
     "exportMyAnswers": "My Answers",
-    "exportReport": "Full Report"
+    "exportReport": "Full Report",
+    "blankPlaceholder": "blank {{index}}",
+    "blankAriaLabel": "Blank {{index}}"
   },
   "create": {
     "title": "Create Test",

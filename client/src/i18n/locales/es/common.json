@@ -70,7 +70,9 @@
     "exportBlank": "Prueba en blanco",
     "exportAnswerKey": "Clave de respuestas",
     "exportMyAnswers": "Mis respuestas",
-    "exportReport": "Informe completo"
+    "exportReport": "Informe completo",
+    "blankPlaceholder": "espacio {{index}}",
+    "blankAriaLabel": "Espacio {{index}}"
   },
   "create": {
     "title": "Crear prueba",

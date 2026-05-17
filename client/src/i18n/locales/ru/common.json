@@ -70,7 +70,9 @@
     "exportBlank": "Чистый тест",
     "exportAnswerKey": "Ответы",
     "exportMyAnswers": "Мои ответы",
-    "exportReport": "Полный отчёт"
+    "exportReport": "Полный отчёт",
+    "blankPlaceholder": "пропуск {{index}}",
+    "blankAriaLabel": "Пропуск {{index}}"
   },
   "create": {
     "title": "Создать тест",
