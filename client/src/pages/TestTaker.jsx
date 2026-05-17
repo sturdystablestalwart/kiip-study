@@ -1019,7 +1019,7 @@ function TestTaker() {
         <Modal onClose={cancelExit} ariaLabel={t('test.confirmExit')}>
           <ModalBody>
             <h3>{t('test.confirmExit')}</h3>
-            <p></p>
+            <p>{t('test.confirmExitBody')}</p>
           </ModalBody>
           <ModalActions>
             <Button $variant="secondary" onClick={cancelExit}>{t('common.cancel')}</Button>
@@ -1032,7 +1032,7 @@ function TestTaker() {
         <Modal onClose={cancelModeChange} ariaLabel={t('test.confirmModeSwitch')}>
           <ModalBody>
             <h3>{t('test.confirmModeSwitch')}</h3>
-            <p></p>
+            <p>{t('test.confirmModeSwitchBody')}</p>
           </ModalBody>
           <ModalActions>
             <Button $variant="secondary" onClick={cancelModeChange}>{t('common.cancel')}</Button>
