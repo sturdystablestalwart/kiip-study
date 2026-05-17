@@ -52,7 +52,6 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', error, info.componentStack);
 
     // Issue #185 — best-effort telemetry POST so production failures
