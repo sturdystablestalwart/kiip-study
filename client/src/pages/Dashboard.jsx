@@ -8,7 +8,16 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { below } from '../theme/breakpoints';
 import { Button, Card, EmptyState } from '../components/ui';
-import 'anychart';
+// Issue #6 — load only the AnyChart modules this page actually uses
+// instead of `import 'anychart'` (which pulls the full 2.5MB bundle).
+// Dashboard renders line, bar, and radar charts; AnyChart's modular
+// shipments cover all three at ~1.1MB combined (vs 2.5MB bundle).
+import 'anychart/dist/js/anychart-base.min.js';
+import 'anychart/dist/js/anychart-cartesian.min.js';
+import 'anychart/dist/js/anychart-radar.min.js';
+import 'anychart/dist/js/anychart-ui.min.js';
+import 'anychart/dist/js/anychart-exports.min.js';
+import 'anychart/dist/js/anychart-default-theme.min.js';
 
 // Optional: apply commercial AnyChart license key to remove the watermark.
 // The key is stored in `client/.env` as `VITE_ANYCHART_LICENSE_KEY=…` and Vite
