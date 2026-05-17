@@ -375,7 +375,7 @@ function AdminBulkImport() {
         </TemplateButton>
       </PageHeader>
 
-      {error && <ErrorBanner>{error}</ErrorBanner>}
+      {error && <ErrorBanner id="admin-bulk-import-error" role="alert">{error}</ErrorBanner>}
 
       {result && (
         <ResultBanner>
@@ -394,6 +394,8 @@ function AdminBulkImport() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleBrowse}
+        aria-invalid={!!error && !file ? 'true' : 'false'}
+        aria-describedby={error && !file ? 'admin-bulk-import-error' : undefined}
       >
         <DropZoneText>
           {uploading ? t('admin.importUploading') : t('admin.importDragDrop')}
