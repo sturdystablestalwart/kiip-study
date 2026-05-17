@@ -351,9 +351,13 @@ function CreateTest() {
     setUploadError(null);
     const uploadedUrls = [];
 
+    // Issue #162 — accumulate per-file failures instead of overwriting,
+    // so the user sees every file that broke (not just the last).
+    const failures = [];
+
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
-        setUploadError(t('create.imageTooLarge', { name: file.name }));
+        failures.push(t('create.imageTooLarge', { name: file.name }));
         continue;
       }
 
@@ -366,13 +370,19 @@ function CreateTest() {
         });
         uploadedUrls.push(res.data.imageUrl);
       } catch (err) {
-        console.error("Upload failed", err);
-        setUploadError(err.response?.data?.message || t('create.uploadFailed', { name: file.name }));
+        console.error('Upload failed', err);
+        failures.push(
+          err.response?.data?.message ||
+          t('create.uploadFailed', { name: file.name })
+        );
       }
     }
 
     if (uploadedUrls.length > 0) {
       setImages([...images, ...uploadedUrls]);
+    }
+    if (failures.length > 0) {
+      setUploadError(failures.join(' · '));
     }
     setUploadingImages(false);
     e.target.value = '';
