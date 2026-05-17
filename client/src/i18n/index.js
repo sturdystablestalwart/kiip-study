@@ -33,4 +33,16 @@ i18n
     },
   });
 
+// Keep <html lang> in sync with the active UI language (WCAG 3.1.1 / 3.1.2):
+// static `lang="en"` in index.html misleads screen readers, fonts, and
+// hyphenation engines once the user switches to KO/RU/ES.
+function syncDocumentLang(lng) {
+  if (typeof document === 'undefined') return;
+  const next = (lng && lng.split('-')[0]) || i18n.resolvedLanguage || i18n.language || 'en';
+  document.documentElement.lang = next;
+}
+i18n.on('languageChanged', syncDocumentLang);
+i18n.on('initialized', () => syncDocumentLang());
+if (i18n.isInitialized) syncDocumentLang();
+
 export default i18n;
