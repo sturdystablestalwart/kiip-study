@@ -661,13 +661,39 @@ function TestTaker() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Keyboard shortcuts: 1-N select options (MCQ types), arrow keys navigate
+  // Keyboard shortcuts: 1-N select options (MCQ types), arrow keys navigate.
+  // Issue #155 — arrow-key nav has to work in review mode too: the UI
+  // shows <Kbd>←</Kbd> / <Kbd>→</Kbd> hints after submit, but the
+  // previous early-return on `isSubmitted` killed all key handling.
+  // We now allow ArrowLeft / ArrowRight when `isSubmitted && reviewMode`
+  // and route through the review-aware navigation.  Option-selection
+  // keys stay gated on !isSubmitted.
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isSubmitted || showExitModal || showModeModal || showFlagModal) return;
+      if (showExitModal || showModeModal || showFlagModal) return;
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!test) return;
+
+      // Issue #155 — review-mode arrow nav after submission.  Compute
+      // missedIndices inline (the outer const is declared later in the
+      // component and would TDZ-trip the dep array).
+      if (isSubmitted && reviewMode && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        const missed = test.questions
+          .map((q, i) => (!answers[i] || !scoreQuestion(q, answers[i])) ? i : -1)
+          .filter((i) => i >= 0);
+        const reviewPos = missed.indexOf(currentQ);
+        if (e.key === 'ArrowLeft' && reviewPos > 0) {
+          e.preventDefault();
+          setCurrentQ(missed[reviewPos - 1]);
+        } else if (e.key === 'ArrowRight' && reviewPos < missed.length - 1) {
+          e.preventDefault();
+          setCurrentQ(missed[reviewPos + 1]);
+        }
+        return;
+      }
+
+      if (isSubmitted) return;
 
       const question = test.questions[currentQ];
       if (!question) return;
@@ -710,7 +736,7 @@ function TestTaker() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [test, currentQ, answers, isSubmitted, showExitModal, showModeModal, showFlagModal, timerExpired]);
+  }, [test, currentQ, answers, isSubmitted, reviewMode, showExitModal, showModeModal, showFlagModal, timerExpired]);
 
   const handleModeChange = (newMode) => {
     if (hasProgress) {
