@@ -72,7 +72,9 @@
     "exportMyAnswers": "Mis respuestas",
     "exportReport": "Informe completo",
     "blankPlaceholder": "espacio {{index}}",
-    "blankAriaLabel": "Espacio {{index}}"
+    "blankAriaLabel": "Espacio {{index}}",
+    "selectAllThatApply": "Selecciona todas las que correspondan",
+    "selectAllThatApplyAriaLabel": "Opciones de respuesta — selecciona todas las que correspondan"
   },
   "create": {
     "title": "Crear prueba",
