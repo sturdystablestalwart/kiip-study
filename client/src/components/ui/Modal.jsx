@@ -67,7 +67,6 @@ export default function Modal({
   // nameless dialog and the user loses the title context.
   useEffect(() => {
     if (import.meta.env.DEV && !ariaLabel && !ariaLabelledBy) {
-      // eslint-disable-next-line no-console
       console.warn('[Modal] Either `ariaLabel` or `ariaLabelledBy` must be set so screen readers can announce the dialog title.');
     }
   }, [ariaLabel, ariaLabelledBy]);
