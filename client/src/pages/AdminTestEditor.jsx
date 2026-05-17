@@ -433,6 +433,20 @@ function AdminTestEditor() {
     };
 
     const requestDeleteQuestion = (idx) => {
+        // Issue #164 — commit any in-flight IME composition (Korean
+        // Hangul, Japanese, Chinese) BEFORE the modal portal mounts
+        // and steals focus.  Without the explicit blur, the
+        // compositionend event doesn't fire and the half-typed jamo
+        // is dropped.  We re-focus after the next microtask so the
+        // visible cursor doesn't jump.
+        if (
+            document.activeElement &&
+            typeof document.activeElement.blur === 'function' &&
+            (document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA')
+        ) {
+            document.activeElement.blur();
+        }
         setDeleteQModal({ show: true, idx });
     };
 
