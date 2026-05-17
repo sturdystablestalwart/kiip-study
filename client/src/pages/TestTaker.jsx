@@ -858,7 +858,9 @@ function TestTaker() {
     const a = answers[k];
     return a && (a.selectedOptions?.length > 0 || a.textAnswer?.trim() || a.orderedItems?.length > 0 || a.blankAnswers?.some(b => b?.trim()));
   }).length : 0;
-  const percentage = Math.round((score / test.questions.length) * 100);
+  const percentage = test.questions.length > 0
+    ? Math.round((score / test.questions.length) * 100)
+    : 0;
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   return (
