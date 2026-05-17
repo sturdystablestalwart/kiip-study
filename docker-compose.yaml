@@ -51,7 +51,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      # Issue #124 — entrypoint script mkdirs + chmods uploads dirs
+      # before node starts.  Cold-volume boots take a bit longer than
+      # warm starts; 30s leaves headroom over the 15s startup target.
+      start_period: 30s
     read_only: true
     tmpfs:
       - /tmp
