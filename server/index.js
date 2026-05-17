@@ -80,19 +80,26 @@ app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')
 app.use('/uploads/documents', requireAuth, express.static(path.join(__dirname, 'uploads/documents')));
 // Do NOT serve /uploads/temp — temp files are internal only
 
-// Ensure upload directories exist
+// Ensure upload directories exist with an explicit, narrow mode.
+// (#142) mkdirSync without `mode` honours the container umask (0o755),
+// which lets sibling containers reading the shared docker volume see
+// every upload.  0o750 keeps owner full + group read/execute, no world
+// access.  multer filename mapping must continue to scrub originalname
+// to avoid path traversal (see `safeFilename` helper near the multer
+// config).
+const UPLOAD_DIR_MODE = 0o750;
 const uploadDir = path.join(__dirname, 'uploads');
 const imagesDir = path.join(uploadDir, 'images');
 const documentsDir = path.join(uploadDir, 'documents');
 
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+    fs.mkdirSync(uploadDir, { recursive: true, mode: UPLOAD_DIR_MODE });
 }
 if (!fs.existsSync(imagesDir)) {
-    fs.mkdirSync(imagesDir, { recursive: true });
+    fs.mkdirSync(imagesDir, { recursive: true, mode: UPLOAD_DIR_MODE });
 }
 if (!fs.existsSync(documentsDir)) {
-    fs.mkdirSync(documentsDir, { recursive: true });
+    fs.mkdirSync(documentsDir, { recursive: true, mode: UPLOAD_DIR_MODE });
 }
 
 // Database Connection
