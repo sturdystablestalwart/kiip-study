@@ -91,6 +91,11 @@ beforeAll(async () => {
         next();
     };
 
+    // Issue #137 — share.js now writes an AuditLog entry on
+    // POST /:id/share. Stub it out so the test runs without Mongo.
+    const AuditLogModel = requireCJS('../../models/AuditLog.js');
+    AuditLogModel.create = async () => ({});
+
     // 3) Load routers AFTER monkey-patching so they pick up the patched
     //    auth middleware via the shared module cache.
     const shareRoutes = requireCJS('../share.js');
