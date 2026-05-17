@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-# KIIP Study — MongoDB backup script
+# KIIP Study — local-dev MongoDB backup helper (issue #16).
+#
+# WHO runs this: a developer at their workstation.
+# WHEN: ad hoc, before a risky migration or before tearing down a local
+#       compose stack.
+# OUTPUT: ./backups/kiip_backup_<TIMESTAMP>.tar.gz on the developer's host.
+#
+# For the IN-CONTAINER scheduled daily backup, see ops/backup.sh — that
+# script is mounted into the `backup` service in docker-compose.yaml and
+# writes to /backups on the persistent volume.  Do NOT conflate the two.
+#
 # Usage: ./scripts/backup.sh [--docker|--local]
 # Requires: mongodump (local) or docker (docker mode)
 
