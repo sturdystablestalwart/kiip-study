@@ -27,6 +27,29 @@ const shareLimiter = rateLimit({
     message: { error: 'Too many requests, please try again later.' },
 });
 
+// Issue #70 — audit public share retrievals, but dedupe by
+// (shareId, ip, YYYY-MM-DD) so a popular link doesn't flood the
+// collection.  Map is bounded by daily key churn and reaped at
+// ~midnight UTC.  An untracked but rate-limit-bound burst still
+// lands one entry per IP-day in the audit log, which is what an admin
+// would actually want to investigate exfiltration.
+const shareAuditDedupe = new Map();
+function shareAuditKey(shareId, ip) {
+    const dayUTC = new Date().toISOString().slice(0, 10);
+    return `${shareId}|${ip}|${dayUTC}`;
+}
+// Reap stale entries hourly (kept >24h means a date rollover is captured).
+if (process.env.NODE_ENV !== 'test') {
+    const reaper = setInterval(() => {
+        const cutoff = new Date(Date.now() - 36 * 3600 * 1000).toISOString().slice(0, 10);
+        for (const k of shareAuditDedupe.keys()) {
+            const day = k.split('|')[2];
+            if (day < cutoff) shareAuditDedupe.delete(k);
+        }
+    }, 3600 * 1000);
+    if (reaper.unref) reaper.unref();
+}
+
 // ─── Admin: POST /api/tests/:id/share — generate share ID (requires auth + admin) ───
 adminRouter.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -77,6 +100,25 @@ publicRouter.get('/:shareId', shareLimiter, async (req, res) => {
     ]);
     const test = results[0];
     if (!test) return res.status(404).json({ error: 'Test not found' });
+
+    // Issue #70 — audit each (shareId, ip, day) tuple exactly once.
+    // Fire-and-forget — the public reader should never see a 500 from
+    // a logging side-effect.
+    const auditKey = shareAuditKey(test.shareId, req.ip);
+    if (!shareAuditDedupe.has(auditKey)) {
+      shareAuditDedupe.set(auditKey, true);
+      AuditLog.create({
+        userId: null,
+        action: 'share.retrieved',
+        targetType: 'Test',
+        targetId: test._id,
+        details: {
+          shareId: test.shareId,
+          ip: req.ip,
+          ua: (req.get('User-Agent') || '').slice(0, 200),
+        },
+      }).catch((err) => logger.warn({ err }, 'share.retrieved audit write failed'));
+    }
 
     res.set('Cache-Control', 'public, max-age=300');
     res.json(test);
