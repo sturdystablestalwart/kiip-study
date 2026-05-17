@@ -3,9 +3,14 @@ import API_BASE_URL from '../config/api';
 import { showToast } from '../components/Toast';
 import i18n from '../i18n';
 
+// Issue #171 — axios singleton ships a default 15s timeout so a hung
+// backend can't pend UI promises indefinitely.  Legitimately slow
+// endpoints (PDF generation, bulk import confirm) pass an explicit
+// `{ timeout: 60000 }` per request.
 const api = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true
+    withCredentials: true,
+    timeout: 15000,
 });
 
 // Module-scoped latch: when the session cookie expires, every in-flight
