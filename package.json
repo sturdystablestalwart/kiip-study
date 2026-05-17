@@ -32,9 +32,9 @@
     "npm": ">=10"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.1",
-    "@playwright/mcp": "^0.0.64",
-    "@playwright/test": "^1.58.2",
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/mcp": "^0.0.75",
+    "@playwright/test": "^1.60.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2"
   },
