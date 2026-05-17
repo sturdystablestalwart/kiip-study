@@ -131,10 +131,20 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_a
         await Curriculum.insertMany(curriculumSeed);
         console.log(`Seeded KIIP curriculum: ${curriculumSeed.length} levels`);
     }
-    // Run Auto-Importer
-    const autoImportTests = require('./utils/autoImporter');
-    const { parseTextWithLLM } = require('./routes/tests');
-    await autoImportTests(parseTextWithLLM);
+    // Run Auto-Importer (issue #21 — opt-in only)
+    // The importer reads additionalContext/tests/*.md|.txt and runs
+    // Gemini classification + DB inserts.  Every container restart used
+    // to re-run it unconditionally, which costs API credits and risks
+    // non-deterministic test re-creation in prod.  Now gated behind
+    // ENABLE_AUTO_IMPORT=true.  Default OFF in production; .env.example
+    // ships ENABLE_AUTO_IMPORT=true for local dev convenience.
+    if (process.env.ENABLE_AUTO_IMPORT === 'true') {
+        const autoImportTests = require('./utils/autoImporter');
+        const { parseTextWithLLM } = require('./routes/tests');
+        await autoImportTests(parseTextWithLLM);
+    } else {
+        logger.info('Auto-importer skipped (ENABLE_AUTO_IMPORT != "true")');
+    }
 })
 .catch(err => logger.error({ err }, 'MongoDB connection failed'));
 
