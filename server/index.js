@@ -16,6 +16,18 @@ dotenv.config();
 
 const logger = require('./utils/logger');
 
+// Issue #32 — fail fast at boot if required env vars are missing, and
+// surface a single warning for optional/feature-gating keys.  We skip
+// the check in NODE_ENV=test so vitest suites that pre-set their own
+// minimal env (or none) don't refuse to start.
+if (process.env.NODE_ENV !== 'test') {
+    const { requireEnv, warnEnv } = require('./utils/envValidate');
+    requireEnv(['MONGO_URI', 'JWT_SECRET', 'CLIENT_URL']);
+    warnEnv(['GEMINI_API_KEY'], 'AI test generation + curriculum classification');
+    warnEnv(['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'], 'magic-link auth');
+    warnEnv(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'], 'Google OAuth sign-in');
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
