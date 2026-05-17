@@ -72,7 +72,9 @@
     "exportMyAnswers": "Мои ответы",
     "exportReport": "Полный отчёт",
     "blankPlaceholder": "пропуск {{index}}",
-    "blankAriaLabel": "Пропуск {{index}}"
+    "blankAriaLabel": "Пропуск {{index}}",
+    "selectAllThatApply": "Выберите все подходящие варианты",
+    "selectAllThatApplyAriaLabel": "Варианты ответа — выберите все подходящие"
   },
   "create": {
     "title": "Создать тест",

@@ -72,7 +72,9 @@
     "exportMyAnswers": "My Answers",
     "exportReport": "Full Report",
     "blankPlaceholder": "blank {{index}}",
-    "blankAriaLabel": "Blank {{index}}"
+    "blankAriaLabel": "Blank {{index}}",
+    "selectAllThatApply": "Select all that apply",
+    "selectAllThatApplyAriaLabel": "Answer options — select all that apply"
   },
   "create": {
     "title": "Create Test",

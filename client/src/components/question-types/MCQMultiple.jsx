@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css } from 'styled-components';
 
 /* ───────── Animations ───────── */
@@ -128,6 +129,7 @@ const ExplanationPanel = styled.div`
 /* ───────── Component ───────── */
 
 function MCQMultiple({ question, answer, onAnswer, showFeedback, disabled }) {
+  const { t } = useTranslation();
   const selected = answer?.selectedOptions ?? [];
 
   const handleClick = (idx) => {
@@ -140,8 +142,8 @@ function MCQMultiple({ question, answer, onAnswer, showFeedback, disabled }) {
 
   return (
     <div>
-      <HintText>Select all that apply</HintText>
-      <OptionsGrid role="group" aria-label="Answer options — select all that apply">
+      <HintText>{t('test.selectAllThatApply')}</HintText>
+      <OptionsGrid role="group" aria-label={t('test.selectAllThatApplyAriaLabel')}>
         {question.options.map((opt, idx) => {
           const isSelected = selected.includes(idx);
           return (
