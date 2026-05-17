@@ -74,7 +74,8 @@
     "blankPlaceholder": "blank {{index}}",
     "blankAriaLabel": "Blank {{index}}",
     "selectAllThatApply": "Select all that apply",
-    "selectAllThatApplyAriaLabel": "Answer options — select all that apply"
+    "selectAllThatApplyAriaLabel": "Answer options — select all that apply",
+    "charCount": "{{count}} characters"
   },
   "create": {
     "title": "Create Test",

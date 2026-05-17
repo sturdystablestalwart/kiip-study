@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css } from 'styled-components';
 
 /* ───────── Animations ───────── */
@@ -119,6 +120,7 @@ function checkCorrectness(userAnswer, acceptedAnswers) {
 /* ───────── Component ───────── */
 
 function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
+  const { t } = useTranslation();
   const textAnswer = answer?.textAnswer ?? '';
   const accepted = question.acceptedAnswers ?? [];
   const isCorrect = showFeedback ? checkCorrectness(textAnswer, accepted) : null;
@@ -139,7 +141,7 @@ function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
         $correct={showFeedback && isCorrect}
         $incorrect={showFeedback && !isCorrect && textAnswer.length > 0}
       />
-      <CharCount>{(answer?.textAnswer || '').length} characters</CharCount>
+      <CharCount>{t('test.charCount', { count: (answer?.textAnswer || '').length })}</CharCount>
 
       <div aria-live="polite">
         {showFeedback && isCorrect && (

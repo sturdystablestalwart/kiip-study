@@ -74,7 +74,8 @@
     "blankPlaceholder": "빈칸 {{index}}",
     "blankAriaLabel": "{{index}}번 빈칸",
     "selectAllThatApply": "해당하는 항목을 모두 선택하세요",
-    "selectAllThatApplyAriaLabel": "답안 선택지 — 해당하는 항목 모두 선택"
+    "selectAllThatApplyAriaLabel": "답안 선택지 — 해당하는 항목 모두 선택",
+    "charCount": "{{count}}자"
   },
   "create": {
     "title": "시험 만들기",

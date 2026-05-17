@@ -74,7 +74,8 @@
     "blankPlaceholder": "пропуск {{index}}",
     "blankAriaLabel": "Пропуск {{index}}",
     "selectAllThatApply": "Выберите все подходящие варианты",
-    "selectAllThatApplyAriaLabel": "Варианты ответа — выберите все подходящие"
+    "selectAllThatApplyAriaLabel": "Варианты ответа — выберите все подходящие",
+    "charCount": "{{count}} симв."
   },
   "create": {
     "title": "Создать тест",
