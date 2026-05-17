@@ -545,6 +545,15 @@ function RouteFocusManager() {
   return null;
 }
 
+// Issue #49 — per-route ErrorBoundary keyed on pathname so a
+// chunk-load failure on one page doesn't keep the whole SPA in an
+// error state after the user navigates away.  The inner boundary
+// catches ChunkLoadError before the outer global one does.
+function RoutedErrorBoundary({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
+
 function AppInner() {
   const { theme } = useThemeMode();
   const [showPalette, setShowPalette] = useState(false);
@@ -594,6 +603,7 @@ function AppInner() {
               <AppShell>
                 <Navigation onSignIn={() => setShowAuthModal(true)} />
                 <Suspense fallback={<LoadingFallback />}>
+                  <RoutedErrorBoundary>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/dashboard" element={<Dashboard />} />
@@ -609,6 +619,7 @@ function AppInner() {
                     <Route path="/review" element={<FailedQuestions />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </RoutedErrorBoundary>
                 </Suspense>
               </AppShell>
               {showPalette && <Suspense fallback={null}><CommandPalette onClose={() => setShowPalette(false)} /></Suspense>}
