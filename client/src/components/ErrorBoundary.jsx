@@ -26,6 +26,21 @@ const ErrorMessage = styled.p`
   max-width: 400px;
 `;
 
+const ButtonRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
+/**
+ * Issue #173 — when wrapping the entire <Router>, any render error
+ * nukes the whole SPA and the only escape was a full reload, which
+ * loses in-progress test answers in other tabs and forces a re-login.
+ *
+ * The boundary now exposes a "Try again" path that just resets
+ * hasError, plus a resetKey prop callers can use to auto-recover on
+ * route change (typically the URL pathname).  Reload stays as the
+ * nuclear option.
+ */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -37,8 +52,19 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', error, info.componentStack);
   }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false });
+  };
 
   render() {
     if (this.state.hasError) {
@@ -48,9 +74,14 @@ class ErrorBoundary extends React.Component {
           <ErrorMessage>
             {i18n.t('common.errorDesc')}
           </ErrorMessage>
-          <Button onClick={() => window.location.reload()}>
-            {i18n.t('common.reload')}
-          </Button>
+          <ButtonRow>
+            <Button onClick={this.handleReset}>
+              {i18n.t('common.retry')}
+            </Button>
+            <Button $variant="secondary" onClick={() => window.location.reload()}>
+              {i18n.t('common.reload')}
+            </Button>
+          </ButtonRow>
         </ErrorWrapper>
       );
     }
