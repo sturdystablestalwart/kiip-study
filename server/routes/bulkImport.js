@@ -159,12 +159,50 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
     return res.status(404).json({ error: 'Preview expired. Please re-upload.' });
   }
 
-  const preview = JSON.parse(fs.readFileSync(previewPath, 'utf-8'));
+  // Issue #61 — defence-in-depth: re-validate the preview structure
+  // before persisting.  Even though /preview wrote this file ourselves
+  // a few seconds ago, a truncated / locale-mangled / out-of-band-
+  // tampered file would otherwise create malformed Test docs that
+  // bypassed validateAndGroup()'s checks.
+  let preview;
+  try {
+    preview = JSON.parse(fs.readFileSync(previewPath, 'utf-8'));
+  } catch (err) {
+    logger.error({ err, previewId }, 'Bulk import preview unreadable');
+    try { fs.unlinkSync(previewPath); } catch { /* ignore */ }
+    return res.status(400).json({ error: 'Preview file unreadable. Please re-upload.' });
+  }
   fs.unlinkSync(previewPath);
+
+  if (!preview || typeof preview !== 'object' || !Array.isArray(preview.tests)) {
+    return res.status(400).json({ error: 'Preview file malformed. Please re-upload.' });
+  }
+  const VALID_TYPES = new Set(['mcq-single', 'mcq-multiple', 'short-answer', 'ordering', 'fill-in-the-blank']);
+  const VALID_LEVELS = new Set(['0', '1', '2', '3', '4', '5-basic', '5-advanced']);
 
   const results = { imported: 0, skipped: 0, errors: [] };
   for (const testData of preview.tests) {
     if (testData.errors && testData.errors.length > 0) { results.skipped++; continue; }
+
+    // Re-check the shape we're about to persist.  Anything that fails
+    // gets counted as a skip + recorded so the admin sees it.
+    const shapeError =
+        (!testData.title || typeof testData.title !== 'string' || testData.title.length > 500)
+            ? 'invalid title' :
+        (!Array.isArray(testData.questions) || testData.questions.length === 0)
+            ? 'no questions' :
+        (testData.questions.length > 200)
+            ? 'too many questions (max 200)' :
+        (testData.level && !VALID_LEVELS.has(String(testData.level)))
+            ? `invalid level "${testData.level}"` :
+        testData.questions.some((q) => !q || typeof q.text !== 'string' || !VALID_TYPES.has(q.type))
+            ? 'invalid question shape' :
+        null;
+    if (shapeError) {
+      results.errors.push({ title: testData.title || '(no title)', error: shapeError });
+      continue;
+    }
+
     try {
       const test = new Test({
         title: testData.title, level: testData.level, unitNumber: testData.unitNumber,
