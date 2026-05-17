@@ -11,29 +11,22 @@ const { scoreQuestion } = require('../utils/scoring');
 const safeError = require('../utils/safeError');
 
 // Issue #36 — per-user rate limits.  The 100 req/min global limiter
-// is too coarse for these authenticated user-facing paths.
+// is too coarse for these authenticated user-facing paths.  All
+// limiters are no-ops in NODE_ENV=test so existing session-flow
+// integration tests don't 429.
 const userKey = (req) => String(req.user?._id || req.ip);
-const sessionStartLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000,
-    max: 20,
+const noOpLimiter = (req, res, next) => next();
+const isTest = process.env.NODE_ENV === 'test';
+const mkLimiter = (opts) => isTest ? noOpLimiter : rateLimit({
+    ...opts,
     keyGenerator: userKey,
     standardHeaders: true,
     legacyHeaders: false,
 });
-const sessionSaveLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    keyGenerator: userKey,
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-const sessionSubmitLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    keyGenerator: userKey,
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+
+const sessionStartLimiter = mkLimiter({ windowMs: 10 * 60 * 1000, max: 20 });
+const sessionSaveLimiter = mkLimiter({ windowMs: 60 * 1000, max: 30 });
+const sessionSubmitLimiter = mkLimiter({ windowMs: 60 * 1000, max: 10 });
 
 // Issue #60 — bounds for the PATCH /:id auto-save body.  Without these
 // a doctored client can ship remainingTime: -999999 or currentQuestion:

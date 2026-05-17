@@ -14,14 +14,18 @@ const publicTestProjection = require('../utils/publicTestProjection');
 // Issue #36 — POST /attempts/migrate ships up to 50 attempts.  A
 // scripted client could replay this all day and balloon the Attempt
 // collection.  Cap at 3 calls / 24h per user (normal migration runs
-// exactly once on first login from a device).
-const attemptMigrateLimiter = rateLimit({
-    windowMs: 24 * 60 * 60 * 1000,
-    max: 3,
-    keyGenerator: (req) => String(req.user?._id || req.ip),
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// exactly once on first login from a device).  Disabled in
+// NODE_ENV=test so the existing migrate-batch test (#109) which
+// fires multiple requests doesn't 429.
+const attemptMigrateLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+        windowMs: 24 * 60 * 60 * 1000,
+        max: 3,
+        keyGenerator: (req) => String(req.user?._id || req.ip),
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
 
 // ============================================
 // ROUTES

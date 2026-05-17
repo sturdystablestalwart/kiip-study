@@ -7,14 +7,17 @@ const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
 
 // Issue #36 — per-user limit on POST /api/flags so a single
-// authenticated user can't flood the moderation queue.
-const flagSubmitLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    keyGenerator: (req) => String(req.user?._id || req.ip),
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// authenticated user can't flood the moderation queue.  No-op in
+// NODE_ENV=test.
+const flagSubmitLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+        windowMs: 60 * 1000,
+        max: 10,
+        keyGenerator: (req) => String(req.user?._id || req.ip),
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
 
 // POST /api/flags — Submit or update a flag
 router.post('/', requireAuth, flagSubmitLimiter, async (req, res) => {
