@@ -242,10 +242,8 @@ function EndlessMode() {
   const [totalCorrect, setTotalCorrect] = useState(0);
   // Issue #160 — keep excludeKeys in a ref so fetchBatch's closure
   // always reads the latest value instead of capturing a stale
-  // previous-batch snapshot through useCallback deps.  The state
-  // version is retained for any caller that still wants to render
-  // it (none today, but the API stays open).
-  const [excludeKeys, setExcludeKeys] = useState([]);
+  // previous-batch snapshot through useCallback deps.  Nothing
+  // currently renders the list, so the state-side is dropped.
   const excludeKeysRef = useRef([]);
   const [levelFilter, setLevelFilter] = useState('');
   const [unitFilter, setUnitFilter] = useState('');
@@ -377,7 +375,6 @@ function EndlessMode() {
     const updatedKeys = [...excludeKeysRef.current, key];
     const trimmedKeys = updatedKeys.length > 30 ? updatedKeys.slice(-30) : updatedKeys;
     excludeKeysRef.current = trimmedKeys;
-    setExcludeKeys(trimmedKeys);
 
     // Check if batch complete
     if (currentIdx >= questions.length - 1) {
@@ -403,7 +400,7 @@ function EndlessMode() {
     setAnswers({});
     setTotalAnswered(0);
     setTotalCorrect(0);
-    setExcludeKeys([]);
+    excludeKeysRef.current = [];
     setLevelFilter('');
     setUnitFilter('');
     setSessionDuration(0);
@@ -440,7 +437,6 @@ function EndlessMode() {
                 // from the previous (different) filter scope.
                 setLevelFilter(v);
                 excludeKeysRef.current = [];
-                setExcludeKeys([]);
               }}
             />
             <FilterDropdown
@@ -450,7 +446,6 @@ function EndlessMode() {
               onChange={(v) => {
                 setUnitFilter(v);
                 excludeKeysRef.current = [];
-                setExcludeKeys([]);
               }}
             />
           </FilterRow>
