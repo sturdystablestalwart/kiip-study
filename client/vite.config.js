@@ -9,6 +9,26 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.js'],
+    // Issue #53 — minimum coverage thresholds (v8 provider).  Same
+    // intentionally-low starting figures as the server side; ratchet
+    // up over time.  Requires `@vitest/coverage-v8` to actually emit
+    // a report.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      thresholds: {
+        lines: 30,
+        statements: 30,
+        branches: 30,
+        functions: 30,
+      },
+      exclude: [
+        'src/__tests__/**',
+        '**/*.test.{js,jsx}',
+        'node_modules/**',
+        'dist/**',
+      ],
+    },
   },
   plugins: [
     react(),
