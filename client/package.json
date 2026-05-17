@@ -6,6 +6,10 @@
   "author": "Alex Reznitskii",
   "license": "UNLICENSED",
   "type": "module",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

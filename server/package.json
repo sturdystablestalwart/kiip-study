@@ -4,6 +4,10 @@
   "private": true,
   "description": "Express + Mongoose API for the KIIP Study practice platform.",
   "main": "index.js",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "vitest run"
