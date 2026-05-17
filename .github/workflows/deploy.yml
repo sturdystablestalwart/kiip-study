@@ -71,10 +71,43 @@ jobs:
             fi
 
             echo "Deploying commit: $(git rev-parse HEAD)"
+
+            # Issue #18 — blue/green-lite rollback.  Before we replace
+            # the running containers, snapshot their current images as
+            # *-rollback tags so we can re-tag them as latest if the
+            # health probe fails.  No registry required.
+            for svc in kiip-server kiip-client; do
+              current_image=$(docker inspect --format='{{.Config.Image}}' "$svc" 2>/dev/null || true)
+              if [ -n "$current_image" ]; then
+                docker tag "$current_image" "${svc}:rollback" || true
+              fi
+            done
+
             docker compose build
             docker compose up -d
+
             for i in $(seq 1 30); do
-              curl -sf http://localhost:80/health && echo "Deploy successful" && exit 0
+              if curl -sf http://localhost:80/health; then
+                echo "Deploy successful"
+                exit 0
+              fi
               sleep 5
             done
-            echo "Health check failed after 150s" && exit 1
+
+            echo "Health check failed after 150s — rolling back"
+            # If we snapshotted images, re-tag them as the names compose
+            # would build to and bounce containers.  Compose still has
+            # the up-to-date images cached locally; pulling isn't needed.
+            for svc in kiip-server kiip-client; do
+              if docker image inspect "${svc}:rollback" >/dev/null 2>&1; then
+                docker tag "${svc}:rollback" "${svc}:latest" || true
+              fi
+            done
+            docker compose up -d
+
+            # Give the rolled-back stack a moment then verify.
+            sleep 10
+            if curl -sf http://localhost:80/health; then
+              echo "Rollback restored a healthy deploy" && exit 1   # exit 1 so CI run shows failed deploy
+            fi
+            echo "ROLLBACK ALSO UNHEALTHY — manual intervention required" && exit 2
