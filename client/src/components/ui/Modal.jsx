@@ -48,6 +48,7 @@ export default function Modal({
   zIndex,
   flush,
   ariaLabel,
+  ariaLabelledBy,
 }) {
   const containerRef = useRef(null);
   useFocusTrap(containerRef);
@@ -61,6 +62,16 @@ export default function Modal({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [handleEscape]);
 
+  // Issue #42 — dev-only warning when neither aria-label nor
+  // aria-labelledby is supplied.  Screen readers otherwise announce a
+  // nameless dialog and the user loses the title context.
+  useEffect(() => {
+    if (import.meta.env.DEV && !ariaLabel && !ariaLabelledBy) {
+      // eslint-disable-next-line no-console
+      console.warn('[Modal] Either `ariaLabel` or `ariaLabelledBy` must be set so screen readers can announce the dialog title.');
+    }
+  }, [ariaLabel, ariaLabelledBy]);
+
   const handleOverlayClick = useCallback(() => onClose(), [onClose]);
   const stopProp = useCallback(e => e.stopPropagation(), []);
 
@@ -72,6 +83,7 @@ export default function Modal({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
     >
       <Container
         ref={containerRef}
