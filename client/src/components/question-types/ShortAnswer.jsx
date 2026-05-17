@@ -136,7 +136,7 @@ function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
         type="text"
         value={textAnswer}
         onChange={handleChange}
-        placeholder="Type your answer..."
+        placeholder={t('test.shortAnswerPlaceholder')}
         disabled={disabled}
         $correct={showFeedback && isCorrect}
         $incorrect={showFeedback && !isCorrect && textAnswer.length > 0}

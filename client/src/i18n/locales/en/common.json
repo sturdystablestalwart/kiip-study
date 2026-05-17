@@ -81,6 +81,11 @@
     "feedbackCorrect": "Correct!",
     "feedbackIncorrectAccepted": "Incorrect. Accepted answers:",
     "whyLabel": "Why?",
+    "answerOptionsAriaLabel": "Answer options",
+    "shortAnswerPlaceholder": "Type your answer...",
+    "orderingMoveUp": "Move up",
+    "orderingMoveDown": "Move down",
+    "orderingMovedTo": "Moved item to position {{position}}",
     "unit": "Unit {{count}}"
   },
   "create": {
