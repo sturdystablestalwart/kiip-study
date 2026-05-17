@@ -112,8 +112,18 @@ services:
     cpus: '0.5'
 
   caddy:
+    # Issue #52 — custom Caddy build that bundles caddy-ratelimit so
+    # the Caddyfile can use the `rate_limit` directive for L7 edge
+    # throttling.  See ops/caddy/Dockerfile.  Base + builder are both
     # SHA-pinned (#51).
-    image: caddy:2-alpine@sha256:86deaf5e3d3408a6ccec08fbb79989783dd26e206ae10bcf78a801dc8c9ab794
+    image: kiip-caddy:latest
+    build:
+      context: ./ops/caddy
+      dockerfile: Dockerfile
+      cache_from:
+        - kiip-caddy:latest
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
     container_name: kiip-caddy
     restart: unless-stopped
     init: true
