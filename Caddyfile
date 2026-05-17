@@ -3,6 +3,16 @@
 }
 
 {$CADDY_HOST:localhost} {
+	# Structured access/error logs to stdout (captured by Docker logging
+	# driver). JSON makes them ingestable by Loki/Promtail/Cloudwatch/etc.
+	# Level INFO captures access logs and warnings; bump to DEBUG transiently
+	# for incident response.
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+
 	# API and uploads → backend
 	handle /api/* {
 		reverse_proxy server:5000
