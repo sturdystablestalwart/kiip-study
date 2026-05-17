@@ -51,6 +51,20 @@ jobs:
       - name: Build client
         run: cd client && npm run build
 
+      # Issue #14 — gate PRs on vitest too, not just lint+build+E2E.
+      # Server tests use mongodb-memory-server; client uses jsdom; neither
+      # needs the live Mongo / Express below.
+      - name: Test client (vitest)
+        run: cd client && npm test
+        env:
+          NODE_ENV: test
+
+      - name: Test server (vitest)
+        run: cd server && npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
