@@ -184,6 +184,12 @@ mongoose.connection.on('reconnected', () => logger.info('mongo reconnected'));
 const { router: testRoutes } = require('./routes/tests');
 app.use('/api/tests', testRoutes);
 
+// Issue #185 — client ErrorBoundary telemetry endpoint.  Mounted early
+// so it works even when the rest of the API has wider middleware in
+// front of it that might reject malformed reports.
+const clientErrorRoutes = require('./routes/clientError');
+app.use('/api', clientErrorRoutes);
+
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 

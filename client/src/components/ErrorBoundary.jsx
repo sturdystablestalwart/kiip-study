@@ -54,6 +54,27 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', error, info.componentStack);
+
+    // Issue #185 — best-effort telemetry POST so production failures
+    // surface in pino logs instead of vanishing into the browser
+    // console.  fire-and-forget; we never want telemetry failures to
+    // mask the original error.
+    if (import.meta.env.PROD) {
+      try {
+        fetch('/api/_log/client-error', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            message: error?.message ?? String(error),
+            stack: (error?.stack || '').slice(0, 4000),
+            componentStack: (info?.componentStack || '').slice(0, 4000),
+            url: typeof location !== 'undefined' ? location.href : '',
+            ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '').slice(0, 200),
+          }),
+        }).catch(() => {});
+      } catch { /* ignore */ }
+    }
   }
 
   componentDidUpdate(prevProps) {
