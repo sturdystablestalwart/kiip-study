@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
 const Attempt = require('../models/Attempt');
 const { scoreQuestion } = require('../utils/scoring');
@@ -9,6 +10,18 @@ const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
 const logger = require('../utils/logger');
 const publicTestProjection = require('../utils/publicTestProjection');
+
+// Issue #36 — POST /attempts/migrate ships up to 50 attempts.  A
+// scripted client could replay this all day and balloon the Attempt
+// collection.  Cap at 3 calls / 24h per user (normal migration runs
+// exactly once on first login from a device).
+const attemptMigrateLimiter = rateLimit({
+    windowMs: 24 * 60 * 60 * 1000,
+    max: 3,
+    keyGenerator: (req) => String(req.user?._id || req.ip),
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // ============================================
 // ROUTES
@@ -328,7 +341,7 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
 // createdAt. Re-score every answer server-side against the source Test,
 // reject rows whose testId does not resolve to a real test, clamp createdAt
 // to the [0, now] interval, and always take the userId from req.user.
-router.post('/attempts/migrate', requireAuth, async (req, res) => {
+router.post('/attempts/migrate', requireAuth, attemptMigrateLimiter, async (req, res) => {
     try {
         const { attempts } = req.body;
         if (!Array.isArray(attempts) || attempts.length === 0) {
