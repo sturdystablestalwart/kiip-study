@@ -23,7 +23,19 @@ let sessionExpiredShown = false;
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (axios.isCancel(error)) return Promise.reject(error);
+        // Issue #190 — axios.isCancel covers CancelToken-style cancels,
+        // but AbortController/AbortSignal cancellations may surface as
+        // err.name === 'CanceledError' (axios >=1.4) or 'AbortError'
+        // (raw fetch).  Any of these mean the caller voluntarily
+        // aborted; we must not show the network-error toast.
+        if (
+            axios.isCancel(error) ||
+            error?.name === 'CanceledError' ||
+            error?.name === 'AbortError' ||
+            error?.code === 'ERR_CANCELED'
+        ) {
+            return Promise.reject(error);
+        }
 
         const status = error.response?.status;
         const url = error.config?.url || '';
