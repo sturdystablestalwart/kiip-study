@@ -1,6 +1,6 @@
 # Stage 1: Build the React app (runs as non-root for defense-in-depth)
 # SHA-pinned. Refresh: `docker pull node:20-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine`
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
+FROM node:26-alpine@sha256:e71ac5e964b9201072425d59d2e876359efa25dc96bb1768cb73295728d6e4ea AS build
 
 WORKDIR /app
 RUN chown -R node:node /app
@@ -17,7 +17,7 @@ RUN npm run build
 
 # Stage 2: Serve with nginx as non-root user (listens on 8080, no root needed)
 # SHA-pinned. Refresh: `docker pull nginxinc/nginx-unprivileged:alpine && docker inspect --format='{{index .RepoDigests 0}}' nginxinc/nginx-unprivileged:alpine`
-FROM nginxinc/nginx-unprivileged:alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+FROM nginxinc/nginx-unprivileged:alpine@sha256:4c18337659c90a01627f2e152b7c89524521c82dcedb255dc83d3689642b0803
 
 # Copy built assets (default html root is /usr/share/nginx/html, same as nginx:alpine)
 COPY --from=build /app/dist /usr/share/nginx/html

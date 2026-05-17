@@ -10,6 +10,7 @@ import { scoreQuestion } from '../utils/scoring';
 import { saveAnonymousAttempt } from '../utils/anonymousAttempts';
 import { Button, Card, Modal, ModalActions, VisuallyHidden } from '../components/ui';
 import { announcementKeyForTime } from '../utils/timerAnnouncement';
+import useCountdownTimer from '../hooks/useCountdownTimer';
 
 /* ───────── Styled Components ───────── */
 
@@ -472,13 +473,17 @@ function TestTaker() {
   const [test, setTest] = useState(null);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('Test');
-  const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [timerExpired, setTimerExpired] = useState(false);
-  const [overdueSeconds, setOverdueSeconds] = useState(0);
+  // Issue #24 — countdown lives in useCountdownTimer; this page no
+  // longer owns the setInterval.  We pass the "active" flag so the
+  // hook stops ticking once the test is submitted.
+  const { timeLeft, overdueSeconds, expired: timerExpired, setTimeLeft } = useCountdownTimer({
+      initialSeconds: 30 * 60,
+      active: !!test && !isSubmitted,
+  });
   const [showExitModal, setShowExitModal] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
@@ -561,24 +566,12 @@ function TestTaker() {
     };
     startSession();
     return () => controller.abort();
+    // Issue #24 — `setTimeLeft` is the hook's stable setter; including
+    // it adds noise without changing the effect's identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, sessionId, isSubmitted, id, mode]);
 
-  useEffect(() => {
-    if (isSubmitted || !test) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 0) {
-          setTimerExpired(true);
-          setOverdueSeconds(os => os + 1);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isSubmitted, test]);
+  // Issue #24 — countdown moved into useCountdownTimer hook above.
 
   // Issue #8 — surface remaining time to assistive tech without
   // spamming every second.  Announce at: 10/5/1 minutes remaining,

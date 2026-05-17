@@ -63,8 +63,6 @@ test.describe('Home Page — Full Audit', () => {
     await expect(page.getByRole('heading', { name: /Your Tests/i })).toBeVisible();
 
     // Wait for tests to load
-    await page.waitForTimeout(1000);
-
     // Should show test cards or empty state
     const cards = page.locator('[class*="TestCard"], [class*="Card"]').first();
     const hasCards = await cards.count() > 0;
@@ -87,8 +85,6 @@ test.describe('Home Page — Full Audit', () => {
 
   test('navigation links work correctly', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     // "Tests" nav link
     const testsLink = page.getByRole('link', { name: /^Tests$/i });
     if (await testsLink.count() > 0) {
@@ -109,8 +105,6 @@ test.describe('Home Page — Full Audit', () => {
 
   test('filter dropdowns exist and are interactive', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(1000);
-
     const selects = page.locator('select');
     const selectCount = await selects.count();
     expect(selectCount).toBeGreaterThanOrEqual(2); // Level + Unit
@@ -130,12 +124,9 @@ test.describe('Home Page — Full Audit', () => {
 
   test('search input works', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     const searchInput = page.locator('input[type="text"], input[placeholder*="earch"], input[placeholder*="Search"]').first();
     if (await searchInput.count() > 0) {
       await searchInput.fill('test');
-      await page.waitForTimeout(500);
       await searchInput.fill('');
     }
 
@@ -144,8 +135,6 @@ test.describe('Home Page — Full Audit', () => {
 
   test('Endless Practice card navigates to /endless', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     // Use a role-scoped locator so we click the link, not the onboarding
     // hint span that also contains "Endless Practice". Refs #222.
     const endlessCard = page.getByRole('link', { name: /Endless Practice/i });
@@ -159,8 +148,6 @@ test.describe('Home Page — Full Audit', () => {
 
   test('test cards are clickable and navigate to test page', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(1500);
-
     // Find test cards (excluding Endless card)
     const links = page.locator('a[href*="/test/"]');
     const linkCount = await links.count();
@@ -169,7 +156,6 @@ test.describe('Home Page — Full Audit', () => {
       const firstLink = links.first();
       const href = await firstLink.getAttribute('href');
       await firstLink.click();
-      await page.waitForTimeout(1000);
       expect(page.url()).toContain('/test/');
     }
 
@@ -180,8 +166,6 @@ test.describe('Home Page — Full Audit', () => {
     await page.goto(BASE_URL);
     await page.evaluate(() => localStorage.setItem('i18nextLng', 'en'));
     await page.reload();
-    await page.waitForTimeout(500);
-
     const signIn = page.getByRole('button', { name: /Sign in/i });
     if (await signIn.count() > 0) {
       await signIn.click();
@@ -198,8 +182,6 @@ test.describe('Home Page — Full Audit', () => {
 test.describe('Theme & Language — Full Audit', () => {
   test('theme toggle button is visible and clickable', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     // Look for theme toggle (sun/moon icon button)
     const themeBtn = page.locator('button').filter({ hasText: /☀|🌙|☾|☼/ }).first();
     const themeBtnAlt = page.locator('button[aria-label*="theme" i], button[title*="theme" i]').first();
@@ -212,10 +194,8 @@ test.describe('Theme & Language — Full Audit', () => {
       await expect(btn).toBeVisible();
       const textBefore = await btn.textContent();
       await btn.click();
-      await page.waitForTimeout(300);
       // Should toggle (text might change)
       await btn.click(); // toggle back
-      await page.waitForTimeout(300);
     }
 
     assertNoErrors('Theme toggle');
@@ -223,8 +203,6 @@ test.describe('Theme & Language — Full Audit', () => {
 
   test('language toggle cycles through languages', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     const validLangs = ['EN', '한국어', 'РУ', 'ES'];
 
     // Use aria-label since button text changes on each click
@@ -245,14 +223,12 @@ test.describe('Theme & Language — Full Audit', () => {
 
       // Click to cycle
       await btn.click();
-      await page.waitForTimeout(300);
       const textAfter = (await btn.textContent()).trim();
       expect(validLangs).toContain(textAfter);
 
       // Cycle back (3 more clicks for 4 languages)
       for (let i = 0; i < 3; i++) {
         await btn.click();
-        await page.waitForTimeout(200);
       }
 
       const textFinal = (await btn.textContent()).trim();
@@ -269,8 +245,6 @@ test.describe('Theme & Language — Full Audit', () => {
 test.describe('Create Test Page — Full Audit', () => {
   test('page loads, textarea and buttons visible', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     const textarea = page.locator('textarea');
     await expect(textarea.first()).toBeVisible();
 
@@ -279,12 +253,8 @@ test.describe('Create Test Page — Full Audit', () => {
 
   test('character count updates when typing', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     const textarea = page.locator('textarea').first();
     await textarea.fill('Hello world test content');
-    await page.waitForTimeout(300);
-
     // Character count should appear somewhere
     const charCount = page.getByText(/\d+\s*(\/|of|characters)/i);
     if (await charCount.count() > 0) {
@@ -296,12 +266,8 @@ test.describe('Create Test Page — Full Audit', () => {
 
   test('Generate button disabled when text too short', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     const textarea = page.locator('textarea').first();
     await textarea.fill('short');
-    await page.waitForTimeout(300);
-
     const genBtn = page.getByRole('button', { name: /Generate/i });
     if (await genBtn.count() > 0) {
       await expect(genBtn.first()).toBeDisabled();
@@ -312,13 +278,9 @@ test.describe('Create Test Page — Full Audit', () => {
 
   test('Generate button enabled when text >= 200 chars', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     const textarea = page.locator('textarea').first();
     const longText = 'A'.repeat(250);
     await textarea.fill(longText);
-    await page.waitForTimeout(300);
-
     const genBtn = page.getByRole('button', { name: /Generate/i });
     if (await genBtn.count() > 0) {
       await expect(genBtn.first()).toBeEnabled();
@@ -329,8 +291,6 @@ test.describe('Create Test Page — Full Audit', () => {
 
   test('upload button exists', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     // File upload input or button
     const fileInput = page.locator('input[type="file"]');
     const uploadBtn = page.getByRole('button', { name: /upload|file|attach/i });
@@ -359,8 +319,6 @@ test.describe('Test Taking — Full Audit', () => {
   test('test page loads with title, mode selector, timer', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Title
     const title = page.locator('h1, h2, h3').first();
     await expect(title).toBeVisible();
@@ -384,8 +342,6 @@ test.describe('Test Taking — Full Audit', () => {
   test('question navigation dots visible and clickable', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Question dots — small buttons with numbers
     const dots = page.getByRole('button', { name: /^[0-9]+$/, exact: true });
     const dotCount = await dots.count();
@@ -393,10 +349,8 @@ test.describe('Test Taking — Full Audit', () => {
     if (dotCount > 1) {
       // Click dot 2
       await dots.nth(1).click();
-      await page.waitForTimeout(300);
       // Click dot 1
       await dots.nth(0).click();
-      await page.waitForTimeout(300);
     }
 
     assertNoErrors('Question dots');
@@ -405,8 +359,6 @@ test.describe('Test Taking — Full Audit', () => {
   test('Previous/Next buttons work', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     const prevBtn = page.getByRole('button', { name: /Previous|Prev|←/i });
     const nextBtn = page.getByRole('button', { name: /Next|→/i });
 
@@ -418,12 +370,10 @@ test.describe('Test Taking — Full Audit', () => {
     // Next should be enabled
     if (await nextBtn.count() > 0) {
       await nextBtn.first().click();
-      await page.waitForTimeout(300);
       // Now Previous should be enabled
       if (await prevBtn.count() > 0) {
         await expect(prevBtn.first()).toBeEnabled();
         await prevBtn.first().click();
-        await page.waitForTimeout(300);
       }
     }
 
@@ -433,13 +383,10 @@ test.describe('Test Taking — Full Audit', () => {
   test('answering MCQ question highlights selection', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Try clicking an MCQ option
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(300);
       // Option should be visually selected (check for active/selected class or style)
       await expect(option).toBeVisible();
     } else {
@@ -447,7 +394,6 @@ test.describe('Test Taking — Full Audit', () => {
       const textInput = page.locator('input[type="text"]').first();
       if (await textInput.count() > 0) {
         await textInput.fill('test answer');
-        await page.waitForTimeout(300);
       }
     }
 
@@ -457,8 +403,6 @@ test.describe('Test Taking — Full Audit', () => {
   test('"Back to Tests" button visible and works', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     const exitBtn = page.getByRole('button', { name: /Back to Tests/i }).or(
       page.getByRole('link', { name: /Back to Tests/i })
     );
@@ -475,19 +419,15 @@ test.describe('Test Taking — Full Audit', () => {
   test('exit modal appears when progress exists', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Answer a question first
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(300);
     } else {
       const textInput = page.locator('input[type="text"]').first();
       if (await textInput.count() > 0) {
         await textInput.fill('test');
         await textInput.press('Enter');
-        await page.waitForTimeout(300);
       }
     }
 
@@ -498,8 +438,6 @@ test.describe('Test Taking — Full Audit', () => {
 
     if (await exitBtn.count() > 0) {
       await exitBtn.first().click();
-      await page.waitForTimeout(500);
-
       // Modal should appear
       const modal = page.getByText(/unsaved progress|leave this test/i);
       if (await modal.count() > 0) {
@@ -509,7 +447,6 @@ test.describe('Test Taking — Full Audit', () => {
         const cancelBtn = page.getByRole('button', { name: /Cancel|Stay/i });
         if (await cancelBtn.count() > 0) {
           await cancelBtn.first().click();
-          await page.waitForTimeout(300);
           // Should still be on test page
           expect(page.url()).toContain('/test/');
         }
@@ -522,19 +459,15 @@ test.describe('Test Taking — Full Audit', () => {
   test('exit confirm navigates to home', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Answer a question
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(300);
     } else {
       const textInput = page.locator('input[type="text"]').first();
       if (await textInput.count() > 0) {
         await textInput.fill('test');
         await textInput.press('Enter');
-        await page.waitForTimeout(300);
       }
     }
 
@@ -544,12 +477,9 @@ test.describe('Test Taking — Full Audit', () => {
 
     if (await exitBtn.count() > 0) {
       await exitBtn.first().click();
-      await page.waitForTimeout(500);
-
       const confirmBtn = page.getByRole('button', { name: /Confirm|Leave|Yes/i });
       if (await confirmBtn.count() > 0) {
         await confirmBtn.first().click();
-        await page.waitForTimeout(500);
         expect(page.url()).toBe(BASE_URL + '/');
       }
     }
@@ -560,19 +490,15 @@ test.describe('Test Taking — Full Audit', () => {
   test('mode switch from Test to Practice with progress shows modal', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Answer a question to create progress
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(300);
     } else {
       const textInput = page.locator('input[type="text"]').first();
       if (await textInput.count() > 0) {
         await textInput.fill('test');
         await textInput.press('Enter');
-        await page.waitForTimeout(300);
       }
     }
 
@@ -580,8 +506,6 @@ test.describe('Test Taking — Full Audit', () => {
     const practiceBtn = page.getByRole('button', { name: /Practice/i }).first();
     if (await practiceBtn.count() > 0) {
       await practiceBtn.click();
-      await page.waitForTimeout(500);
-
       // Should show modal
       const modal = page.getByText(/Switching modes|switch.*mode|reset/i);
       if (await modal.count() > 0) {
@@ -590,7 +514,6 @@ test.describe('Test Taking — Full Audit', () => {
         const cancelBtn = page.getByRole('button', { name: /Cancel/i });
         if (await cancelBtn.count() > 0) {
           await cancelBtn.first().click();
-          await page.waitForTimeout(300);
         }
       }
     }
@@ -601,21 +524,16 @@ test.describe('Test Taking — Full Audit', () => {
   test('Practice mode shows instant feedback', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Switch to Practice mode (no progress yet, so direct switch)
     const practiceBtn = page.getByRole('button', { name: /Practice/i }).first();
     if (await practiceBtn.count() > 0) {
       await practiceBtn.click();
-      await page.waitForTimeout(500);
     }
 
     // Answer a question
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(500);
-
       // Should show feedback (Correct/Incorrect or explanation)
       const feedback = page.getByText(/Correct|Incorrect|Explanation|✓|✗/i);
       // In practice mode, feedback should be visible
@@ -627,14 +545,10 @@ test.describe('Test Taking — Full Audit', () => {
   test('Test mode hides feedback until Submit', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Should default to Test mode
     const option = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
     if (await option.count() > 0) {
       await option.click();
-      await page.waitForTimeout(300);
-
       // In test mode, no immediate feedback text
       const correctText = page.getByText(/^Correct!$/i);
       const incorrectText = page.getByText(/^Incorrect$/i);
@@ -648,8 +562,6 @@ test.describe('Test Taking — Full Audit', () => {
   test('Submit button appears and works after answering all', async ({ page }) => {
     test.skip(!testUrl, 'No tests available');
     await page.goto(testUrl);
-    await page.waitForTimeout(1000);
-
     // Get total questions from dots
     const dots = page.getByRole('button', { name: /^[0-9]+$/, exact: true });
     const totalQ = await dots.count();
@@ -658,7 +570,6 @@ test.describe('Test Taking — Full Audit', () => {
     for (let i = 0; i < totalQ; i++) {
       if (i > 0) {
         await dots.nth(i).click();
-        await page.waitForTimeout(300);
       }
 
       const mcqOption = page.locator('button').filter({ hasText: /^[1-4]\./ }).first();
@@ -671,15 +582,12 @@ test.describe('Test Taking — Full Audit', () => {
           await textInput.press('Enter');
         }
       }
-      await page.waitForTimeout(200);
     }
 
     // Submit button
     const submitBtn = page.getByRole('button', { name: /Submit|Finish/i });
     if (await submitBtn.count() > 0) {
       await submitBtn.first().click();
-      await page.waitForTimeout(1000);
-
       // Should show results (score)
       const score = page.getByText(/score|result|\d+\s*\/\s*\d+|\d+%/i);
       if (await score.count() > 0) {
@@ -697,8 +605,6 @@ test.describe('Test Taking — Full Audit', () => {
 test.describe('Endless Mode — Full Audit', () => {
   test('start screen shows title, filters, start button', async ({ page }) => {
     await page.goto(`${BASE_URL}/endless`);
-    await page.waitForTimeout(1000);
-
     await expect(page.getByText('Endless Practice')).toBeVisible();
 
     const startBtn = page.getByRole('button', { name: /Start|Begin/i });
@@ -716,13 +622,9 @@ test.describe('Endless Mode — Full Audit', () => {
 
   test('start button begins question flow', async ({ page }) => {
     await page.goto(`${BASE_URL}/endless`);
-    await page.waitForTimeout(1000);
-
     const startBtn = page.getByRole('button', { name: /Start|Begin/i });
     if (await startBtn.count() > 0) {
       await startBtn.first().click();
-      await page.waitForTimeout(2000);
-
       // Should show a question or loading
       const questionArea = page.locator('button').filter({ hasText: /^[1-4]\./ });
       const textInput = page.locator('input[type="text"]');
@@ -741,8 +643,6 @@ test.describe('Endless Mode — Full Audit', () => {
 
   test('filter dropdowns are interactive', async ({ page }) => {
     await page.goto(`${BASE_URL}/endless`);
-    await page.waitForTimeout(1000);
-
     const selects = page.locator('select');
     await expect(selects.first()).toBeVisible({ timeout: 5000 });
 
@@ -752,7 +652,6 @@ test.describe('Endless Mode — Full Audit', () => {
     const optCount = await options.count();
     if (optCount > 1) {
       await firstSelect.selectOption({ index: 1 });
-      await page.waitForTimeout(300);
       await firstSelect.selectOption({ index: 0 }); // reset
     }
 
@@ -766,11 +665,7 @@ test.describe('Endless Mode — Full Audit', () => {
 test.describe('Keyboard Shortcuts — Full Audit', () => {
   test('Ctrl+P opens command palette', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     await page.keyboard.press('Control+p');
-    await page.waitForTimeout(500);
-
     // Command palette should appear
     const palette = page.getByPlaceholder(/search|command|type/i).or(
       page.locator('[class*="CommandPalette"], [class*="Palette"], [role="dialog"]')
@@ -783,12 +678,10 @@ test.describe('Keyboard Shortcuts — Full Audit', () => {
       const input = page.getByPlaceholder(/search|command|type/i).first();
       if (await input.count() > 0) {
         await input.fill('test');
-        await page.waitForTimeout(300);
       }
 
       // Close with Escape
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
     }
 
     assertNoErrors('Ctrl+P palette');
@@ -796,11 +689,7 @@ test.describe('Keyboard Shortcuts — Full Audit', () => {
 
   test('Ctrl+K opens shortcuts modal', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     await page.keyboard.press('Control+k');
-    await page.waitForTimeout(500);
-
     // Shortcuts modal should appear
     const shortcuts = page.getByText(/Keyboard Shortcuts|Shortcuts/i);
     if (await shortcuts.count() > 0) {
@@ -808,7 +697,6 @@ test.describe('Keyboard Shortcuts — Full Audit', () => {
 
       // Close with Escape
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
     }
 
     assertNoErrors('Ctrl+K shortcuts');
@@ -816,23 +704,13 @@ test.describe('Keyboard Shortcuts — Full Audit', () => {
 
   test('Escape closes modals', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     // Open palette
     await page.keyboard.press('Control+p');
-    await page.waitForTimeout(500);
-
     // Close with Escape
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
-
     // Open shortcuts
     await page.keyboard.press('Control+k');
-    await page.waitForTimeout(500);
-
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
-
     assertNoErrors('Escape closes modals');
   });
 });
@@ -843,8 +721,6 @@ test.describe('Keyboard Shortcuts — Full Audit', () => {
 test.describe('Error States — Full Audit', () => {
   test('404 page shows for unknown routes', async ({ page }) => {
     await page.goto(`${BASE_URL}/nonexistent-page-12345`);
-    await page.waitForTimeout(500);
-
     const notFound = page.getByText(/not found|404|page.*exist/i);
     await expect(notFound.first()).toBeVisible();
 
@@ -854,7 +730,6 @@ test.describe('Error States — Full Audit', () => {
     );
     if (await homeLink.count() > 0) {
       await homeLink.first().click();
-      await page.waitForTimeout(500);
       await expect(page).toHaveURL(BASE_URL + '/');
     }
 
@@ -863,8 +738,6 @@ test.describe('Error States — Full Audit', () => {
 
   test('invalid test ID shows error', async ({ page }) => {
     await page.goto(`${BASE_URL}/test/invalid-id-123`);
-    await page.waitForTimeout(2000);
-
     // Should show error or redirect
     const error = page.getByText(/error|not found|failed|invalid/i);
     // Just verify no page crash
@@ -879,8 +752,6 @@ test.describe('Error States — Full Audit', () => {
 test.describe('Accessibility — Full Audit', () => {
   test('all visible buttons have accessible names', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(1000);
-
     const buttons = page.getByRole('button');
     const count = await buttons.count();
 
@@ -897,8 +768,6 @@ test.describe('Accessibility — Full Audit', () => {
 
   test('all navigation links have accessible text', async ({ page }) => {
     await page.goto(BASE_URL);
-    await page.waitForTimeout(500);
-
     const links = page.getByRole('link');
     const count = await links.count();
 
@@ -915,8 +784,6 @@ test.describe('Accessibility — Full Audit', () => {
 
   test('form inputs have labels or placeholders', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(500);
-
     const inputs = page.locator('input, textarea, select');
     const count = await inputs.count();
 
@@ -957,8 +824,6 @@ test.describe('Console Error Deep Scan', () => {
       page.on('pageerror', err => errors.push(`PAGE ERROR: ${err.message}`));
 
       await page.goto(`${BASE_URL}${p.url}`);
-      await page.waitForTimeout(2000);
-
       // Filter known non-critical messages
       const realErrors = errors.filter(e =>
         !e.includes('favicon.ico') &&
@@ -984,8 +849,6 @@ test.describe('Console Error Deep Scan', () => {
     test.skip(!res.tests?.length, 'No tests');
 
     await page.goto(`${BASE_URL}/test/${res.tests[0]._id}`);
-    await page.waitForTimeout(2000);
-
     const realErrors = errors.filter(e =>
       !e.includes('favicon.ico') &&
       !e.includes('401') &&
