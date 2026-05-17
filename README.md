@@ -2,6 +2,12 @@
 
 A desktop-first practice test platform for the Korea Immigration and Integration Program (KIIP) Level 2 exam. Built with a Japandi (Japanese warm minimalism) design aesthetic.
 
+## Status
+
+- Phase 0–7 features: shipped ✅
+- Active hardening track: [IMPLEMENTATION_PLAN_AUDIT_REMEDIATION.md](./IMPLEMENTATION_PLAN_AUDIT_REMEDIATION.md) (security, perf, ops, a11y)
+- Open work, bugs and proposals: [GitHub Issues](https://github.com/sturdystablestalwart/kiip-study/issues)
+
 ## Features
 
 - **AI Test Generation** from pasted text or uploaded documents (PDF, DOCX, TXT, MD) via Google Gemini 2.5 Flash (admin-only)
