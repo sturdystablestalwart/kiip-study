@@ -73,42 +73,24 @@ jobs:
         with:
           mongodb-version: "7.0"
 
-      - name: Start server
-        run: cd server && node index.js &
-        env:
-          # NODE_ENV=test raises the express-rate-limit ceiling from 100 to
-          # 10000 req/min (server/index.js:45); Playwright fires many parallel
-          # requests and would otherwise hit 429s on /api/tests, /api/tests/endless,
-          # etc. It also keeps cookies non-secure for HTTP and skips the ≥32-char
-          # JWT_SECRET production check.
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/kiip_test_app
-          GEMINI_API_KEY: test_key_not_used_in_ci
-          # server/middleware/auth.js throws on boot if JWT_SECRET is unset.
-          # The ≥32-char check only applies when NODE_ENV=production (which
-          # we deliberately don't set in CI), so any non-empty value works;
-          # using a 40-char placeholder for clarity.
-          JWT_SECRET: ci-test-secret-not-used-in-production-xx
-          # server/routes/auth.js:50 constructs passport-google-oauth20 at
-          # module-load time; passport-oauth2 throws
-          # `OAuth2Strategy requires a clientID option` if clientID is undefined.
-          # CI exercises neither the OAuth flow nor the callback URL, so
-          # placeholders are safe.
-          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
-          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
-
-      - name: Start client dev server
-        run: cd client && npm run dev &
-
-      - name: Wait for servers
-        run: |
-          npx --yes wait-on http://localhost:5000/health http://localhost:5173 --timeout 30000
-
-      - name: Run Playwright tests
+      # Issue #55 — Playwright's webServer config (in playwright.config.js)
+      # now owns the server + client lifecycle, so the shell-step
+      # background starts and wait-on are gone.  Env vars the spawned
+      # servers need are still set here so they're in scope for the
+      # `npx playwright test` invocation below.
+      - name: Run Playwright tests (with Playwright-managed servers)
         run: npx playwright test --project=chromium
         env:
           CI: true
           BASE_URL: http://localhost:5173
+          NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/kiip_test_app
+          GEMINI_API_KEY: test_key_not_used_in_ci
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
+          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
+          CLIENT_URL: http://localhost:5173
+          ADMIN_EMAIL: admin@example.com
 
       - name: Upload test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

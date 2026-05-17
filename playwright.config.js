@@ -42,13 +42,31 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm start',
-  //   url: 'http://localhost:5173',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120 * 1000,
-  // },
+  /* Issue #55 — Playwright owns the dev-server lifecycle.  Previously
+     CI started servers in shell steps and raced them against the
+     runner; if a server failed to come up (port collision, slow
+     Mongo), Playwright hit dead endpoints and failures looked like
+     product bugs.  Now Playwright waits for each /health (or root URL)
+     before any test runs.  reuseExistingServer locally so devs can
+     keep `npm start` running between iterations. */
+  webServer: [
+    {
+      command: 'cd server && npm start',
+      url: 'http://localhost:5000/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'cd client && npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 
   /* Test timeout */
   timeout: 30 * 1000,
