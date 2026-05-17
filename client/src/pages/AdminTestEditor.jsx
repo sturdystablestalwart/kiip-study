@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 import { Button, Card, Badge, Modal, ModalActions } from '../components/ui';
 
 const BackLink = styled(Button).attrs({ $variant: 'ghost', $size: 'compact' })`
@@ -297,7 +298,10 @@ const QUESTION_TYPES = [
 function AdminTestEditor() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user, loading: authLoading } = useAuth();
+    // user is referenced indirectly via useRequireAdmin; authLoading is
+    // kept available for any callers below that still want it.
+    const { loading: authLoading } = useAuth();
+    const adminReady = useRequireAdmin();
     const { t } = useTranslation();
 
     const [curriculum, setCurriculum] = useState([]);
@@ -321,12 +325,9 @@ function AdminTestEditor() {
     }, []);
 
     useEffect(() => {
-        if (!authLoading && !user?.isAdmin) {
-            navigate('/');
-            return;
-        }
-
-        if (!authLoading && user?.isAdmin) {
+        // Issue #163 — shared admin gate handles redirect; only fetch
+        // when adminReady is true.
+        if (adminReady) {
             const controller = new AbortController();
             api.get(`/api/tests/${id}`, { signal: controller.signal })
                 .then(res => {
@@ -362,7 +363,7 @@ function AdminTestEditor() {
                 .finally(() => setLoading(false));
             return () => controller.abort();
         }
-    }, [id, authLoading, user, navigate]);
+    }, [id, adminReady]);
 
     const updateQuestion = (idx, updates) => {
         setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, ...updates } : q));
