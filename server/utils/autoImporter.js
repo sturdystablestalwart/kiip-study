@@ -25,8 +25,14 @@ const autoImportTests = async (parseFunction) => {
             const parsedData = await parseFunction(content);
             const title = parsedData.title || fileName;
 
-            const existing = await Test.findOne({ title });
-            if (existing) {
+            // Issue #136 — fast existence check (uses the new
+            // single-field { title: 1 } index instead of scanning) so we
+            // skip the expensive Gemini classifier call when the doc
+            // already exists.  The actual insert is then an atomic
+            // findOneAndUpdate upsert so two concurrent boots can't
+            // double-insert on the same title.
+            const exists = await Test.exists({ title });
+            if (exists) {
                 logger.info({ title }, 'Skipping — already exists');
                 continue;
             }
@@ -47,14 +53,24 @@ const autoImportTests = async (parseFunction) => {
                 classification = {};
             }
 
-            const newTest = new Test({
-                title,
-                source: 'auto-imported',
-                ...classification,
-                questions: parsedData.questions
-            });
-            await newTest.save();
-            logger.info({ title, classification }, 'Imported test');
+            const result = await Test.findOneAndUpdate(
+                { title },
+                {
+                    $setOnInsert: {
+                        title,
+                        source: 'auto-imported',
+                        ...classification,
+                        questions: parsedData.questions,
+                    },
+                },
+                { upsert: true, new: true, includeResultMetadata: true },
+            );
+            const insertedFresh = result?.lastErrorObject?.updatedExisting === false;
+            if (insertedFresh) {
+                logger.info({ title, classification }, 'Imported test');
+            } else {
+                logger.info({ title }, 'Race avoided — concurrent insert won');
+            }
         } catch (err) {
             logger.error({ err }, `Failed to import ${fileName}`);
         }

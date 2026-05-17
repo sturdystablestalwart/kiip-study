@@ -51,4 +51,11 @@ TestSchema.index({ level: 1, unitNumber: 1, contentType: 1, createdAt: -1 });
 // Compound index for cursor pagination by (createdAt desc, _id desc)
 TestSchema.index({ createdAt: -1, _id: -1 });
 
+// Issue #136 — exact-match lookup by `title` is used by autoImporter
+// to skip already-imported files; without a single-field index this
+// was a collection scan at every boot once the library grew past a
+// few hundred tests.  The text index on title is separate (full-text
+// search) and doesn't satisfy exact-match queries.
+TestSchema.index({ title: 1 });
+
 module.exports = mongoose.model('Test', TestSchema);
