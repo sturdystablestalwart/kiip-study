@@ -75,7 +75,9 @@
     "blankAriaLabel": "Blank {{index}}",
     "selectAllThatApply": "Select all that apply",
     "selectAllThatApplyAriaLabel": "Answer options — select all that apply",
-    "charCount": "{{count}} characters"
+    "charCount": "{{count}} characters",
+    "feedbackCorrect": "Correct!",
+    "feedbackIncorrectAccepted": "Incorrect. Accepted answers:"
   },
   "create": {
     "title": "Create Test",

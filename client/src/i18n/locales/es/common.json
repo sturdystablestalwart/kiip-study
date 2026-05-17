@@ -75,7 +75,9 @@
     "blankAriaLabel": "Espacio {{index}}",
     "selectAllThatApply": "Selecciona todas las que correspondan",
     "selectAllThatApplyAriaLabel": "Opciones de respuesta — selecciona todas las que correspondan",
-    "charCount": "{{count}} caracteres"
+    "charCount": "{{count}} caracteres",
+    "feedbackCorrect": "¡Correcto!",
+    "feedbackIncorrectAccepted": "Incorrecto. Respuestas aceptadas:"
   },
   "create": {
     "title": "Crear prueba",
