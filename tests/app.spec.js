@@ -556,13 +556,14 @@ test.describe('Theme and Language', () => {
   test('clicking language toggle cycles to next language', async ({ page }) => {
     await page.goto(BASE_URL);
     const langBtn = page.locator('button[aria-label="Change language"]');
+    const originalText = (await langBtn.textContent())?.trim();
     await langBtn.click();
-    // Wait for re-render after language change
-    await page.waitForTimeout(300);
-    const newText = await langBtn.textContent();
-    // After clicking, should show a different language label
+    // Issue #3 — wait for the *label text* to actually flip rather
+    // than a fixed sleep that could under- or over-shoot re-render.
+    await expect.poll(async () => (await langBtn.textContent())?.trim()).not.toBe(originalText);
+    const newText = (await langBtn.textContent())?.trim();
     const validLabels = ['EN', '한국어', 'РУ', 'ES'];
-    expect(validLabels).toContain(newText.trim());
+    expect(validLabels).toContain(newText);
   });
 
 });
@@ -662,7 +663,9 @@ test.describe('Accessibility', () => {
 
   test('Create Test page has no critical a11y violations', async ({ page }) => {
     await page.goto(`${BASE_URL}/create`);
-    await page.waitForTimeout(1000);
+    // Issue #3 — wait for the SPA shell to settle (main rendered)
+    // instead of a fixed 1s sleep before running axe.
+    await page.waitForSelector('main', { timeout: 10_000 });
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze();
@@ -672,7 +675,9 @@ test.describe('Accessibility', () => {
 
   test('404 page has no critical a11y violations', async ({ page }) => {
     await page.goto(`${BASE_URL}/nonexistent-page`);
-    await page.waitForTimeout(500);
+    // Issue #3 — same: wait for the rendered 404 surface instead of
+    // a fixed 500ms sleep that under/over-shoots on slow CI.
+    await page.waitForSelector('main', { timeout: 10_000 });
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze();
@@ -935,9 +940,12 @@ test.describe('A6: Semantic MCQ inputs', () => {
     const count = await testCard.count();
     if (count === 0) return;
     await testCard.click();
-    await page.waitForTimeout(3000);
+    // Issue #3 — wait for either group to actually appear instead of
+    // a blanket 3s sleep.  Either-or via `or`, so the first matching
+    // group resolves the wait.
     const radioGroup = page.locator('[role="radiogroup"]');
     const checkboxGroup = page.locator('[role="group"][aria-label*="select all"]');
+    await expect(radioGroup.or(checkboxGroup).first()).toBeVisible({ timeout: 10_000 });
     const hasRadio = await radioGroup.count();
     const hasCheckbox = await checkboxGroup.count();
     expect(hasRadio + hasCheckbox).toBeGreaterThan(0);
@@ -974,7 +982,11 @@ test.describe('B8: Prominent continue session', () => {
 test.describe('B10: Attempt comparison', () => {
   test('dashboard has compare button for repeated tests', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForTimeout(3000);
+    // Issue #3 — wait for the dashboard's primary heading to render
+    // before probing for the optional element.  Avoids the 3s sleep
+    // when the page is ready in 200ms and avoids racing past it on
+    // slow CI.
+    await page.waitForSelector('h1', { timeout: 10_000 });
     const compareBtn = page.locator('[data-testid="compare-attempts"]');
     // May or may not exist depending on auth state and data
     const count = await compareBtn.count();
@@ -1007,7 +1019,10 @@ test.describe('C1: Tooltip component', () => {
     const count = await testCard.count();
     if (count === 0) return;
     await testCard.click();
-    await page.waitForTimeout(3000);
+    // Issue #3 — wait for the test-taker shell to render (the
+    // primary heading appears after the route transition + fetch).
+    // Probe `<kbd>` after that signal instead of a fixed 3s sleep.
+    await page.waitForSelector('h1, h2, h3', { timeout: 10_000 });
     const kbd = page.locator('kbd').first();
     const kbdCount = await kbd.count();
     if (kbdCount > 0) {

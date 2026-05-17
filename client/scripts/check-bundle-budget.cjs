@@ -30,7 +30,10 @@ const BUDGETS = {
     // Every visitor downloads this on first paint.
     entry: { match: /^(index|vendor)-[A-Za-z0-9_-]+\.js$/, limit: 400_000 },
     // The chart library — guarded separately because it dominates total.
-    anychart: { match: /^anychart-[A-Za-z0-9_-]+\.js$/, limit: 2_700_000 },
+    // Lowered from 2_700_000 → 1_400_000 in #6 after switching from
+    // `import 'anychart'` (full bundle) to modular base/cartesian/radar
+    // imports.  Current build sits at ~1.27MB; ~10% headroom over that.
+    anychart: { match: /^anychart-[A-Za-z0-9_-]+\.js$/, limit: 1_400_000 },
     // Everything else (route-level lazy chunks, i18n bundles, etc).
     lazy: { match: /\.js$/, limit: 600_000 },
 };
