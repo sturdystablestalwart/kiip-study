@@ -230,7 +230,7 @@ function formatDuration(seconds) {
 function EndlessMode() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user: _User } = useAuth();
+  const { user } = useAuth();
 
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -432,7 +432,19 @@ function EndlessMode() {
               onChange={setUnitFilter}
             />
           </FilterRow>
-          <Button onClick={handleStart}>{t('endless.start')}</Button>
+          {/* Issue #159 — surface the sign-in requirement upfront so
+              anonymous users don't fill filters, click Start, wait for
+              a network round-trip, then see a 401 toast. */}
+          {user ? (
+            <Button onClick={handleStart}>{t('endless.start')}</Button>
+          ) : (
+            <>
+              <Button onClick={handleStart} disabled>{t('endless.start')}</Button>
+              <StartDescription style={{ marginTop: 12 }}>
+                {t('common.loginRequired')}
+              </StartDescription>
+            </>
+          )}
         </StartScreenCard>
       </Page>
     );
