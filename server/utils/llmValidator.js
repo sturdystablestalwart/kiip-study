@@ -1,6 +1,21 @@
 'use strict';
 
-const HTML_TAG_RE = /<\/?[a-z][\s\S]*?>/i;
+// Issue #67 — `/<\/?[a-z][\s\S]*?>/i` could be ReDoS'd by pathological
+// LLM output (e.g. very long unterminated `<a` followed by megabytes of
+// content).  We only need *detection* here — the validator throws on
+// any HTML — so a length-cap + a non-backtracking probe is sufficient
+// and runs in O(n) over the cap.
+const MAX_HTML_PROBE_LEN = 100_000;          // 100 KB is far above any real field
+const HTML_LEAD_RE = /<[a-z!\/]/i;            // matches the lead of any tag-like sequence
+
+function containsHtmlTag(s) {
+    if (typeof s !== 'string' || s.length === 0) return false;
+    const probe = s.length > MAX_HTML_PROBE_LEN ? s.slice(0, MAX_HTML_PROBE_LEN) : s;
+    return HTML_LEAD_RE.test(probe);
+}
+
+// Back-compat shim — call sites use `.test()` directly.
+const HTML_TAG_RE = { test: containsHtmlTag };
 const VALID_TYPES = new Set([
     'mcq-single',
     'mcq-multiple',
