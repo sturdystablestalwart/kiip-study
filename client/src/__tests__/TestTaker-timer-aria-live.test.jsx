@@ -2,7 +2,7 @@
 // aria-live region.  Tests the pure helper so we don't need to render
 // the (heavy) TestTaker page just to validate the time→key mapping.
 import { describe, test, expect } from 'vitest';
-import { announcementKeyForTime } from '../pages/TestTaker';
+import { announcementKeyForTime } from '../utils/timerAnnouncement';
 
 describe('announcementKeyForTime (#8)', () => {
     test('fires at exactly 10 minutes remaining', () => {

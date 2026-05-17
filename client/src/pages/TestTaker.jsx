@@ -9,6 +9,7 @@ import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import { saveAnonymousAttempt } from '../utils/anonymousAttempts';
 import { Button, Card, Modal, ModalActions, VisuallyHidden } from '../components/ui';
+import { announcementKeyForTime } from '../utils/timerAnnouncement';
 
 /* ───────── Styled Components ───────── */
 
@@ -461,21 +462,6 @@ const ExportLink = styled.a`
     color: ${({ theme }) => theme.colors.accent.indigo};
   }
 `;
-
-/* ───────── Helpers ───────── */
-
-// Issue #8 — pure mapping from remaining seconds → i18n key suffix.
-// Returns one of: 'tenMinutes' | 'fiveMinutes' | 'oneMinute' |
-// 'thirtySeconds' | 'expired' | null.  Centralised + exported so the
-// thresholds are unit-testable without rendering the entire page.
-export function announcementKeyForTime(timeLeft, timerExpired) {
-    if (timeLeft === 600) return 'tenMinutes';
-    if (timeLeft === 300) return 'fiveMinutes';
-    if (timeLeft === 60) return 'oneMinute';
-    if (timeLeft === 30) return 'thirtySeconds';
-    if (timeLeft === 0 && !timerExpired) return 'expired';
-    return null;
-}
 
 /* ───────── Component ───────── */
 
