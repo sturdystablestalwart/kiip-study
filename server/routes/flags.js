@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const Flag = require('../models/Flag');
 const { requireAuth } = require('../middleware/auth');
 const safeError = require('../utils/safeError');
@@ -14,7 +14,8 @@ const flagSubmitLimiter = process.env.NODE_ENV === 'test'
     : rateLimit({
         windowMs: 60 * 1000,
         max: 10,
-        keyGenerator: (req) => String(req.user?._id || req.ip),
+        // Issue #23 — v8 IPv6-safe IP fallback via ipKeyGenerator.
+        keyGenerator: (req) => req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip),
         standardHeaders: true,
         legacyHeaders: false,
     });

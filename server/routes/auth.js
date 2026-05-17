@@ -4,7 +4,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { requireAuth, JWT_SECRET } = require('../middleware/auth');
 const crypto = require('crypto');
 const MagicLink = require('../models/MagicLink');
@@ -27,7 +27,10 @@ const magicLinkLimiter = rateLimit({
 const magicLinkEmailLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: isTest ? 10000 : 3,
-    keyGenerator: (req) => req.body?.email || req.ip,
+    // Issue #23 — v8 requires ipKeyGenerator() for IP fallbacks so
+    // IPv6 normalisation happens correctly (without it, /64 prefix
+    // attackers could bypass the limit by rotating the host suffix).
+    keyGenerator: (req) => req.body?.email || ipKeyGenerator(req.ip),
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests for this email, please try again later.' },
