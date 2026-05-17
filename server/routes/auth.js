@@ -407,9 +407,19 @@ router.get('/magic/verify', async (req, res) => {
         res.cookie('jwt', jwtToken, COOKIE_OPTIONS);
         res.redirect(clientUrl);
     } catch (err) {
+        // Issue #62 — distinguish "token bad" (expected, user-facing) from
+        // "server broken" (our fault) so AuthVerify can show the right
+        // message and ops sees the real failure class in telemetry.
         logger.error({ err }, 'Magic link verify error');
         const clientUrl = getClientUrl();
-        res.redirect(`${clientUrl}/auth/verify?error=TOKEN_INVALID`);
+        const isDbError = err && (
+            err.name === 'MongoServerError' ||
+            err.name === 'MongooseError' ||
+            err.name === 'MongooseServerSelectionError' ||
+            (typeof err.name === 'string' && err.name.startsWith('Mongo'))
+        );
+        const code = isDbError ? 'SERVER_ERROR' : 'TOKEN_INVALID';
+        res.redirect(`${clientUrl}/auth/verify?error=${code}`);
     }
 });
 

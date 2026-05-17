@@ -251,6 +251,7 @@
     "verifyExpired": "Este enlace ha expirado.",
     "verifyUsed": "Este enlace ya fue utilizado.",
     "verifyInvalid": "Este enlace no es valido.",
+    "verifyServerError": "Algo salió mal en nuestro lado. Por favor inténtalo de nuevo en un momento.",
     "requestNewLink": "Solicitar nuevo enlace",
     "goHome": "Ir al inicio"
   },

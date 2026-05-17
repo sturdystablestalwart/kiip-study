@@ -255,6 +255,7 @@
     "verifyExpired": "This link has expired.",
     "verifyUsed": "This link has already been used.",
     "verifyInvalid": "This link is invalid.",
+    "verifyServerError": "Something went wrong on our side. Please try again in a moment.",
     "requestNewLink": "Request a new link",
     "goHome": "Go to home"
   },
