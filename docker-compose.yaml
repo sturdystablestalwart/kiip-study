@@ -3,6 +3,7 @@ services:
     image: mongo:7
     container_name: kiip-mongo
     restart: unless-stopped
+    init: true
     volumes:
       - mongo_data:/data/db
     networks:
@@ -22,6 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: kiip-server
     restart: unless-stopped
+    init: true
     expose:
       - "5000"
     environment:
@@ -61,6 +63,7 @@ services:
       dockerfile: Dockerfile
     container_name: kiip-client
     restart: unless-stopped
+    init: true
     expose:
       - "8080"
     depends_on:
