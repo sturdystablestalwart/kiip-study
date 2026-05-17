@@ -102,6 +102,40 @@ jobs:
             server/coverage/
           retention-days: 7
 
+  # Issue #123 — verify all Dockerfiles + docker-compose.yaml build
+  # successfully BEFORE merge.  Without this, image-level breakages
+  # (Dockerfile syntax, SHA-pin drift, missing .dockerignore entries,
+  # multi-stage misconfigurations) only surface during deploy on the
+  # home server, where they crash-loop instead of failing CI.
+  # No push, no run — pure build verification.  Uses buildx with
+  # GitHub Actions cache so subsequent runs reuse layers and stay
+  # well under the timeout.
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3
+
+      # `compose build --pull` rebuilds all `build:` services in the
+      # compose file (server, client, backup as of #201) and re-pulls
+      # all pinned base images so a stale-SHA typo fails the job.
+      - name: docker compose build (server + client + backup)
+        run: docker compose build --pull
+        env:
+          # Compose interpolates these at parse time even for build-only
+          # services that won't be `up`'d; supply harmless placeholders.
+          GEMINI_API_KEY: ci-not-used
+          GOOGLE_CLIENT_ID: ci-not-used
+          GOOGLE_CLIENT_SECRET: ci-not-used
+          JWT_SECRET: ci-not-used
+          ADMIN_EMAIL: admin@example.com
+          CLIENT_URL: http://localhost
+          GOOGLE_CALLBACK_URL: http://localhost/auth/google/callback
+          CADDY_HOST: localhost
+          CADDY_EMAIL: admin@example.com
+
   # Issue #192 — split E2E across 3 shards so wall-clock drops from
   # ~10min to ~4min.  Each shard provisions its own Mongo + Playwright
   # browser; the matrix elements run in parallel so total runner time
