@@ -1,34 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import styled, { useTheme } from 'styled-components';
+import React, { useState, useEffect, useCallback } from 'react';
+import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
-import { useThemeMode } from '../context/ThemeContext';
 import { below } from '../theme/breakpoints';
 import { Button, Card, EmptyState } from '../components/ui';
-// Issue #6 — load only the AnyChart modules this page actually uses
-// instead of `import 'anychart'` (which pulls the full 2.5MB bundle).
-// Dashboard renders line, bar, and radar charts; AnyChart's modular
-// shipments cover all three at ~1.1MB combined (vs 2.5MB bundle).
-import 'anychart/dist/js/anychart-base.min.js';
-import 'anychart/dist/js/anychart-cartesian.min.js';
-import 'anychart/dist/js/anychart-radar.min.js';
-import 'anychart/dist/js/anychart-ui.min.js';
-import 'anychart/dist/js/anychart-exports.min.js';
-import 'anychart/dist/js/anychart-default-theme.min.js';
-
-// Optional: apply commercial AnyChart license key to remove the watermark.
-// The key is stored in `client/.env` as `VITE_ANYCHART_LICENSE_KEY=…` and Vite
-// substitutes it at build time. NOTE: the license key does NOT suppress the
-// rolldown `direct eval` build warning — that warning comes from the minified
-// anychart bundle itself (anychart-base.min.js / anychart-bundle.min.js) and is
-// independent of licensing. It is a benign build-time scan, not a runtime issue.
-const ANYCHART_LICENSE_KEY = import.meta.env.VITE_ANYCHART_LICENSE_KEY;
-if (ANYCHART_LICENSE_KEY && typeof window !== 'undefined' && window.anychart) {
-  window.anychart.licenseKey(ANYCHART_LICENSE_KEY);
-}
+// Issue #10 — chart rendering + AnyChart side-effects moved to dedicated
+// per-chart components.  Bootstrap module loads only the AnyChart
+// submodules these charts need and applies the optional licence key.
+import '../components/dashboard/anychartBootstrap';
+import AccuracyTrendChart from '../components/dashboard/AccuracyTrendChart';
+import UnitBreakdownChart from '../components/dashboard/UnitBreakdownChart';
+import QuestionTypeRadar from '../components/dashboard/QuestionTypeRadar';
 
 /* ───────── Styled Components ───────── */
 
@@ -285,48 +270,12 @@ const ReviewLink = styled(Link)`
 
 /* ───────── Helpers ───────── */
 
-// Issue #166 — was a static English dictionary.  Now resolved via
-// t() against the dashboard.qtype.* keys at render time so the
-// chart re-labels follow the active UI language.
-const QUESTION_TYPE_KEYS = {
-  'mcq-single': 'dashboard.qtype.mcqSingle',
-  'mcq-multiple': 'dashboard.qtype.mcqMultiple',
-  'short-answer': 'dashboard.qtype.shortAnswer',
-  'ordering': 'dashboard.qtype.ordering',
-  'fill-in-the-blank': 'dashboard.qtype.fillInTheBlank',
-};
-
-function applyChartTheme(chart, theme) {
-  chart.background().fill(theme.colors.bg.surface);
-  chart.title().fontFamily(theme.typography.fontSans);
-  chart.title().fontColor(theme.colors.text.primary);
-  chart.title().fontSize(theme.typography.scale.h3.size);
-  chart.title().fontWeight(theme.typography.scale.h3.weight);
-}
-
-function styleAxis(axis, theme) {
-  if (!axis) return;
-  axis.labels().fontColor(theme.colors.text.muted);
-  axis.labels().fontFamily(theme.typography.fontSans);
-  axis.labels().fontSize(theme.typography.scale.micro.size);
-  if (axis.title) {
-    axis.title().fontColor(theme.colors.text.muted);
-    axis.title().fontFamily(theme.typography.fontSans);
-  }
-  if (axis.stroke) {
-    axis.stroke(theme.colors.border.subtle);
-  }
-  if (axis.ticks) {
-    axis.ticks().stroke(theme.colors.border.subtle);
-  }
-}
-
 /* ───────── Component ───────── */
+/* Issue #10 — QUESTION_TYPE_KEYS, applyChartTheme, styleAxis moved
+   alongside the chart components in client/src/components/dashboard/. */
 
 function Dashboard() {
   const { user } = useAuth();
-  const { isDark } = useThemeMode();
-  const theme = useTheme();
   const { t, i18n } = useTranslation();
 
   const [stats, setStats] = useState(null);
@@ -338,14 +287,6 @@ function Dashboard() {
   const [loadingAttempts, setLoadingAttempts] = useState(false);
   const [compareTestId, setCompareTestId] = useState(null);
   const [compareAttempts, setCompareAttempts] = useState([]);
-
-  const lineRef = useRef(null);
-  const barRef = useRef(null);
-  const radarRef = useRef(null);
-
-  const lineChartRef = useRef(null);
-  const barChartRef = useRef(null);
-  const radarChartRef = useRef(null);
 
   useEffect(() => {
     if (!user) {
@@ -397,194 +338,10 @@ function Dashboard() {
     if (user) fetchAttempts();
   }, [user, fetchAttempts]);
 
-  // Line chart: Accuracy Over Time
-  useEffect(() => {
-    if (!stats?.accuracyTrend?.length || !lineRef.current) return;
-
-    // Dispose previous chart
-    if (lineChartRef.current) {
-      lineChartRef.current.dispose();
-      lineChartRef.current = null;
-    }
-
-    const chart = window.anychart.line();
-    lineChartRef.current = chart;
-
-    const data = stats.accuracyTrend.map(d => [d.date, d.score]);
-    const series = chart.line(data);
-    series.stroke(theme.colors.accent.indigo, 2);
-    series.name(t('dashboard.accuracyOverTime'));
-
-    // Markers
-    series.markers().enabled(true);
-    series.markers().size(4);
-    series.markers().fill(theme.colors.accent.indigo);
-    series.markers().stroke(theme.colors.bg.surface, 1);
-
-    // Tooltip
-    chart.tooltip().format('{%value}%');
-
-    chart.title(false);
-    applyChartTheme(chart, theme);
-    chart.title(false);
-    chart.background().fill('transparent');
-
-    // Y axis
-    const yAxis = chart.yAxis();
-    styleAxis(yAxis, theme);
-    yAxis.title(false);
-    chart.yScale().minimum(0);
-    chart.yScale().maximum(100);
-
-    // X axis
-    const xAxis = chart.xAxis();
-    styleAxis(xAxis, theme);
-    xAxis.title(false);
-
-    // Grid
-    chart.yGrid().enabled(true);
-    chart.yGrid().stroke(theme.colors.border.subtle, 1, '5 5');
-
-    chart.container(lineRef.current);
-    chart.draw();
-
-    return () => {
-      if (lineChartRef.current) {
-        lineChartRef.current.dispose();
-        lineChartRef.current = null;
-      }
-    };
-  // Issue #48 — `theme` is derived from isDark via ThemeContext (they
-  // always flip together), so listing both made every render re-fire
-  // the effect for no reason.  i18n's `t` is stable; reading it for
-  // labels does not require it in deps.  Narrowing to [stats, isDark]
-  // means a dark/light toggle re-instantiates the AnyChart instance
-  // exactly once.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stats, isDark]);
-
-  // Bar chart: Score by Unit
-  useEffect(() => {
-    if (!stats?.unitBreakdown?.length || !barRef.current) return;
-
-    if (barChartRef.current) {
-      barChartRef.current.dispose();
-      barChartRef.current = null;
-    }
-
-    const chart = window.anychart.bar();
-    barChartRef.current = chart;
-
-    const data = stats.unitBreakdown.map(u => [u.unit || 'N/A', u.avgScore]);
-    const series = chart.bar(data);
-    series.fill(theme.colors.accent.moss);
-    series.stroke(theme.colors.accent.moss, 1);
-    series.name(t('dashboard.scoreByUnit'));
-
-    chart.tooltip().format('{%value}%');
-
-    chart.title(false);
-    chart.background().fill('transparent');
-
-    const yAxis = chart.yAxis();
-    styleAxis(yAxis, theme);
-    yAxis.title(false);
-    chart.yScale().minimum(0);
-    chart.yScale().maximum(100);
-
-    const xAxis = chart.xAxis();
-    styleAxis(xAxis, theme);
-    xAxis.title(false);
-
-    chart.yGrid().enabled(true);
-    chart.yGrid().stroke(theme.colors.border.subtle, 1, '5 5');
-
-    chart.container(barRef.current);
-    chart.draw();
-
-    return () => {
-      if (barChartRef.current) {
-        barChartRef.current.dispose();
-        barChartRef.current = null;
-      }
-    };
-  // Issue #48 — `theme` is derived from isDark via ThemeContext (they
-  // always flip together), so listing both made every render re-fire
-  // the effect for no reason.  i18n's `t` is stable; reading it for
-  // labels does not require it in deps.  Narrowing to [stats, isDark]
-  // means a dark/light toggle re-instantiates the AnyChart instance
-  // exactly once.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stats, isDark]);
-
-  // Radar chart: Performance by Question Type
-  useEffect(() => {
-    if (!typeStats?.types?.length || !radarRef.current) return;
-
-    if (radarChartRef.current) {
-      radarChartRef.current.dispose();
-      radarChartRef.current = null;
-    }
-
-    const chart = window.anychart.radar();
-    radarChartRef.current = chart;
-
-    const data = typeStats.types.map(qt => [
-      QUESTION_TYPE_KEYS[qt.type] ? t(QUESTION_TYPE_KEYS[qt.type]) : qt.type,
-      qt.accuracy,
-    ]);
-
-    const series = chart.area(data);
-    series.fill(theme.colors.accent.indigo, 0.2);
-    series.stroke(theme.colors.accent.indigo, 2);
-    series.markers().enabled(true);
-    series.markers().size(4);
-    series.markers().fill(theme.colors.accent.indigo);
-    series.markers().stroke(theme.colors.bg.surface, 1);
-    series.name(t('dashboard.byQuestionType'));
-
-    chart.tooltip().format('{%value}%');
-
-    chart.title(false);
-    chart.background().fill('transparent');
-
-    chart.yScale().minimum(0);
-    chart.yScale().maximum(100);
-    chart.yScale().ticks().interval(25);
-
-    // Style radar axes
-    const yAxis = chart.yAxis();
-    if (yAxis) {
-      yAxis.labels().fontColor(theme.colors.text.faint);
-      yAxis.labels().fontFamily(theme.typography.fontSans);
-      yAxis.labels().fontSize(theme.typography.scale.micro.size);
-      yAxis.stroke(theme.colors.border.subtle);
-    }
-
-    const xAxis = chart.xAxis();
-    if (xAxis) {
-      xAxis.labels().fontColor(theme.colors.text.muted);
-      xAxis.labels().fontFamily(theme.typography.fontSans);
-      xAxis.labels().fontSize(theme.typography.scale.micro.size);
-    }
-
-    // Grid styling
-    chart.yGrid().enabled(true);
-    chart.yGrid().stroke(theme.colors.border.subtle, 1, '3 3');
-    chart.xGrid().enabled(true);
-    chart.xGrid().stroke(theme.colors.border.subtle, 1);
-
-    chart.container(radarRef.current);
-    chart.draw();
-
-    return () => {
-      if (radarChartRef.current) {
-        radarChartRef.current.dispose();
-        radarChartRef.current = null;
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeStats, isDark]);
+  // Issue #10 — chart rendering lives in AccuracyTrendChart /
+  // UnitBreakdownChart / QuestionTypeRadar.  Each owns its own
+  // window.anychart instance, ref, dispose-on-unmount, and
+  // dark-mode re-render.
 
   // Not signed in
   if (!user) {
@@ -692,7 +449,7 @@ function Dashboard() {
         <ChartSection>
           <ChartTitle>{t('dashboard.accuracyOverTime')}</ChartTitle>
           <ChartContainer $padding="sm" $height={300}>
-            <div ref={lineRef} style={{ width: '100%', height: '100%' }} />
+            <AccuracyTrendChart data={accuracyTrend} />
           </ChartContainer>
         </ChartSection>
       )}
@@ -704,7 +461,7 @@ function Dashboard() {
           <div>
             <ChartTitle>{t('dashboard.scoreByUnit')}</ChartTitle>
             <ChartContainer $padding="sm" $height={250}>
-              <div ref={barRef} style={{ width: '100%', height: '100%' }} />
+              <UnitBreakdownChart data={unitBreakdown} />
             </ChartContainer>
           </div>
         )}
@@ -714,7 +471,7 @@ function Dashboard() {
           <div>
             <ChartTitle>{t('dashboard.byQuestionType')}</ChartTitle>
             <ChartContainer $padding="sm" $height={250}>
-              <div ref={radarRef} style={{ width: '100%', height: '100%' }} />
+              <QuestionTypeRadar data={typeStats.types} />
             </ChartContainer>
           </div>
         )}
