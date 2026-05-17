@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const Test = require('../models/Test');
+const AuditLog = require('../models/AuditLog');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
@@ -32,13 +33,27 @@ adminRouter.post('/:id/share', requireAuth, requireAdmin, async (req, res) => {
     const test = await Test.findById(req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
+    let shareCreated = false;
     if (!test.shareId) {
       const { nanoid } = await import('nanoid');
-      // 21 chars of the default URL-safe alphabet = ~126 entropy bits,
-      // far above what the 30 req/min public rate-limit can practically enumerate.
-      // Older 10-char shareIds keep working because the schema accepts any string.
       test.shareId = nanoid(21);
       await test.save();
+      shareCreated = true;
+    }
+
+    // Issue #137 — record admin share-link generation in the audit log.
+    // Only audit the create path; subsequent re-fetches of an existing
+    // share link aren't state changes.  AuditLog.create is awaited
+    // (not fire-and-forget) for security-relevant paths so a missing
+    // audit entry fails the request rather than silently shipping.
+    if (shareCreated) {
+      await AuditLog.create({
+        userId: req.user._id,
+        action: 'test.share',
+        targetType: 'Test',
+        targetId: test._id,
+        details: { title: test.title, shareId: test.shareId },
+      });
     }
 
     const shareUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/shared/${test.shareId}`;
