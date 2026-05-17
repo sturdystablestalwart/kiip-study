@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const Test = require('../models/Test');
+const AuditLog = require('../models/AuditLog');
 const { checkAgainstExisting } = require('../utils/dedup');
 const { validateQuestion } = require('../utils/contentValidator');
 const safeError = require('../utils/safeError');
@@ -213,6 +214,23 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
     } catch (err) {
       results.errors.push({ title: testData.title, error: err.message });
     }
+  }
+
+  // Issue #137 — admin bulk-import is an auditable event; record the
+  // aggregate outcome.  Awaited so a failing audit write surfaces as a
+  // request failure (security-relevant path).
+  if (results.imported > 0 || results.errors.length > 0) {
+    await AuditLog.create({
+      userId: req.user._id,
+      action: 'test.bulk-import',
+      targetType: 'Test',
+      targetId: req.user._id, // no single targetId; use admin id as a stable handle
+      details: {
+        imported: results.imported,
+        skipped: results.skipped,
+        errors: results.errors.length,
+      },
+    });
   }
 
   res.json(results);

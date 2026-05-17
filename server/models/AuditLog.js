@@ -2,23 +2,13 @@ const mongoose = require('mongoose');
 
 const AuditLogSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    action: {
-        type: String,
-        required: true,
-        enum: [
-            'test.create',
-            'test.import',
-            'test.generate',
-            'test.generate-from-file',
-            'test.edit',
-            'test.delete',
-            'flag.resolve',
-            'flag.dismiss',
-            'user.admin-grant',
-            'user.admin-revoke'
-        ]
-    },
-    targetType: { type: String, required: true, enum: ['Test', 'Flag', 'User'] },
+    // Issue #137 — drop the action enum.  New audit-able admin actions
+    // (test.share, test.bulk-import, …) are added all the time and
+    // forcing a schema migration each time meant they got skipped.
+    // The field is still bounded (≤100 chars) and queryable via the
+    // existing { userId, createdAt } / { targetType, targetId } indexes.
+    action: { type: String, required: true, trim: true, maxlength: 100 },
+    targetType: { type: String, required: true, trim: true, maxlength: 50 },
     targetId: { type: mongoose.Schema.Types.ObjectId, required: true },
     details: { type: mongoose.Schema.Types.Mixed }, // contextual info e.g. { title: '...' }
     createdAt: { type: Date, default: Date.now }
