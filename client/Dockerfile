@@ -1,6 +1,6 @@
 # Stage 1: Build the React app (runs as non-root for defense-in-depth)
 # SHA-pinned. Refresh: `docker pull node:20-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine`
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
+FROM node:26-alpine@sha256:e71ac5e964b9201072425d59d2e876359efa25dc96bb1768cb73295728d6e4ea AS build
 
 WORKDIR /app
 RUN chown -R node:node /app
