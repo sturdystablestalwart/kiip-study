@@ -186,12 +186,19 @@ function AdminDuplicates() {
   // Issue #163 — shared admin gate.
   if (!adminReady) return null;
 
+  // Issue #165 — carry the original cluster index through the filter
+  // so the render doesn't fall back to O(N²) clusters.indexOf() on
+  // every paint.  Also avoids the reference-equality footgun if the
+  // backend ever ships the same question reference inside multiple
+  // clusters.
   const visibleClusters = clusters
-    ? clusters.filter((_, idx) => !dismissedIds.has(idx))
+    ? clusters
+        .map((c, originalIdx) => ({ cluster: c, originalIdx }))
+        .filter(({ originalIdx }) => !dismissedIds.has(originalIdx))
     : null;
 
   const totalQuestions = visibleClusters
-    ? visibleClusters.reduce((sum, c) => sum + (c.questions?.length || 0), 0)
+    ? visibleClusters.reduce((sum, { cluster }) => sum + (cluster.questions?.length || 0), 0)
     : 0;
 
   return (
@@ -254,8 +261,7 @@ function AdminDuplicates() {
             />
           ) : (
             <ClusterList>
-              {visibleClusters.map((cluster) => {
-                const originalIdx = clusters.indexOf(cluster);
+              {visibleClusters.map(({ cluster, originalIdx }) => {
                 const questions = cluster.questions || [];
                 const similarity = cluster.similarity || 0;
 
