@@ -8,8 +8,24 @@ if (!GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || 'missing');
 
+// Strip optional ```json fences (case-insensitive, whitespace-tolerant).
+// Handles "```json", "```JSON", "``` json ", or no fence at all.
+const FENCE_RE = /^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/im;
+
+function extractJSONBody(raw) {
+    const m = raw.match(FENCE_RE);
+    return (m ? m[1] : raw).trim();
+}
+
+const MAX_ATTEMPTS = 2;
+
 const parseTextWithLLM = async (text) => {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: {
+            responseMimeType: 'application/json',
+        },
+    });
 
     const prompt = `
         You are an expert KIIP (Korea Immigration and Integration Program) Level 2 instructor.
@@ -47,17 +63,25 @@ const parseTextWithLLM = async (text) => {
         Respond ONLY with the JSON object.
     `;
 
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const jsonText = response.text().replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
-        const parsed = JSON.parse(jsonText);
-        validateLLMOutput(parsed);
-        return parsed;
-    } catch (err) {
-        logger.error({ err }, 'LLM Parsing Error');
-        throw new Error("Failed to parse text with AI: " + err.message);
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const jsonText = extractJSONBody(response.text());
+            const parsed = JSON.parse(jsonText);
+            validateLLMOutput(parsed);
+            return parsed;
+        } catch (err) {
+            lastErr = err;
+            logger.warn(
+                { err, attempt, maxAttempts: MAX_ATTEMPTS },
+                'LLM parse attempt failed'
+            );
+        }
     }
+    logger.error({ err: lastErr }, 'LLM Parsing Error');
+    throw new Error("Failed to parse text with AI: " + lastErr.message);
 };
 
 module.exports = { parseTextWithLLM };
