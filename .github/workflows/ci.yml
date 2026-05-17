@@ -195,6 +195,10 @@ jobs:
           GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
           CLIENT_URL: http://localhost:5173
           ADMIN_EMAIL: admin@example.com
+          # Issue #210 — let the on-boot auto-importer populate Test
+          # fixtures from additionalContext/tests/ so manual-audit.
+          # spec.js has data to query and doesn't silently skip.
+          ENABLE_AUTO_IMPORT: "true"
 
       - name: Upload test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
