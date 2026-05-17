@@ -11,6 +11,12 @@ executes one gets a hard refusal instead of a destructive re-run.
 | `server/scripts/migrateLegacyTests.js`  | Map old `category` field → `source` enum; map `"Level 2"` strings → `"2"` enum; back-fill `contentType` via Gemini classifier; remove `category` + `unit` fields. | 2026-04-XX (prod) | NOT idempotent (LLM classification varies). Re-running on an already-migrated DB will reclassify everything. Avoid. |
 | `server/scripts/backfillAuthMethods.js` | Compute `authMethods` array from `googleId` / magic-link records.  Per-environment one-time. | 2026-04-XX (prod) | Safe to re-run; idempotent. |
 
+## One-off index drops
+
+| Drop | Why | When |
+|------|-----|------|
+| `db.magiclinks.dropIndex('expiresAt_1')` | Issue #39 changed the TTL `expireAfterSeconds` from 3600 → 0 so exhausted tokens expire promptly.  MongoDB cannot mutate `expireAfterSeconds` in place, so the old TTL index must be dropped once per environment before the new one rebuilds on next server start. | Once per long-lived environment, on the deploy that ships #39. |
+
 ## Run procedure
 
 1. Take a Mongo backup first.  `ops/backup.sh` produces a `.tar.gz` snapshot.
