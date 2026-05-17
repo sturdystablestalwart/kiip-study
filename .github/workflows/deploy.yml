@@ -16,6 +16,13 @@ on:
         description: 'Commit SHA to deploy (overrides tag flow; use sparingly)'
         required: false
 
+# Serialize deploys by commit SHA — duplicate runs for the same revision
+# are pointless, but we deliberately do NOT set cancel-in-progress so an
+# in-flight production deploy is never interrupted mid-rollout.
+concurrency:
+  group: deploy-${{ github.event.inputs.sha || github.ref }}
+  cancel-in-progress: false
+
 # Least-privilege: the deploy job SSHes to a remote host. It does not
 # call the GitHub API and never needs write access to repo contents,
 # issues, or PRs.
