@@ -86,7 +86,14 @@
     "orderingMoveUp": "Вверх",
     "orderingMoveDown": "Вниз",
     "orderingMovedTo": "Элемент перемещён на позицию {{position}}",
-    "unit": "Раздел {{count}}"
+    "unit": "Раздел {{count}}",
+    "timerAnnounce": {
+      "tenMinutes": "Осталось десять минут",
+      "fiveMinutes": "Осталось пять минут",
+      "oneMinute": "Осталась одна минута",
+      "thirtySeconds": "Осталось тридцать секунд",
+      "expired": "Время вышло"
+    }
   },
   "create": {
     "title": "Создать тест",

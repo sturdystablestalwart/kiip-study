@@ -8,7 +8,7 @@ import { below } from '../theme/breakpoints';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
 import { saveAnonymousAttempt } from '../utils/anonymousAttempts';
-import { Button, Card, Modal, ModalActions } from '../components/ui';
+import { Button, Card, Modal, ModalActions, VisuallyHidden } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
 
@@ -462,6 +462,21 @@ const ExportLink = styled.a`
   }
 `;
 
+/* ───────── Helpers ───────── */
+
+// Issue #8 — pure mapping from remaining seconds → i18n key suffix.
+// Returns one of: 'tenMinutes' | 'fiveMinutes' | 'oneMinute' |
+// 'thirtySeconds' | 'expired' | null.  Centralised + exported so the
+// thresholds are unit-testable without rendering the entire page.
+export function announcementKeyForTime(timeLeft, timerExpired) {
+    if (timeLeft === 600) return 'tenMinutes';
+    if (timeLeft === 300) return 'fiveMinutes';
+    if (timeLeft === 60) return 'oneMinute';
+    if (timeLeft === 30) return 'thirtySeconds';
+    if (timeLeft === 0 && !timerExpired) return 'expired';
+    return null;
+}
+
 /* ───────── Component ───────── */
 
 function TestTaker() {
@@ -482,6 +497,10 @@ function TestTaker() {
   const [showModeModal, setShowModeModal] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
   const [reviewMode, setReviewMode] = useState(false);
+  // Issue #8 — text that gets announced by an aria-live region in the
+  // header.  Only set at meaningful intervals so screen-reader users
+  // don't get spammed with a tick every second.
+  const [timerAnnouncement, setTimerAnnouncement] = useState('');
 
   const [sessionId, setSessionId] = useState(null);
   const [attemptId, setAttemptId] = useState(null);
@@ -574,6 +593,16 @@ function TestTaker() {
 
     return () => clearInterval(timer);
   }, [isSubmitted, test]);
+
+  // Issue #8 — surface remaining time to assistive tech without
+  // spamming every second.  Announce at: 10/5/1 minutes remaining,
+  // 30s, and the moment we hit zero (timer expired).  Visual timer
+  // is unchanged; this writes only to the off-screen live region.
+  useEffect(() => {
+    if (isSubmitted || !test) return;
+    const key = announcementKeyForTime(timeLeft, timerExpired);
+    if (key) setTimerAnnouncement(t(`test.timerAnnounce.${key}`));
+  }, [timeLeft, timerExpired, isSubmitted, test, t]);
 
   // Auto-save session progress every 30 seconds for authenticated users
   const autoSaveFailCount = useRef(0);
@@ -946,8 +975,16 @@ function TestTaker() {
           </ModeRow>
         </HeaderLeft>
         <HeaderRight>
-          <TimerDisplay $expired={timerExpired}>
-            {timerExpired ? `+${formatTime(overdueSeconds)}` : formatTime(timeLeft)}
+          {/* Issue #8 — role=timer + aria-live region so screen readers
+              announce remaining time at meaningful intervals (set by
+              the effect above) without ticking every second. */}
+          <TimerDisplay $expired={timerExpired} role="timer">
+            <span aria-hidden="true">
+              {timerExpired ? `+${formatTime(overdueSeconds)}` : formatTime(timeLeft)}
+            </span>
+            <VisuallyHidden aria-live="polite" aria-atomic="true">
+              {timerAnnouncement}
+            </VisuallyHidden>
           </TimerDisplay>
           <SaveIndicator $status={saveStatus} data-testid="save-indicator">
             {saveStatus === 'saving' && 'Saving...'}
