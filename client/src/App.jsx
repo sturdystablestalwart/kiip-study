@@ -409,7 +409,7 @@ function AdminDropdown({ flagCount }) {
 
 /* ─── Navigation ─── */
 
-function Navigation({ onSignIn }) {
+export function Navigation({ onSignIn }) {
   const location = useLocation();
   const { user, loading, logout } = useAuth();
   const { isDark, toggleMode } = useThemeMode();
@@ -437,9 +437,17 @@ function Navigation({ onSignIn }) {
     <Nav>
       <Logo to="/">KIIP Study</Logo>
       <NavLinks>
-        <NavLink to="/" active={location.pathname === '/' ? 1 : 0}>{t('nav.home')}</NavLink>
+        <NavLink
+          to="/"
+          active={location.pathname === '/' ? 1 : 0}
+          aria-current={location.pathname === '/' ? 'page' : undefined}
+        >{t('nav.home')}</NavLink>
         {user && (
-          <NavLink to="/dashboard" active={location.pathname === '/dashboard' ? 1 : 0}>{t('nav.dashboard')}</NavLink>
+          <NavLink
+            to="/dashboard"
+            active={location.pathname === '/dashboard' ? 1 : 0}
+            aria-current={location.pathname === '/dashboard' ? 'page' : undefined}
+          >{t('nav.dashboard')}</NavLink>
         )}
         {user?.isAdmin && <AdminDropdown flagCount={flagCount} />}
       </NavLinks>
