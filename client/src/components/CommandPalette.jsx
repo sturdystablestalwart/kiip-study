@@ -174,7 +174,7 @@ function CommandPalette({ onClose }) {
             >
               <ResultTitle>{test.title}</ResultTitle>
               <ResultMeta>
-                {test.questionCount} qs
+                {t('home.questionsCount', { count: test.questionCount })}
                 {test.lastAttempt && ` · ${Math.round((test.lastAttempt.score / test.lastAttempt.totalQuestions) * 100)}%`}
               </ResultMeta>
             </ResultItem>
