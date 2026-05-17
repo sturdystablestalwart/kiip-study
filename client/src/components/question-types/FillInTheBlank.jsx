@@ -40,7 +40,14 @@ const TextSegment = styled.span`
 
 const BlankInput = styled.input`
   display: inline-block;
-  width: 120px;
+  /* Issue #188 — 120px was too narrow for Korean noun phrases and
+     compound words; the field clipped text and forced horizontal
+     scroll inside a single-line input.  ch-units track the actual
+     character width of the user's font and CJK glyphs render as
+     ~2ch, so a `min-width: 8ch` is roughly 4 CJK characters wide. */
+  min-width: 8ch;
+  width: auto;
+  max-width: 100%;
   height: 36px;
   padding: 0 ${({ theme }) => theme.layout.space[3]}px;
   border-radius: ${({ theme }) => theme.layout.radius.sm}px;
@@ -165,6 +172,13 @@ function FillInTheBlank({ question, answer, onAnswer, showFeedback, disabled }) 
                     $incorrect={isIncorrect}
                     placeholder={t('test.blankPlaceholder', { index: currentBlankIdx + 1 })}
                     aria-label={t('test.blankAriaLabel', { index: currentBlankIdx + 1 })}
+                    /* Issue #188 — size attribute auto-grows the field
+                       to fit the user's input (or the first accepted
+                       answer when empty), with a sensible floor. */
+                    size={Math.max(
+                      8,
+                      (userVal.length || ((blankDef?.acceptedAnswers?.[0] ?? blankDef?.answer ?? '').length)) + 2
+                    )}
                   />
                   {showFeedback && isIncorrect && blankDef && (
                     <span aria-live="polite">
