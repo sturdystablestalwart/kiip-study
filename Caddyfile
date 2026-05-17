@@ -1,5 +1,13 @@
 {
 	email {$CADDY_EMAIL:admin@example.com}
+
+	# Issue #52 — edge per-IP rate-limit, shed at the proxy so a
+	# volumetric flood never wakes up the Express loop.  Defined here
+	# at the global level so the zone is reusable across handlers.
+	# 300 events / 1 minute is ~3x the Express global limiter (100/min)
+	# so legitimate concurrent users aren't hit at the edge; Express
+	# remains the precise per-route gate.
+	order rate_limit before reverse_proxy
 }
 
 {$CADDY_HOST:localhost} {
@@ -29,6 +37,19 @@
 	handle /api/* {
 		request_body {
 			max_size 12MB
+		}
+		# Issue #52 — per-IP edge limit on the API surface.  Bursts of
+		# 300+ req/min from a single client_ip are dropped with 429 at
+		# the proxy.  The window is 1m so it self-resets quickly; abusers
+		# don't get a sticky block, real users behind shared NAT get a
+		# generous ceiling.  caddy-ratelimit module loaded via custom
+		# build in ops/caddy/Dockerfile.
+		rate_limit {
+			zone api_per_ip {
+				key {client_ip}
+				events 300
+				window 1m
+			}
 		}
 		reverse_proxy server:5000
 	}
