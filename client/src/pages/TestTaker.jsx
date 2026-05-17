@@ -1000,12 +1000,15 @@ function TestTaker() {
           </NavButton>
           {reviewMode ? (
             <NavButton $primary onClick={goNext} disabled={!canGoNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
-          ) : canGoNext ? (
-            <NavButton $primary onClick={goNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
           ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitted}>
-              {t('test.submit')}
-            </Button>
+            <>
+              {canGoNext && (
+                <NavButton $primary onClick={goNext}>{t('test.next')} <Kbd>→</Kbd></NavButton>
+              )}
+              <Button onClick={handleSubmit} disabled={isSubmitted}>
+                {t('test.submit')}
+              </Button>
+            </>
           )}
         </Controls>
 
