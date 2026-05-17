@@ -465,8 +465,15 @@ function CreateTest() {
           onChange={(e) => setText(e.target.value)}
           disabled={!!file}
           $hasError={textHasError}
+          aria-invalid={textHasError ? 'true' : 'false'}
+          aria-describedby="create-text-charcount"
         />
-        <CharCount $hasError={textHasError}>
+        <CharCount
+          id="create-text-charcount"
+          $hasError={textHasError}
+          role={textHasError ? 'alert' : undefined}
+          aria-live={textHasError ? 'polite' : undefined}
+        >
           {textLength.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()}
           {textHasError && ` (${t('create.minChars', { min: MIN_TEXT_LENGTH - textLength })})`}
         </CharCount>
@@ -480,9 +487,11 @@ function CreateTest() {
             accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff"
             disabled={!!file || uploadingImages || images.length >= MAX_IMAGES}
             aria-label="Upload images"
+            aria-invalid={uploadError ? 'true' : 'false'}
+            aria-describedby={uploadError ? 'create-upload-error' : undefined}
           />
           {uploadingImages && <UploadProgress>Uploading...</UploadProgress>}
-          {uploadError && <ErrorBanner>{uploadError}</ErrorBanner>}
+          {uploadError && <ErrorBanner id="create-upload-error" role="alert">{uploadError}</ErrorBanner>}
           <ImagePreviewGrid>
             {images.map((url, i) => (
               <PreviewImageContainer key={i}>
