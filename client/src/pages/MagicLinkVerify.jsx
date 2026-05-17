@@ -57,6 +57,10 @@ export default function MagicLinkVerify() {
         TOKEN_EXPIRED: t('auth.verifyExpired'),
         TOKEN_USED: t('auth.verifyUsed'),
         TOKEN_INVALID: t('auth.verifyInvalid'),
+        // Issue #62 — server-side failure (DB outage etc.) is distinct
+        // from a bad token; show different copy so the user retries
+        // instead of giving up thinking their link expired.
+        SERVER_ERROR: t('auth.verifyServerError'),
     };
 
     if (status === 'checking' || status === 'success') {
