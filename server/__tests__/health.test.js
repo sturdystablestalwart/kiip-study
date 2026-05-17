@@ -32,17 +32,26 @@ function buildApp() {
 
 describe('GET /health — mongoose readyState gating', () => {
     let readyStateSpy;
+    const savedEnv = {};
+    const REQUIRED = ['JWT_SECRET', 'GEMINI_API_KEY'];
 
     beforeEach(() => {
-        // Stub mongoose.connection.readyState — it's a getter on the
-        // Connection prototype, so we redefine the property on the live
-        // connection object for the duration of each test.
         readyStateSpy = null;
+        // Issue #92 — handler now also gates on required env vars.
+        // Provide placeholders so the connected-mongo path returns 200.
+        for (const k of REQUIRED) {
+            savedEnv[k] = process.env[k];
+            process.env[k] = process.env[k] || 'health-test-placeholder';
+        }
     });
 
     afterEach(() => {
         if (readyStateSpy) readyStateSpy.mockRestore();
         vi.restoreAllMocks();
+        for (const k of REQUIRED) {
+            if (savedEnv[k] === undefined) delete process.env[k];
+            else process.env[k] = savedEnv[k];
+        }
     });
 
     function stubReadyState(value) {
@@ -91,5 +100,48 @@ describe('GET /health — mongoose readyState gating', () => {
         const res = await request(buildApp()).get('/api/health');
         expect(res.status).toBe(503);
         expect(res.body.ok).toBe(false);
+    });
+
+    // ─── Issue #92 — env / version / build coverage ─────────────────
+    it('returns 503 with env.missing when JWT_SECRET is absent', async () => {
+        stubReadyState(1);
+        delete process.env.JWT_SECRET;
+        const res = await request(buildApp()).get('/health');
+        expect(res.status).toBe(503);
+        expect(res.body.ok).toBe(false);
+        expect(res.body.env.ok).toBe(false);
+        expect(res.body.env.missing).toContain('JWT_SECRET');
+    });
+
+    it('returns 503 with env.missing when GEMINI_API_KEY is absent', async () => {
+        stubReadyState(1);
+        delete process.env.GEMINI_API_KEY;
+        const res = await request(buildApp()).get('/health');
+        expect(res.status).toBe(503);
+        expect(res.body.env.missing).toContain('GEMINI_API_KEY');
+    });
+
+    it('reports version and buildSha (defaulting to "dev")', async () => {
+        stubReadyState(1);
+        const res = await request(buildApp()).get('/health');
+        expect(res.status).toBe(200);
+        expect(typeof res.body.version).toBe('string');
+        expect(typeof res.body.buildSha).toBe('string');
+    });
+
+    it('reports APP_VERSION / BUILD_SHA when set at boot', async () => {
+        stubReadyState(1);
+        const savedV = process.env.APP_VERSION;
+        const savedS = process.env.BUILD_SHA;
+        process.env.APP_VERSION = '1.2.3';
+        process.env.BUILD_SHA = 'deadbeef';
+        try {
+            const res = await request(buildApp()).get('/health');
+            expect(res.body.version).toBe('1.2.3');
+            expect(res.body.buildSha).toBe('deadbeef');
+        } finally {
+            if (savedV === undefined) delete process.env.APP_VERSION; else process.env.APP_VERSION = savedV;
+            if (savedS === undefined) delete process.env.BUILD_SHA;   else process.env.BUILD_SHA = savedS;
+        }
     });
 });
