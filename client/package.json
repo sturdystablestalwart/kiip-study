@@ -18,7 +18,8 @@
     "analyze": "ANALYZE=true vite build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "i18n:check": "node scripts/i18n-coverage.cjs"
+    "i18n:check": "node scripts/i18n-coverage.cjs",
+    "bundle:check": "node scripts/check-bundle-budget.cjs"
   },
   "dependencies": {
     "anychart": "^8.14.1",
