@@ -42,5 +42,11 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# Issue #68 — helmet handles these on /api/* responses, but Caddy
+		# serves the static client bundle directly and is the only header
+		# source the browser sees for assets that never hit Express.
+		Permissions-Policy "camera=(), microphone=(), payment=(), geolocation=(), interest-cohort=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-site"
 	}
 }
