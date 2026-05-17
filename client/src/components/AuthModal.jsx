@@ -188,7 +188,10 @@ export default function AuthModal({ onClose }) {
     return (
         <Modal onClose={onClose} maxWidth={400} ariaLabel={t('auth.signInTitle')}>
                 {state === 'checkEmail' ? (
-                    <>
+                    // Issue #175 — wrap the post-send state in a polite
+                    // live region so screen readers announce the change.
+                    // role="status" implies aria-live="polite" + atomic.
+                    <div role="status" aria-live="polite">
                         <Title>{t('auth.checkEmail')}</Title>
                         <CheckEmailText>
                             {t('auth.checkEmailDesc')}{' '}
@@ -204,7 +207,7 @@ export default function AuthModal({ onClose }) {
                                 {t('auth.wrongEmail')}
                             </LinkButton>
                         </Actions>
-                    </>
+                    </div>
                 ) : (
                     <>
                         <Title>{t('auth.signInTitle')}</Title>
@@ -215,7 +218,10 @@ export default function AuthModal({ onClose }) {
                             onChange={e => setEmail(e.target.value)}
                             onKeyDown={handleKeyDown}
                             disabled={state === 'sending'}
-                            autoFocus
+                            // Issue #175 — `autoFocus` fought the Modal's
+                            // useFocusTrap initial focus call.  Modal will
+                            // focus the first focusable element (this input)
+                            // on its own, no duplicate dispatch.
                         />
                         <PrimaryAction onClick={handleSend} disabled={state === 'sending' || !email.includes('@')}>
                             {state === 'sending' ? '...' : t('auth.sendMagicLink')}
