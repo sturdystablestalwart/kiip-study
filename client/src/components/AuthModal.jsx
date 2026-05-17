@@ -106,11 +106,50 @@ export default function AuthModal({ onClose }) {
         return () => clearTimeout(timer);
     }, [cooldown]);
 
-    // Poll for auth changes (user clicked magic link in another tab)
+    // Poll for auth changes (user clicked magic link in another tab).
+    // Issue #174 — was setInterval(3000), so a 10-minute pending link
+    // burned 200 requests + DB hits per user.  Now:
+    // - exponential backoff 3s → 6s → 12s → 30s cap
+    // - pauses when document is hidden (no work while tab is in the
+    //   background)
+    // - resumes (and resets the backoff) on visibilitychange
     useEffect(() => {
         if (user) { onClose(); return; }
-        const interval = setInterval(() => refreshUser(), 3000);
-        return () => clearInterval(interval);
+
+        let cancelled = false;
+        let delay = 3000;
+        const MAX_DELAY = 30000;
+        let timer;
+
+        const schedule = () => {
+            if (cancelled) return;
+            timer = setTimeout(async () => {
+                if (cancelled) return;
+                if (!document.hidden) {
+                    try { await refreshUser(); } catch { /* ignore */ }
+                    delay = Math.min(delay * 2, MAX_DELAY);
+                }
+                schedule();
+            }, delay);
+        };
+
+        const onVisibility = () => {
+            if (!document.hidden) {
+                delay = 3000;
+                if (timer) clearTimeout(timer);
+                refreshUser().catch(() => {});
+                schedule();
+            }
+        };
+
+        schedule();
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            cancelled = true;
+            if (timer) clearTimeout(timer);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, [user, refreshUser, onClose]);
 
     const handleSend = useCallback(async () => {
