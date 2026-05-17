@@ -240,7 +240,13 @@ function EndlessMode() {
   const [answers, setAnswers] = useState({});
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
+  // Issue #160 — keep excludeKeys in a ref so fetchBatch's closure
+  // always reads the latest value instead of capturing a stale
+  // previous-batch snapshot through useCallback deps.  The state
+  // version is retained for any caller that still wants to render
+  // it (none today, but the API stays open).
   const [excludeKeys, setExcludeKeys] = useState([]);
+  const excludeKeysRef = useRef([]);
   const [levelFilter, setLevelFilter] = useState('');
   const [unitFilter, setUnitFilter] = useState('');
   const [sessionDuration, setSessionDuration] = useState(0);
@@ -287,7 +293,9 @@ function EndlessMode() {
       const params = new URLSearchParams();
       if (levelFilter) params.set('level', levelFilter);
       if (unitFilter) params.set('unit', unitFilter);
-      const keysToExclude = excludeList || excludeKeys;
+      // Issue #160 — read from the ref so a filter-change-triggered
+      // fetch doesn't carry the previous batch's exclude list.
+      const keysToExclude = excludeList || excludeKeysRef.current;
       if (keysToExclude.length) params.set('exclude', keysToExclude.join(','));
       params.set('limit', '10');
 
@@ -310,7 +318,7 @@ function EndlessMode() {
     } finally {
       setLoading(false);
     }
-  }, [levelFilter, unitFilter, excludeKeys]);
+  }, [levelFilter, unitFilter]);
 
   const submitChunk = useCallback(async (chunkQuestions, chunkAnswers) => {
     const qs = chunkQuestions || questions;
@@ -362,10 +370,13 @@ function EndlessMode() {
     setTotalAnswered(prev => prev + 1);
     if (correct) setTotalCorrect(prev => prev + 1);
 
-    // Add to exclude list (rolling window of 30)
+    // Add to exclude list (rolling window of 30).  Issue #160 — keep
+    // the ref in sync with the state so fetchBatch always sees the
+    // current list, including the very item we just added.
     const key = q._sourceKey;
-    const updatedKeys = [...excludeKeys, key];
+    const updatedKeys = [...excludeKeysRef.current, key];
     const trimmedKeys = updatedKeys.length > 30 ? updatedKeys.slice(-30) : updatedKeys;
+    excludeKeysRef.current = trimmedKeys;
     setExcludeKeys(trimmedKeys);
 
     // Check if batch complete
@@ -423,13 +434,24 @@ function EndlessMode() {
               label={t('home.allLevels')}
               value={levelFilter}
               options={LEVEL_OPTIONS}
-              onChange={setLevelFilter}
+              onChange={(v) => {
+                // Issue #160 — reset the exclude list on filter change
+                // so the next batch isn't filtered against questions
+                // from the previous (different) filter scope.
+                setLevelFilter(v);
+                excludeKeysRef.current = [];
+                setExcludeKeys([]);
+              }}
             />
             <FilterDropdown
               label={t('home.allUnits')}
               value={unitFilter}
               options={UNIT_OPTIONS}
-              onChange={setUnitFilter}
+              onChange={(v) => {
+                setUnitFilter(v);
+                excludeKeysRef.current = [];
+                setExcludeKeys([]);
+              }}
             />
           </FilterRow>
           {/* Issue #159 — surface the sign-in requirement upfront so
