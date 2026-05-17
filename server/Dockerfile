@@ -4,7 +4,7 @@
 #
 # SHA-pinned base for reproducible/secure builds.
 # To refresh: `docker pull node:20-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine`
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS deps
+FROM node:26-alpine@sha256:e71ac5e964b9201072425d59d2e876359efa25dc96bb1768cb73295728d6e4ea AS deps
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # ---------- runtime stage ----------
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
+FROM node:26-alpine@sha256:e71ac5e964b9201072425d59d2e876359efa25dc96bb1768cb73295728d6e4ea AS runtime
 
 WORKDIR /app
 
