@@ -106,6 +106,14 @@ services:
       - server
     networks:
       - kiip-network
+    healthcheck:
+      # Caddy's admin API listens on 2019/tcp (localhost-only by default).
+      # If Caddy can't load the Caddyfile or bind ports, this probe fails.
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     mem_limit: 128m
     cpus: '0.25'
 
@@ -127,6 +135,15 @@ services:
     restart: unless-stopped
     networks:
       - kiip-network
+    healthcheck:
+      # Confirms the mounted backup.sh script is present + executable.
+      # A silent volume-mount failure would otherwise leave this container
+      # cron-spinning forever with no backups landing.
+      test: ["CMD", "test", "-x", "/usr/local/bin/backup.sh"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     mem_limit: 256m
 
 volumes:
