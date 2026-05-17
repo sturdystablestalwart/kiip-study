@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege: the CI workflow only reads the checked-out tree and
+# uploads an artifact (which uses run-scoped permissions, not API tokens).
+# No write access to contents, issues, PRs, or packages is required.
+permissions:
+  contents: read
+
 jobs:
   lint-build-test:
     runs-on: ubuntu-latest
