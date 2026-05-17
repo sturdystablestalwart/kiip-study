@@ -118,19 +118,45 @@ router.post('/bulk-import', requireAuth, requireAdmin, upload.single('file'), as
       });
     }
 
-    // Check duplicates against existing tests
-    const existingTests = await Test.find({}, { title: 1, 'questions.text': 1 }).lean();
+    // Issue #64 — preview-stage dedup previously did `Test.find({}).lean()`
+    // with no limit, so each preview pulled every test's question text into
+    // memory.  Library growth made this unbounded.
+    //
+    // Fix:
+    //   1. Hard cap of MAX_LIBRARY_SIZE tests for dedup.  Above the cap the
+    //      preview short-circuits: the import still succeeds (admin gets
+    //      `dedupSkipped: true` they can surface in the UI) but we don't
+    //      OOM the server building a multi-million-question in-memory set.
+    //   2. Stream the matching tests via a cursor + `for await`, so even
+    //      under the cap we never hold all docs at once — only the running
+    //      `existingQuestions` array (which is what dedup needs anyway).
+    const MAX_LIBRARY_SIZE = 20000;
+    const totalTests = await Test.estimatedDocumentCount();
     const existingQuestions = [];
-    for (const t of existingTests) {
-      for (const q of t.questions) {
-        existingQuestions.push({ ...q, testTitle: t.title });
+    let dedupSkipped = false;
+    if (totalTests > MAX_LIBRARY_SIZE) {
+      // Skip dedup so the preview still returns; flag so UI can warn.
+      dedupSkipped = true;
+      logger.warn({ totalTests, cap: MAX_LIBRARY_SIZE }, 'Bulk import: skipping dedup — library above cap');
+    } else {
+      const cursor = Test.find({}, { title: 1, 'questions.text': 1 }).lean().cursor();
+      for await (const t of cursor) {
+        for (const q of (t.questions || [])) {
+          existingQuestions.push({ ...q, testTitle: t.title });
+        }
       }
     }
 
     for (const testData of preview.tests) {
-      const dupResults = checkAgainstExisting(testData.questions, existingQuestions);
+      // When dedup is skipped (#64), pass an empty pool so the import
+      // still proceeds; the UI shows `dedupSkipped` so the admin knows
+      // duplicates weren't checked this time.
+      const dupResults = dedupSkipped
+        ? []
+        : checkAgainstExisting(testData.questions, existingQuestions);
       testData.duplicateWarnings = dupResults;
     }
+    if (dedupSkipped) preview.dedupSkipped = true;
 
     // Store preview
     const previewId = crypto.randomUUID().replace(/-/g, '');
