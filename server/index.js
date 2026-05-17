@@ -56,7 +56,12 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      // Issue #139 — drop `data:` and `blob:` from img-src.  Inline
+      // <img src="data:image/svg+xml;..."> can carry an XSS payload, and
+      // nothing in the client uses createObjectURL.  Uploaded images come
+      // back as `/uploads/...` (same origin) and decorative SVGs now live
+      // in `client/public/` (e.g. /chevron-down.svg) so 'self' suffices.
+      imgSrc: ["'self'"],
       connectSrc: ["'self'", "https://accounts.google.com"],
     },
   },
