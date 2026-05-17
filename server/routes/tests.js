@@ -175,6 +175,13 @@ router.get('/recent-attempts', requireAuth, async (req, res) => {
     }
 });
 
+// Issue #63 — cap the number of tests we hydrate per /endless request.
+// Each test averages ~10-25 questions; the per-request pool is bounded
+// to MAX_TESTS_FOR_ENDLESS * questions/test instead of growing linearly
+// with the level's test count.  We use $sample so the cap is random
+// across the library each request, not the same "first N inserted".
+const MAX_TESTS_FOR_ENDLESS = 200;
+
 // GET random questions for endless mode
 router.get('/endless', requireAuth, async (req, res) => {
     try {
@@ -189,8 +196,17 @@ router.get('/endless', requireAuth, async (req, res) => {
         if (level && typeof level === 'string') match.level = level;
         if (unit && !isNaN(parseInt(unit))) match.unitNumber = parseInt(unit);
 
-        // Fetch matching tests with their questions
-        const tests = await Test.find(match, { questions: 1, title: 1 }).lean();
+        // Issue #63 — random sample with hard cap.  MongoDB's $sample is
+        // O(N) but only streams MAX_TESTS_FOR_ENDLESS docs back, so even
+        // a 10k-test library only pulls ~200 docs into Node memory.
+        // Sampling at the DB layer also means each request explores a
+        // different slice of the library, which is desirable for endless
+        // mode's "always-fresh" semantics.
+        const tests = await Test.aggregate([
+            { $match: match },
+            { $sample: { size: MAX_TESTS_FOR_ENDLESS } },
+            { $project: { questions: 1, title: 1 } },
+        ]);
 
         // Flatten all questions with source references
         let pool = [];
