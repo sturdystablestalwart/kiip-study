@@ -1,12 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const { body, validationResult } = require('express-validator');
 const TestSession = require('../models/TestSession');
 const Attempt = require('../models/Attempt');
 const Test = require('../models/Test');
 const { requireAuth } = require('../middleware/auth');
 const { scoreQuestion } = require('../utils/scoring');
 const safeError = require('../utils/safeError');
+
+// Issue #60 — bounds for the PATCH /:id auto-save body.  Without these
+// a doctored client can ship remainingTime: -999999 or currentQuestion:
+// 999999 which poisons the auto-save state and can leak into the
+// scoring path on /submit.
+const MAX_ANSWERS = 200;        // far above any real test
+const MAX_QUESTION_INDEX = 500;  // ~5x our largest current test
+const MAX_REMAINING_SECONDS = 24 * 3600;
+
+const patchSessionValidators = [
+    body('answers').optional().isArray({ max: MAX_ANSWERS }),
+    body('answers.*.questionIndex').optional().isInt({ min: 0, max: MAX_QUESTION_INDEX }),
+    body('answers.*.textAnswer').optional().isString().isLength({ max: 4000 }),
+    body('answers.*.selectedOptions').optional().isArray({ max: 50 }),
+    body('answers.*.orderedItems').optional().isArray({ max: 100 }),
+    body('answers.*.blankAnswers').optional().isArray({ max: 50 }),
+    body('currentQuestion').optional().isInt({ min: 0, max: MAX_QUESTION_INDEX }),
+    body('remainingTime').optional().isInt({ min: 0, max: MAX_REMAINING_SECONDS }),
+    body('expectedLastSavedAt').optional({ nullable: true }).isISO8601(),
+];
 
 // POST /api/sessions/start
 // Body: { testId, mode }
@@ -71,8 +92,12 @@ router.post('/start', requireAuth, async (req, res) => {
 // prompt). When `expectedLastSavedAt` is absent we fall back to last-writer-
 // wins for back-compat with pre-fix clients. The response always includes
 // the new `lastSavedAt` so updated clients can roll it forward.
-router.patch('/:id', requireAuth, async (req, res) => {
+router.patch('/:id', requireAuth, patchSessionValidators, async (req, res) => {
     try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array().slice(0, 10) });
+        }
         const { answers, currentQuestion, remainingTime, expectedLastSavedAt } = req.body;
 
         const set = { lastSavedAt: new Date() };
