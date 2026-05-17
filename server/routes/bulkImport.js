@@ -47,7 +47,29 @@ router.get('/import-template', requireAuth, requireAdmin, async (req, res) => {
   });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename=kiip-import-template.xlsx');
-  await workbook.xlsx.write(res);
+
+  // Issue #133 — streaming `workbook.xlsx.write(res)` without try/catch
+  // surfaced as 500 + 'headers already sent' warnings when the client
+  // disconnected mid-stream (EPIPE).  Track close, swallow EPIPE /
+  // ERR_STREAM_DESTROYED after headers have gone out, surface a clean
+  // 500 only when the response is still writable.
+  let aborted = false;
+  res.on('close', () => { if (!res.writableEnded) aborted = true; });
+
+  try {
+    await workbook.xlsx.write(res);
+  } catch (err) {
+    if (aborted || err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED') {
+      logger.warn({ err: { code: err.code, message: err.message } }, 'import-template stream aborted');
+      return;
+    }
+    if (!res.headersSent) {
+      logger.error({ err }, 'import-template generation failed before headers');
+      return res.status(500).json({ error: 'Failed to generate template' });
+    }
+    logger.error({ err }, 'import-template generation failed mid-stream');
+    try { res.destroy(err); } catch { /* ignore */ }
+  }
 });
 
 // POST /bulk-import
