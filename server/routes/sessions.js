@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const TestSession = require('../models/TestSession');
 const Attempt = require('../models/Attempt');
@@ -8,6 +9,31 @@ const Test = require('../models/Test');
 const { requireAuth } = require('../middleware/auth');
 const { scoreQuestion } = require('../utils/scoring');
 const safeError = require('../utils/safeError');
+
+// Issue #36 — per-user rate limits.  The 100 req/min global limiter
+// is too coarse for these authenticated user-facing paths.
+const userKey = (req) => String(req.user?._id || req.ip);
+const sessionStartLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 20,
+    keyGenerator: userKey,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const sessionSaveLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    keyGenerator: userKey,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+const sessionSubmitLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    keyGenerator: userKey,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Issue #60 — bounds for the PATCH /:id auto-save body.  Without these
 // a doctored client can ship remainingTime: -999999 or currentQuestion:
@@ -32,7 +58,7 @@ const patchSessionValidators = [
 // POST /api/sessions/start
 // Body: { testId, mode }
 // Returns existing active session (resumed: true) or creates a new one (resumed: false)
-router.post('/start', requireAuth, async (req, res) => {
+router.post('/start', requireAuth, sessionStartLimiter, async (req, res) => {
     try {
         const { testId, mode } = req.body;
 
@@ -92,7 +118,7 @@ router.post('/start', requireAuth, async (req, res) => {
 // prompt). When `expectedLastSavedAt` is absent we fall back to last-writer-
 // wins for back-compat with pre-fix clients. The response always includes
 // the new `lastSavedAt` so updated clients can roll it forward.
-router.patch('/:id', requireAuth, patchSessionValidators, async (req, res) => {
+router.patch('/:id', requireAuth, sessionSaveLimiter, patchSessionValidators, async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -150,7 +176,7 @@ router.patch('/:id', requireAuth, patchSessionValidators, async (req, res) => {
 
 // POST /api/sessions/:id/submit
 // Score answers server-side, create an Attempt, mark session completed
-router.post('/:id/submit', requireAuth, async (req, res) => {
+router.post('/:id/submit', requireAuth, sessionSubmitLimiter, async (req, res) => {
     try {
         const session = await TestSession.findOne({
             _id: req.params.id,
