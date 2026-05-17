@@ -446,7 +446,7 @@ function Navigation({ onSignIn }) {
       <NavSpacer />
       <NavUtilities>
         <LangToggle onClick={cycleLang} aria-label="Change language" title="Change language">
-          {LANG_LABELS[i18n.language] || LANG_LABELS.en}
+          {LANG_LABELS[i18n.resolvedLanguage || i18n.language.split('-')[0]] || LANG_LABELS.en}
         </LangToggle>
         <IconButton onClick={toggleMode} aria-label={themeLabel} title={themeLabel}>
           {isDark ? <MoonIcon /> : <SunIcon />}
