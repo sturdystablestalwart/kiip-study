@@ -28,8 +28,14 @@ const clientErrorLimiter = rateLimit({
 
 router.post('/_log/client-error', clientErrorLimiter, express.json({ limit: '12kb' }), (req, res) => {
     const body = req.body || {};
+    // Issue #31 — `source` distinguishes the new window.onerror /
+    // unhandledrejection telemetry from the original ErrorBoundary
+    // payload.  Defaults to 'error-boundary' for backward compat with
+    // the existing client send (which doesn't include the field).
+    const source = String(body.source || 'error-boundary').slice(0, 32);
     logger.warn({
         clientError: true,
+        source,
         message: String(body.message || '').slice(0, CAP),
         stack: String(body.stack || '').slice(0, CAP),
         componentStack: String(body.componentStack || '').slice(0, CAP),
@@ -37,7 +43,7 @@ router.post('/_log/client-error', clientErrorLimiter, express.json({ limit: '12k
         ua: String(body.ua || '').slice(0, UA_CAP),
         userId: req.user?._id,
         ip: req.ip,
-    }, 'client ErrorBoundary report');
+    }, `client error report (${source})`);
     res.status(204).end();
 });
 
