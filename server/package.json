@@ -1,15 +1,16 @@
 {
-  "name": "server",
+  "name": "kiip-study-server",
   "version": "1.0.0",
+  "private": true,
+  "description": "Express + Mongoose API for the KIIP Study practice platform.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "vitest run"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Alex Reznitskii",
+  "license": "UNLICENSED",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "compression": "^1.8.1",

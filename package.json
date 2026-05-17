@@ -1,7 +1,12 @@
 {
-  "name": "kiip_test_app",
+  "name": "kiip-study",
   "version": "1.0.0",
-  "description": "KIIP Test Application - Korean Immigration Integration Program study app",
+  "private": true,
+  "description": "KIIP Study — Korean Immigration Integration Program practice platform (root workspace).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sturdystablestalwart/kiip-study.git"
+  },
   "scripts": {
     "setup": "bash scripts/setup-local.sh",
     "install-all": "cd server && npm install && cd ../client && npm install",
@@ -18,8 +23,8 @@
   "dependencies": {
     "concurrently": "^8.2.0"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Alex Reznitskii",
+  "license": "UNLICENSED",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/mcp": "^0.0.64",

@@ -1,7 +1,10 @@
 {
-  "name": "client",
+  "name": "kiip-study-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "React + Vite SPA for the KIIP Study practice platform.",
+  "author": "Alex Reznitskii",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",
