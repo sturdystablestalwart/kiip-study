@@ -112,18 +112,26 @@ RULES:
 - contentType: "mock-exam" = 15+ questions across topics; "topic-drill" = single topic; "vocabulary"/"grammar" = focused drills.
 - section: only for level 5 (사회/교육/문화/정치/경제/법/역사/지리), otherwise empty.`;
 
+    // Issue #145 — hoisted to module scope so we don't pay the
+    // getGenerativeModel() cost on every retry + every request.  The
+    // SDK's GenerativeModel instance is cheap to share — it's just
+    // config + a thin wrapper around fetch.
+    if (!classifierModel) {
+        classifierModel = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: classificationSchema
+            }
+        });
+    }
+
+    await acquireSlot();
+    try {
     // Attempt classification with structured output, retry once on failure
     for (let attempt = 0; attempt < 2; attempt++) {
         try {
-            const model = genAI.getGenerativeModel({
-                model: 'gemini-2.5-flash',
-                generationConfig: {
-                    responseMimeType: 'application/json',
-                    responseSchema: classificationSchema
-                }
-            });
-
-            const llmResponse = await model.generateContent(prompt);
+            const llmResponse = await classifierModel.generateContent(prompt);
             const parsed = JSON.parse(llmResponse.response.text());
 
             // Validate level against curriculum
@@ -176,6 +184,12 @@ RULES:
             return { level: null, unitNumber: null, section: null, contentType: 'general' };
         }
     }
+    } finally {
+        releaseSlot();
+    }
 }
+
+// Module-scope shared GenerativeModel instance (#145).
+let classifierModel = null;
 
 module.exports = { classifyTest };
