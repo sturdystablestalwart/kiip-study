@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 import { formatDate } from '../utils/dateFormat';
-import { useAuth } from '../context/AuthContext';
 import { Button, Card } from '../components/ui';
 
 const PageHeader = styled.div`
@@ -154,8 +154,8 @@ const LoadMoreWrap = styled.div`
 // REASON_LABELS moved inside component for i18n access
 
 function AdminFlags() {
-    const navigate = useNavigate();
-    const { user, loading: authLoading } = useAuth();
+    // Redirect + null-render handled by useRequireAdmin (#163).
+    const adminReady = useRequireAdmin();
     const { t, i18n } = useTranslation();
     const [flags, setFlags] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -194,16 +194,11 @@ function AdminFlags() {
     }, [statusFilter]);
 
     useEffect(() => {
-        if (!authLoading && !user?.isAdmin) {
-            navigate('/');
-            return;
-        }
-        if (!authLoading && user?.isAdmin) {
-            const controller = new AbortController();
-            fetchFlags(null, false, controller.signal);
-            return () => controller.abort();
-        }
-    }, [authLoading, user, fetchFlags, navigate]);
+        if (!adminReady) return;
+        const controller = new AbortController();
+        fetchFlags(null, false, controller.signal);
+        return () => controller.abort();
+    }, [adminReady, fetchFlags]);
 
     const handleUpdateFlag = async (flagId, status) => {
         setUpdating(prev => ({ ...prev, [flagId]: true }));
@@ -220,7 +215,7 @@ function AdminFlags() {
         }
     };
 
-    if (authLoading) return null;
+    if (!adminReady) return null;
 
     return (
         <div>

@@ -1,9 +1,8 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 import { below } from '../theme/breakpoints';
 import { Button, Card, Badge } from '../components/ui';
 
@@ -233,8 +232,8 @@ const LoadingState = styled.div`
 /* ───────── Component ───────── */
 
 function AdminBulkImport() {
-  const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  // Redirect + null-render handled by useRequireAdmin (#163).
+  const adminReady = useRequireAdmin();
   const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -341,14 +340,8 @@ function AdminBulkImport() {
     window.open(`${apiBaseUrl}/api/admin/tests/import-template`, '_blank');
   };
 
-  // Redirect non-admins
-  useEffect(() => {
-    if (!authLoading && !user?.isAdmin) {
-      navigate('/');
-    }
-  }, [authLoading, user, navigate]);
-
-  if (authLoading || !user?.isAdmin) return null;
+  // Issue #163 — shared admin gate.
+  if (!adminReady) return null;
 
   const getTestStatus = (test) => {
     if (test.errors && test.errors.length > 0) return 'error';

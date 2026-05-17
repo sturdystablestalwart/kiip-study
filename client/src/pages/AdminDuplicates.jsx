@@ -1,9 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 import FilterDropdown from '../components/FilterDropdown';
 import { below } from '../theme/breakpoints';
 import { Button, Card, Badge, EmptyState } from '../components/ui';
@@ -144,8 +143,8 @@ const ErrorBanner = styled.div`
 /* ───────── Component ───────── */
 
 function AdminDuplicates() {
-  const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  // Redirect + null-render handled by useRequireAdmin (#163).
+  const adminReady = useRequireAdmin();
   const { t } = useTranslation();
 
   const [levelFilter, setLevelFilter] = useState('');
@@ -184,14 +183,8 @@ function AdminDuplicates() {
     });
   };
 
-  // Redirect non-admins
-  useEffect(() => {
-    if (!authLoading && !user?.isAdmin) {
-      navigate('/');
-    }
-  }, [authLoading, user, navigate]);
-
-  if (authLoading || !user?.isAdmin) return null;
+  // Issue #163 — shared admin gate.
+  if (!adminReady) return null;
 
   const visibleClusters = clusters
     ? clusters.filter((_, idx) => !dismissedIds.has(idx))

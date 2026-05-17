@@ -560,7 +560,8 @@ function Home() {
   const navigate = useNavigate();
   const searchPalette = useSearchPalette();
   const isAdmin = user?.isAdmin;
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // apiBaseUrl removed in #152 — PDF download now goes through the
+  // axios singleton's blob path, no need to compose a raw URL here.
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
