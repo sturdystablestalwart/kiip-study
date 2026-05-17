@@ -3,6 +3,7 @@ import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { below } from '../theme/breakpoints';
@@ -314,7 +315,7 @@ function Dashboard() {
   const { user } = useAuth();
   const { isDark } = useThemeMode();
   const theme = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [stats, setStats] = useState(null);
   const [typeStats, setTypeStats] = useState(null);
@@ -704,7 +705,7 @@ function Dashboard() {
                 <AttemptTitle>{a.test?.title || t('common.unknown')}</AttemptTitle>
                 <AttemptScore>{a.score}/{a.totalQuestions}</AttemptScore>
                 <AttemptMeta>{a.mode}</AttemptMeta>
-                <AttemptMeta>{new Date(a.createdAt).toLocaleDateString()}</AttemptMeta>
+                <AttemptMeta>{formatDate(a.createdAt, i18n.resolvedLanguage)}</AttemptMeta>
                 {attemptsByTest[a.testId?._id || a.testId]?.length >= 2 && (
                   <CompareButton
                     data-testid="compare-attempts"
@@ -741,7 +742,7 @@ function Dashboard() {
                   const pct = Math.round((a.score / a.totalQuestions) * 100);
                   return (
                     <CompareCard key={a._id}>
-                      <CompareDate>{new Date(a.createdAt).toLocaleDateString()}</CompareDate>
+                      <CompareDate>{formatDate(a.createdAt, i18n.resolvedLanguage)}</CompareDate>
                       <CompareScore $percent={pct}>{pct}%</CompareScore>
                       <CompareMeta>{a.score}/{a.totalQuestions} · {Math.floor(a.duration / 60)}m</CompareMeta>
                     </CompareCard>

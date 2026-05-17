@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
 import { useSearchPalette } from '../context/SearchPaletteContext';
 import { below } from '../theme/breakpoints';
@@ -555,7 +556,7 @@ const BadgeRow = styled.div`
 
 function Home() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const searchPalette = useSearchPalette();
   const isAdmin = user?.isAdmin;
@@ -804,7 +805,7 @@ function Home() {
               <ContinueTitle>{lastAttempt.test?.title || 'Test'}</ContinueTitle>
               <ContinueMeta>
                 {lastAttempt.mode} mode &middot; {lastAttempt.score}/{lastAttempt.totalQuestions}
-                {' '}&middot; {new Date(lastAttempt.createdAt).toLocaleDateString()}
+                {' '}&middot; {formatDate(lastAttempt.createdAt, i18n.resolvedLanguage)}
               </ContinueMeta>
             </ContinueInfo>
             <ContinueScore>{scorePercent}%</ContinueScore>
@@ -921,7 +922,7 @@ function Home() {
               {test.lastAttempt ? (
                 <CardScore>
                   {t('home.lastScore', { score: Math.round((test.lastAttempt.score / test.lastAttempt.totalQuestions) * 100) })}
-                  {' '}({new Date(test.lastAttempt.createdAt).toLocaleDateString()})
+                  {' '}({formatDate(test.lastAttempt.createdAt, i18n.resolvedLanguage)})
                 </CardScore>
               ) : (
                 <CardNoAttempt>{t('home.notAttempted')}</CardNoAttempt>

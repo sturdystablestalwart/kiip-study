@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card } from '../components/ui';
 
@@ -155,7 +156,7 @@ const LoadMoreWrap = styled.div`
 function AdminFlags() {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [flags, setFlags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('open');
@@ -257,7 +258,7 @@ function AdminFlags() {
                                     )}
                                     <FlagMeta>
                                         By {flag.userId?.displayName || flag.userId?.email || 'Unknown'}
-                                        {' '}&middot; {new Date(flag.createdAt).toLocaleDateString()}
+                                        {' '}&middot; {formatDate(flag.createdAt, i18n.resolvedLanguage)}
                                     </FlagMeta>
                                 </FlagInfo>
                                 <FlagReason>{REASON_LABELS[flag.reason] || flag.reason}</FlagReason>
