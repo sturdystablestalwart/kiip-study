@@ -1,8 +1,10 @@
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 const Curriculum = require('../models/Curriculum');
 const logger = require('./logger');
+const loadSecret = require('./loadSecret');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'missing');
+// Issue #9 — Gemini key resolves from Docker Secrets first, env second.
+const genAI = new GoogleGenerativeAI(loadSecret('GEMINI_API_KEY') || 'missing');
 
 // ── Cached taxonomy string (1-hour TTL) ──
 let cachedTaxonomy = null;
