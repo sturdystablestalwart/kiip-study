@@ -107,13 +107,15 @@ services:
     networks:
       - kiip-network
     healthcheck:
-      # Caddy's admin API listens on 2019/tcp (localhost-only by default).
-      # If Caddy can't load the Caddyfile or bind ports, this probe fails.
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2019/config/"]
+      # End-to-end probe: bind on :80 + Caddyfile parse + reverse_proxy →
+      # server + /health handler. Hits the same path the deploy workflow
+      # uses, so a proxy regression can't pass `service_healthy` while
+      # real traffic breaks (issue #94).
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     mem_limit: 128m
     cpus: '0.25'
 
