@@ -442,7 +442,14 @@ function Dashboard() {
         lineChartRef.current = null;
       }
     };
-  }, [stats, isDark, t, theme]);
+  // Issue #48 — `theme` is derived from isDark via ThemeContext (they
+  // always flip together), so listing both made every render re-fire
+  // the effect for no reason.  i18n's `t` is stable; reading it for
+  // labels does not require it in deps.  Narrowing to [stats, isDark]
+  // means a dark/light toggle re-instantiates the AnyChart instance
+  // exactly once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats, isDark]);
 
   // Bar chart: Score by Unit
   useEffect(() => {
@@ -489,7 +496,14 @@ function Dashboard() {
         barChartRef.current = null;
       }
     };
-  }, [stats, isDark, t, theme]);
+  // Issue #48 — `theme` is derived from isDark via ThemeContext (they
+  // always flip together), so listing both made every render re-fire
+  // the effect for no reason.  i18n's `t` is stable; reading it for
+  // labels does not require it in deps.  Narrowing to [stats, isDark]
+  // means a dark/light toggle re-instantiates the AnyChart instance
+  // exactly once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats, isDark]);
 
   // Radar chart: Performance by Question Type
   useEffect(() => {
@@ -557,7 +571,8 @@ function Dashboard() {
         radarChartRef.current = null;
       }
     };
-  }, [typeStats, isDark, t, theme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeStats, isDark]);
 
   // Not signed in
   if (!user) {
