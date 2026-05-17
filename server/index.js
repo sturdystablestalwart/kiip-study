@@ -234,7 +234,17 @@ app.get('/api/health', healthHandler);
 
 // Production error handler — hide stack traces from clients
 app.use((err, req, res, _next) => {
-  logger.error({ err }, 'Unhandled error');
+  // Issue #146 — bundle request context with the error so logs are
+  // tied to a route, user and client.  Without this an error line is
+  // basically a noisy stack trace with no way to triage it.
+  logger.error({
+    err,
+    method: req.method,
+    url: req.originalUrl,
+    userId: req.user?._id,
+    ip: req.ip,
+    ua: (req.headers['user-agent'] || '').slice(0, 200),
+  }, 'Unhandled error');
   const status = err.status || 500;
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(status).json({ error: message });
