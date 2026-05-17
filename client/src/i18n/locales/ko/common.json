@@ -70,7 +70,9 @@
     "exportBlank": "빈 시험지",
     "exportAnswerKey": "정답지",
     "exportMyAnswers": "내 답안",
-    "exportReport": "전체 리포트"
+    "exportReport": "전체 리포트",
+    "blankPlaceholder": "빈칸 {{index}}",
+    "blankAriaLabel": "{{index}}번 빈칸"
   },
   "create": {
     "title": "시험 만들기",
