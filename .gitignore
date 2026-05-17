@@ -75,9 +75,11 @@ server/uploads/documents/*
 !server/uploads/images/.gitkeep
 !server/uploads/documents/.gitkeep
 
-# Local backups
-backups/*.tar.gz
-backups/mongo-*/
+# Local backups — ignore everything inside `backups/` so half-built
+# kiip_backup_*/, mongo-*/ and *.tar.gz dirs from aborted backup runs
+# don't leak into commits (#203).  The .gitkeep keeps the dir tracked.
+backups/*
+!backups/.gitkeep
 
 # Bundle analysis
 dist/bundle-report.html
