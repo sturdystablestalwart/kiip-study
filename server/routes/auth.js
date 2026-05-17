@@ -254,13 +254,34 @@ if (!isTest) {
 // Equalize latency for no-op success paths (honeypot, cooldown) so they
 // take a similar amount of time as the real send-mail path. Bots / timing
 // attackers should not be able to distinguish them.
+//
+// Issue #131 — pad real and no-op paths to the same lower bound so DB +
+// SMTP latency on the real send can't be timed against the no-op paths
+// to enumerate registered emails.  We fire SMTP asynchronously (see the
+// /magic/send handler) so the response itself completes in ~constant
+// time regardless of SMTP target speed.
+const MAGIC_LINK_PAD_MIN_MS = 250;
+const MAGIC_LINK_PAD_JITTER_MS = 100;
+
 function approximateSendDelay() {
-    const ms = 50 + Math.floor(Math.random() * 100);
+    const ms = MAGIC_LINK_PAD_MIN_MS + Math.floor(Math.random() * MAGIC_LINK_PAD_JITTER_MS);
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function padToConstantTime(startedAt) {
+    const elapsed = Date.now() - startedAt;
+    const target = MAGIC_LINK_PAD_MIN_MS + Math.floor(Math.random() * MAGIC_LINK_PAD_JITTER_MS);
+    const remaining = target - elapsed;
+    if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
 }
 
 // POST /api/auth/magic/send
 router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, res) => {
+    // Issue #131 — track when the handler started so we can pad both
+    // no-op and real-send paths to a constant time.  Without this, a
+    // timing attacker could observe ~500ms-2s for real sends vs
+    // ~50-150ms for no-op paths and enumerate registered users.
+    const startedAt = Date.now();
     try {
         // Honeypot: a hidden field the real form does NOT render. Bots that
         // blindly fill every input get caught here. Respond with the same
@@ -268,7 +289,7 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
         const honeypot = req.body?.website;
         if (typeof honeypot === 'string' && honeypot.trim() !== '') {
             logger.warn({ ip: req.ip }, 'Magic link honeypot tripped');
-            await approximateSendDelay();
+            await padToConstantTime(startedAt);
             return res.json(MAGIC_LINK_GENERIC_RESPONSE);
         }
 
@@ -285,7 +306,7 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
         const lastSent = lastSendByEmail.get(normalizedEmail);
         if (lastSent && now - lastSent < MAGIC_LINK_COOLDOWN_MS) {
             logger.info({ email: normalizedEmail }, 'Magic link per-email cooldown hit');
-            await approximateSendDelay();
+            await padToConstantTime(startedAt);
             return res.json(MAGIC_LINK_GENERIC_RESPONSE);
         }
 
@@ -293,7 +314,7 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
         // the generic body so we don't leak which emails are allowed.
         if (!isEmailAllowedForSignup(normalizedEmail)) {
             logger.warn({ email: normalizedEmail }, 'Magic link signup rejected by allowlist');
-            await approximateSendDelay();
+            await padToConstantTime(startedAt);
             return res.json(MAGIC_LINK_GENERIC_RESPONSE);
         }
 
@@ -320,11 +341,21 @@ router.post('/magic/send', magicLinkLimiter, magicLinkEmailLimiter, async (req, 
             requestedUA: req.headers['user-agent'],
         });
 
-        await sendMagicLinkEmail(normalizedEmail, rawToken, validLang);
+        // Issue #131 — fire-and-forget SMTP so the response time doesn't
+        // expand with the (variable, often multi-second) upstream send
+        // latency.  Errors land in pino instead of bubbling up to the
+        // client — the user already saw the generic success body.
+        sendMagicLinkEmail(normalizedEmail, rawToken, validLang).catch((err) => {
+            logger.error({ err, email: normalizedEmail }, 'Magic link SMTP send failed (async)');
+        });
 
+        await padToConstantTime(startedAt);
         res.json(MAGIC_LINK_GENERIC_RESPONSE);
     } catch (err) {
         logger.error({ err }, 'Magic link send error');
+        // Even on error, pad so the timing of "real attempt got here and
+        // crashed" can't be distinguished from the no-op paths.
+        try { await padToConstantTime(startedAt); } catch { /* ignore */ }
         res.status(500).json({ message: 'Failed to send sign-in link' });
     }
 });
