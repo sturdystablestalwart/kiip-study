@@ -165,15 +165,18 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
   // a few seconds ago, a truncated / locale-mangled / out-of-band-
   // tampered file would otherwise create malformed Test docs that
   // bypassed validateAndGroup()'s checks.
+  // Issue #138 — switch to async fs.promises so the multi-MB JSON
+  // read doesn't block the event loop while other requests starve.
   let preview;
   try {
-    preview = JSON.parse(fs.readFileSync(previewPath, 'utf-8'));
+    const raw = await fs.promises.readFile(previewPath, 'utf-8');
+    preview = JSON.parse(raw);
   } catch (err) {
     logger.error({ err, previewId }, 'Bulk import preview unreadable');
-    try { fs.unlinkSync(previewPath); } catch { /* ignore */ }
+    try { await fs.promises.unlink(previewPath); } catch { /* ignore */ }
     return res.status(400).json({ error: 'Preview file unreadable. Please re-upload.' });
   }
-  fs.unlinkSync(previewPath);
+  await fs.promises.unlink(previewPath).catch(() => {});
 
   if (!preview || typeof preview !== 'object' || !Array.isArray(preview.tests)) {
     return res.status(400).json({ error: 'Preview file malformed. Please re-upload.' });
@@ -182,11 +185,11 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
   const VALID_LEVELS = new Set(['0', '1', '2', '3', '4', '5-basic', '5-advanced']);
 
   const results = { imported: 0, skipped: 0, errors: [] };
+  // First pass: filter + shape-validate so we only insert valid docs.
+  const toInsert = [];
   for (const testData of preview.tests) {
     if (testData.errors && testData.errors.length > 0) { results.skipped++; continue; }
 
-    // Re-check the shape we're about to persist.  Anything that fails
-    // gets counted as a skip + recorded so the admin sees it.
     const shapeError =
         (!testData.title || typeof testData.title !== 'string' || testData.title.length > 500)
             ? 'invalid title' :
@@ -204,15 +207,40 @@ router.post('/bulk-import/confirm', requireAuth, requireAdmin, async (req, res) 
       continue;
     }
 
+    toInsert.push({
+      title: testData.title,
+      level: testData.level,
+      unitNumber: testData.unitNumber,
+      source: 'bulk-import',
+      questions: testData.questions,
+    });
+  }
+
+  // Issue #138 — replace the serial `for (...) await test.save()` loop
+  // with Test.insertMany({ ordered: false }) so the whole batch lands
+  // in one round-trip.  ordered:false continues past per-doc errors and
+  // we re-surface them in the response.
+  if (toInsert.length > 0) {
     try {
-      const test = new Test({
-        title: testData.title, level: testData.level, unitNumber: testData.unitNumber,
-        source: 'bulk-import', questions: testData.questions,
-      });
-      await test.save();
-      results.imported++;
+      const inserted = await Test.insertMany(toInsert, { ordered: false });
+      results.imported += inserted.length;
     } catch (err) {
-      results.errors.push({ title: testData.title, error: err.message });
+      // BulkWriteError: some inserted, some failed
+      if (err.writeErrors) {
+        const failedIdx = new Set(err.writeErrors.map((e) => e.index));
+        results.imported += toInsert.length - failedIdx.size;
+        for (const e of err.writeErrors) {
+          results.errors.push({
+            title: toInsert[e.index]?.title || '(no title)',
+            error: e.errmsg || e.message,
+          });
+        }
+      } else {
+        // Total failure
+        for (const t of toInsert) {
+          results.errors.push({ title: t.title, error: err.message });
+        }
+      }
     }
   }
 
