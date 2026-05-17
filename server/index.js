@@ -131,8 +131,22 @@ if (!fs.existsSync(documentsDir)) {
     fs.mkdirSync(documentsDir, { recursive: true, mode: UPLOAD_DIR_MODE });
 }
 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app')
+// Database Connection (#147)
+// Driver defaults are too forgiving for a single-tenant app:
+//   - serverSelectionTimeoutMS=30000 turns a misconfigured boot into a
+//     30s hang before fail; 5s is plenty for local + same-network mongo.
+//   - socketTimeoutMS=0 (unset) means hung sockets stay in the pool
+//     forever; 30s lets the driver recycle them.
+//   - maxPoolSize=100 is oversized for the single-process workload and
+//     hides connection leaks; 20 is enough headroom.
+//   - family=4 keeps the resolver on IPv4 so `localhost` doesn't ping
+//     ::1 first on dual-stacks where mongo only binds v4.
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app', {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 30000,
+    maxPoolSize: 20,
+    family: 4,
+})
 .then(async () => {
     console.log('MongoDB Connected');
     // Seed KIIP curriculum if empty
@@ -159,6 +173,12 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_a
     }
 })
 .catch(err => logger.error({ err }, 'MongoDB connection failed'));
+
+// Issue #147 — surface ongoing connection events so a flap in
+// production shows up as structured logs rather than silent stalls.
+mongoose.connection.on('error', (err) => logger.error({ err }, 'mongo error'));
+mongoose.connection.on('disconnected', () => logger.warn('mongo disconnected'));
+mongoose.connection.on('reconnected', () => logger.info('mongo reconnected'));
 
 // Routes
 const { router: testRoutes } = require('./routes/tests');
