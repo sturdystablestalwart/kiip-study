@@ -1,8 +1,10 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { validateLLMOutput } = require('./llmValidator');
 const logger = require('./logger');
+const loadSecret = require('./loadSecret');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Issue #9 — Gemini key resolves from Docker Secrets first, env second.
+const GEMINI_API_KEY = loadSecret('GEMINI_API_KEY');
 if (!GEMINI_API_KEY) {
     logger.warn('GEMINI_API_KEY is not set — AI generation will fail');
 }

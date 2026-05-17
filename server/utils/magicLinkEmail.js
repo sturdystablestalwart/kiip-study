@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const logger = require('./logger');
+const loadSecret = require('./loadSecret');
 
 const subjects = {
     en: 'Your sign-in link for KIIP Study',
@@ -47,12 +48,15 @@ let transporter = null;
 
 function getTransporter() {
     if (transporter) return transporter;
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    // Issue #9 — SMTP creds resolve from /run/secrets/* first, env second.
+    const smtpUser = loadSecret('SMTP_USER');
+    const smtpPass = loadSecret('SMTP_PASS');
+    if (smtpUser && smtpPass) {
         transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 587,
             secure: false,
-            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+            auth: { user: smtpUser, pass: smtpPass },
         });
         return transporter;
     }
@@ -67,12 +71,14 @@ async function sendMagicLinkEmail(email, token, lang = 'en') {
 
     const transport = getTransporter();
     if (!transport) {
-        logger.warn({ smtp_user: !!process.env.SMTP_USER }, '[magic-link] SMTP not configured — email NOT sent');
+        logger.warn({ smtp_user: !!loadSecret('SMTP_USER') }, '[magic-link] SMTP not configured — email NOT sent');
         return { sent: false, reason: 'smtp-not-configured' };
     }
 
     await transport.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        // Issue #9 — SMTP_FROM optional; falls back to the authenticated
+        // user just like before, via the same secret-aware resolver.
+        from: loadSecret('SMTP_FROM') || loadSecret('SMTP_USER'),
         to: email,
         subject,
         html,

@@ -12,6 +12,7 @@ const { sendMagicLinkEmail } = require('../utils/magicLinkEmail');
 const logger = require('../utils/logger');
 const AuditLog = require('../models/AuditLog');
 const safeError = require('../utils/safeError');
+const loadSecret = require('../utils/loadSecret');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -77,10 +78,11 @@ function isEmailAllowedForSignup(email) {
     return false;
 }
 
-// Configure Passport Google Strategy
+// Configure Passport Google Strategy.
+// Issue #9 — OAuth secrets resolve from /run/secrets/* first, env second.
 passport.use(new GoogleStrategy({
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientID: loadSecret('GOOGLE_CLIENT_ID'),
+        clientSecret: loadSecret('GOOGLE_CLIENT_SECRET'),
         callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
         scope: ['profile', 'email']
     },

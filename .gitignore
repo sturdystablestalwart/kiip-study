@@ -9,6 +9,11 @@ node_modules/
 .env.production
 .env.development
 
+# Issue #9 — Docker Secrets file source for docker-compose.secrets.yaml.
+# Each file under secrets/ holds a raw production secret; NEVER commit.
+secrets/
+!secrets/.gitkeep
+
 # Build outputs
 dist/
 dist-ssr/
