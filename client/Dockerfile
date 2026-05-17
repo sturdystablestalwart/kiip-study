@@ -17,7 +17,7 @@ RUN npm run build
 
 # Stage 2: Serve with nginx as non-root user (listens on 8080, no root needed)
 # SHA-pinned. Refresh: `docker pull nginxinc/nginx-unprivileged:alpine && docker inspect --format='{{index .RepoDigests 0}}' nginxinc/nginx-unprivileged:alpine`
-FROM nginxinc/nginx-unprivileged:alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+FROM nginxinc/nginx-unprivileged:alpine@sha256:4c18337659c90a01627f2e152b7c89524521c82dcedb255dc83d3689642b0803
 
 # Copy built assets (default html root is /usr/share/nginx/html, same as nginx:alpine)
 COPY --from=build /app/dist /usr/share/nginx/html
