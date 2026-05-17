@@ -9,7 +9,8 @@
   },
   "scripts": {
     "setup": "bash scripts/setup-local.sh",
-    "install-all": "cd server && npm install && cd ../client && npm install",
+    "install-all": "cd server && npm ci && cd ../client && npm ci",
+    "install-fresh": "cd server && npm install && cd ../client && npm install",
     "start": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
     "server": "cd server && npm start",
     "client": "cd client && npm run dev",
