@@ -80,6 +80,7 @@
     "charCount": "{{count}} симв.",
     "feedbackCorrect": "Правильно!",
     "feedbackIncorrectAccepted": "Неправильно. Допустимые ответы:",
+    "whyLabel": "Почему?",
     "unit": "Раздел {{count}}"
   },
   "create": {

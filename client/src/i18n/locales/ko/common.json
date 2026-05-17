@@ -80,6 +80,7 @@
     "charCount": "{{count}}자",
     "feedbackCorrect": "정답입니다!",
     "feedbackIncorrectAccepted": "오답입니다. 정답:",
+    "whyLabel": "이유?",
     "unit": "{{count}}과"
   },
   "create": {

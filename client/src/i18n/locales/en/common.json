@@ -80,6 +80,7 @@
     "charCount": "{{count}} characters",
     "feedbackCorrect": "Correct!",
     "feedbackIncorrectAccepted": "Incorrect. Accepted answers:",
+    "whyLabel": "Why?",
     "unit": "Unit {{count}}"
   },
   "create": {

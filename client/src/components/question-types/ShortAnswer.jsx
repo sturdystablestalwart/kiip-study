@@ -162,7 +162,7 @@ function ShortAnswer({ question, answer, onAnswer, showFeedback, disabled }) {
 
       {showFeedback && question.explanation && (
         <ExplanationPanel>
-          <strong>Why?</strong> {question.explanation}
+          <strong>{t('test.whyLabel')}</strong> {question.explanation}
         </ExplanationPanel>
       )}
     </Wrapper>
