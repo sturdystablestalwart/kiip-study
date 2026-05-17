@@ -1,0 +1,32 @@
+# Issue #204 — gitleaks configuration.
+#
+# Extends the default ruleset; only adds allowlists so we don't get
+# false positives on placeholder values that legitimately live in the
+# repo.
+title = "kiip-study gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for placeholder / example values"
+paths = [
+    # .env.example ships placeholder values like `your-jwt-secret-change-in-production`
+    # that look like secrets but aren't.
+    '''\.env\.example$''',
+    # README + setup docs reference placeholder API keys + database URIs.
+    '''additionalContext/SETUP_AND_USAGE\.md$''',
+    '''README\.md$''',
+    # CI workflow uses literal `ci-test-secret-not-used-in-production-xx`
+    # placeholders intentionally so server boot validation passes.
+    '''\.github/workflows/.*\.yml$''',
+]
+regexes = [
+    # The exact placeholder values we use across env/CI configs.
+    '''your-jwt-secret-change-in-production''',
+    '''ci-test-secret-not-used-in-production-xx''',
+    '''your-gemini-api-key''',
+    '''your-google-client-(id|secret)''',
+    '''test_key_not_used_in_ci''',
+    '''ci-google-client-(id|secret)-placeholder''',
+]
