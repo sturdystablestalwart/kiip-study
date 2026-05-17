@@ -36,4 +36,18 @@ TestSessionSchema.index({ userId: 1, testId: 1, status: 1 });
 // List resumable sessions on the user dashboard, sorted most-recently-saved first
 TestSessionSchema.index({ userId: 1, status: 1, lastSavedAt: -1 });
 
+// Issue #148 — partial TTL on completed/abandoned sessions.  Active
+// sessions are exempt (they're the user's resumable progress) but
+// once a session is done it has no further read use beyond a short
+// reporting tail.  30 days keeps the analytics window while bounding
+// long-term DB bloat.  MagicLink uses the same expireAfterSeconds
+// pattern.
+TestSessionSchema.index(
+    { lastSavedAt: 1 },
+    {
+        expireAfterSeconds: 30 * 24 * 3600,
+        partialFilterExpression: { status: { $in: ['completed', 'abandoned'] } },
+    },
+);
+
 module.exports = mongoose.model('TestSession', TestSessionSchema);
