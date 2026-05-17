@@ -55,6 +55,13 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+      # Issue #195 — uploads/temp holds short-lived multer staging and
+      # bulk-import preview JSON.  Putting it on tmpfs (mounted *over*
+      # the persistent server_uploads volume at that subpath) keeps it
+      # ephemeral so a crashed container doesn't leave stale preview
+      # blobs on the persistent volume.  Size capped to 200MB matching
+      # the largest realistic bulk-import file.
+      - /app/uploads/temp:size=200m,mode=750,uid=1000,gid=1000
     mem_limit: 512m
     cpus: '1.0'
 
