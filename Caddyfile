@@ -3,6 +3,12 @@
 }
 
 {$CADDY_HOST:localhost} {
+	# Defense-in-depth (#197): nginx + Express `compression` cover the
+	# served paths today, but any future direct-serve from Caddy (static
+	# asset CDN, custom error pages, redirect bodies) goes uncompressed
+	# without this. Cheap, no-state-required, supports modern clients.
+	encode gzip zstd
+
 	# Structured access/error logs to stdout (captured by Docker logging
 	# driver). JSON makes them ingestable by Loki/Promtail/Cloudwatch/etc.
 	# Level INFO captures access logs and warnings; bump to DEBUG transiently
