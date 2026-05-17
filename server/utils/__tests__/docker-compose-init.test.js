@@ -1,15 +1,14 @@
 /**
- * Regression for issue #194:
- * Server/client/mongo services in docker-compose.yaml lacked `init: true`.
- * Without an init process, child processes spawned inside the container
- * (pdf-parse / sharp / papaparse in the server image, signal handling
- * for mongod, nginx workers in the client image) are not reaped on
- * SIGCHLD and can accumulate as zombies. Also delays clean SIGTERM
- * propagation.
+ * Regression for issues #194 + #93:
+ * All five services in docker-compose.yaml must declare `init: true`.
+ * Without an init process, child processes spawned inside containers
+ * (pdf-parse/sharp/papaparse in server, mongod workers, nginx workers
+ * in client, certificate-management children in caddy, shell pipelines
+ * in backup) are not reaped on SIGCHLD and accumulate as zombies. Also
+ * delays clean SIGTERM propagation.
  *
- * #93 covers caddy + backup; this issue covers the remaining three.
- *
- * Lock in: server, client, and mongo each declare `init: true`.
+ * #194 covers server/client/mongo; #93 covers caddy + backup. Locked in
+ * together here.
  */
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -29,8 +28,8 @@ function sectionFor(service) {
   return m ? m[1] : null;
 }
 
-describe('docker-compose init:true on app services (#194)', () => {
-  for (const svc of ['server', 'client', 'mongo']) {
+describe('docker-compose init:true on all services (#194 + #93)', () => {
+  for (const svc of ['server', 'client', 'mongo', 'caddy', 'backup']) {
     it(`${svc} declares init: true`, () => {
       const section = sectionFor(svc);
       expect(section, `${svc} service section must exist`).not.toBeNull();
