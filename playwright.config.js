@@ -6,6 +6,12 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './tests',
+  // Issue #210 — wait for at least one Test fixture to exist before any
+  // spec runs.  Without this, manual-audit.spec.js silently skipped in
+  // CI because its beforeEach finds an empty DB.  globalSetup polls
+  // /api/tests until one appears (auto-importer populates from
+  // additionalContext/tests/ when ENABLE_AUTO_IMPORT=true).
+  globalSetup: require.resolve('./tests/global-setup.js'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -61,6 +67,12 @@ module.exports = defineConfig({
       timeout: 60 * 1000,
       stdout: 'pipe',
       stderr: 'pipe',
+      // Issue #210 — auto-import the additionalContext/tests/ fixtures
+      // so /api/tests has data for manual-audit.spec.js (which would
+      // otherwise skip every case).  The server env block in
+      // .github/workflows/ci.yml also sets this, but webServer-managed
+      // local Playwright runs need it too.
+      env: { ENABLE_AUTO_IMPORT: 'true' },
     },
     {
       command: 'cd client && npm run dev',
