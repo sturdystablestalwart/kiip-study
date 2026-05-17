@@ -180,6 +180,18 @@
     "days30": "Last 30 days",
     "days90": "Last 90 days",
     "allTime": "All time",
+    "compare": "Compare",
+    "testComparison": "Test Comparison",
+    "reviewFailedLink": "Review Failed Questions →",
+    "streakDays_one": "{{count}} day",
+    "streakDays_other": "{{count}} days",
+    "qtype": {
+      "mcqSingle": "MCQ Single",
+      "mcqMultiple": "MCQ Multiple",
+      "shortAnswer": "Short Answer",
+      "ordering": "Ordering",
+      "fillInTheBlank": "Fill in Blank"
+    },
     "noData": "Take some tests to see your progress here.",
     "recentAttempts": "Recent Attempts",
     "loadMore": "Load more",
