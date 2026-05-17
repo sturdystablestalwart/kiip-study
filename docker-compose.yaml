@@ -19,9 +19,18 @@ services:
     cpus: '1.0'
 
   server:
+    # Issue #191 — deploy host has no registry, but local Docker keeps
+    # the previous build.  `cache_from` + inline cache lets BuildKit
+    # reuse layers from the previously-built local image so a one-line
+    # change doesn't re-run `npm ci` from scratch.
+    image: kiip-server:latest
     build:
       context: ./server
       dockerfile: Dockerfile
+      cache_from:
+        - kiip-server:latest
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
     container_name: kiip-server
     restart: unless-stopped
     init: true
@@ -69,9 +78,15 @@ services:
     cpus: '1.0'
 
   client:
+    # Issue #191 — see `server` block for cache_from rationale.
+    image: kiip-client:latest
     build:
       context: ./client
       dockerfile: Dockerfile
+      cache_from:
+        - kiip-client:latest
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
     container_name: kiip-client
     restart: unless-stopped
     init: true
