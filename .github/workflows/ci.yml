@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded CI runs on the same PR — rapid pushes (or
+# force-pushes) shouldn't burn runner minutes verifying stale commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Least-privilege: the CI workflow only reads the checked-out tree and
 # uploads an artifact (which uses run-scoped permissions, not API tokens).
 # No write access to contents, issues, PRs, or packages is required.
