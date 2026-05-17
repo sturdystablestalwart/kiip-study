@@ -58,6 +58,16 @@ const EmailHighlight = styled.span`
     font-weight: 500;
 `;
 
+const PrimaryAction = styled(UiButton)`
+    width: 100%;
+    margin-top: ${({ theme }) => theme.layout.space[4]}px;
+`;
+
+const SecondaryAction = styled(UiButton)`
+    width: 100%;
+    margin-top: ${({ theme }) => theme.layout.space[3]}px;
+`;
+
 const LinkButton = styled.button`
     background: none;
     border: none;
@@ -168,13 +178,13 @@ export default function AuthModal({ onClose }) {
                             disabled={state === 'sending'}
                             autoFocus
                         />
-                        <UiButton onClick={handleSend} disabled={state === 'sending' || !email.includes('@')} style={{ width: '100%', marginTop: 16 }}>
+                        <PrimaryAction onClick={handleSend} disabled={state === 'sending' || !email.includes('@')}>
                             {state === 'sending' ? '...' : t('auth.sendMagicLink')}
-                        </UiButton>
+                        </PrimaryAction>
                         <Divider>{t('auth.or')}</Divider>
-                        <UiButton $variant="secondary" onClick={handleGoogle} style={{ width: '100%', marginTop: 12 }}>
+                        <SecondaryAction $variant="secondary" onClick={handleGoogle}>
                             {t('auth.signInWithGoogle')}
-                        </UiButton>
+                        </SecondaryAction>
                     </>
                 )}
         </Modal>
