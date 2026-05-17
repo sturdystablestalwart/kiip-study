@@ -27,4 +27,10 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
 
+# Image-level liveness signal (#200). Compose adds its own; this covers
+# any standalone `docker run` and future orchestrator that reads
+# HEALTHCHECK directly.  nginx-unprivileged ships wget in busybox.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -q --spider http://localhost:8080/ || exit 1
+
 CMD ["nginx", "-g", "daemon off;"]

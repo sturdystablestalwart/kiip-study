@@ -23,5 +23,11 @@ USER node
 # Expose port
 EXPOSE 5000
 
+# Image-level liveness signal (#200). Compose adds its own healthcheck,
+# but a `docker run` for diagnostics or any future orchestrator that
+# reads HEALTHCHECK directly needs this baked in.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -q --spider http://localhost:5000/health || exit 1
+
 # Start server
 CMD ["node", "index.js"]
