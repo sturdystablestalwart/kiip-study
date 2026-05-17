@@ -513,8 +513,12 @@ function TestTaker() {
     };
     fetchTest();
     return () => controller.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    // Issue #41 — `t` is the only other identifier the body reads, and
+    // it's a stable reference returned by useTranslation (i18next swaps
+    // the underlying language without changing the function identity).
+    // Declaring it here drops the eslint-disable without re-triggering
+    // the fetch on every render.
+  }, [id, t]);
 
   // Session start (issue #114): separated from the test-fetch effect so that
   // a cold-load with a still-resolving AuthContext (`user` initially null)
