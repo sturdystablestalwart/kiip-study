@@ -17,9 +17,12 @@ permissions:
   contents: read
 
 jobs:
+  # Fast-path: lint / build / vitest don't need a Mongo or Playwright,
+  # so we split them off so the slow E2E shards aren't gated on them
+  # serially (they're gated as `needs:` instead).
   lint-build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -33,14 +36,15 @@ jobs:
             client/package-lock.json
             server/package-lock.json
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install client dependencies
-        run: cd client && npm ci
-
-      - name: Install server dependencies
-        run: cd server && npm ci
+      # Issue #192 — install three workspaces in parallel. setup-node's
+      # `cache: npm` warms ~/.npm so the slow part is hard-link extraction,
+      # which parallelizes well on the 2-core runner.
+      - name: Install all workspaces in parallel
+        run: |
+          npm ci & pid1=$!
+          (cd client && npm ci) & pid2=$!
+          (cd server && npm ci) & pid3=$!
+          wait $pid1 && wait $pid2 && wait $pid3
 
       - name: Lint client
         run: cd client && npm run lint
@@ -53,7 +57,7 @@ jobs:
 
       # Issue #14 — gate PRs on vitest too, not just lint+build+E2E.
       # Server tests use mongodb-memory-server; client uses jsdom; neither
-      # needs the live Mongo / Express below.
+      # needs the live Mongo / Express used by the E2E shards.
       - name: Test client (vitest)
         run: cd client && npm test
         env:
@@ -65,45 +69,9 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-not-used-in-production-xx
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@65edc22f4b7334080451e277dd338d2732982d8f # 1.11.0
-        with:
-          mongodb-version: "7.0"
-
-      # Issue #55 — Playwright's webServer config (in playwright.config.js)
-      # now owns the server + client lifecycle, so the shell-step
-      # background starts and wait-on are gone.  Env vars the spawned
-      # servers need are still set here so they're in scope for the
-      # `npx playwright test` invocation below.
-      - name: Run Playwright tests (with Playwright-managed servers)
-        run: npx playwright test --project=chromium
-        env:
-          CI: true
-          BASE_URL: http://localhost:5173
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/kiip_test_app
-          GEMINI_API_KEY: test_key_not_used_in_ci
-          JWT_SECRET: ci-test-secret-not-used-in-production-xx
-          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
-          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
-          CLIENT_URL: http://localhost:5173
-          ADMIN_EMAIL: admin@example.com
-
-      - name: Upload test results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-
       # Issue #53 — vitest coverage on both workspaces, threshold-gated
-      # in {client,server}/vitest.config.js.  Runs after the Playwright
-      # step so a vitest crash doesn't mask an E2E failure.  Skipped if
-      # @vitest/coverage-v8 isn't installed yet (continue-on-error).
+      # in {client,server}/vitest.config.js.  continue-on-error so a
+      # missing @vitest/coverage-v8 doesn't fail the build.
       - name: Coverage — client
         continue-on-error: true
         run: cd client && npm run test:coverage
@@ -122,4 +90,72 @@ jobs:
           path: |
             client/coverage/
             server/coverage/
+          retention-days: 7
+
+  # Issue #192 — split E2E across 3 shards so wall-clock drops from
+  # ~10min to ~4min.  Each shard provisions its own Mongo + Playwright
+  # browser; the matrix elements run in parallel so total runner time
+  # goes up but the gate-time the contributor waits on drops.
+  e2e:
+    needs: lint-build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install all workspaces in parallel
+        run: |
+          npm ci & pid1=$!
+          (cd client && npm ci) & pid2=$!
+          (cd server && npm ci) & pid3=$!
+          wait $pid1 && wait $pid2 && wait $pid3
+
+      - name: Build client
+        run: cd client && npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@65edc22f4b7334080451e277dd338d2732982d8f # 1.11.0
+        with:
+          mongodb-version: "7.0"
+
+      # Issue #55 — Playwright owns the dev-server lifecycle via the
+      # `webServer` block in playwright.config.js; no manual wait-on
+      # here.  --shard splits the 122-test suite across 3 jobs.
+      - name: Run Playwright tests (shard ${{ matrix.shard }}/3)
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/3
+        env:
+          CI: true
+          BASE_URL: http://localhost:5173
+          NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/kiip_test_app
+          GEMINI_API_KEY: test_key_not_used_in_ci
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+          GOOGLE_CLIENT_ID: ci-google-client-id-placeholder
+          GOOGLE_CLIENT_SECRET: ci-google-client-secret-placeholder
+          CLIENT_URL: http://localhost:5173
+          ADMIN_EMAIL: admin@example.com
+
+      - name: Upload test results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report/
           retention-days: 7
