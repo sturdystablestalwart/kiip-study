@@ -33,7 +33,29 @@ beforeAll(async () => {
         const doc = testStore.get(String(id));
         return { lean: async () => (doc ? { ...doc } : null) };
     };
-    TestModel.aggregate = async () => [];
+    // Issue #63 — /endless now uses Test.aggregate([{ $match }, { $sample }, ...]).
+    // The mock honors $match-by-level/unit + $sample.size cap, ignoring $project
+    // (the test asserts on fields by name, not query-shape).
+    TestModel.aggregate = async (pipeline) => {
+        let arr = Array.from(testStore.values());
+        for (const stage of pipeline || []) {
+            if (stage.$match) {
+                arr = arr.filter(t => {
+                    for (const [k, v] of Object.entries(stage.$match)) {
+                        if (t[k] !== v) return false;
+                    }
+                    return true;
+                });
+            }
+            if (stage.$sample) {
+                const size = stage.$sample.size || arr.length;
+                // Deterministic in tests — return the first N (we're not asserting on
+                // randomness, only on field projection + cap behavior).
+                arr = arr.slice(0, size);
+            }
+        }
+        return arr;
+    };
 
     // 2) Monkey-patch Attempt model
     const AttemptModel = requireCJS('../../models/Attempt.js');
@@ -161,6 +183,25 @@ describe('Issue #107 — GET /api/tests/endless must not leak answer keys', () =
                 }
             }
         }
+    });
+
+    it('Issue #63 — caps the test pool via $sample so a large library does not blow up memory', async () => {
+        // Seed 250 tests with 2 questions each; cap is 200, so the
+        // aggregate path will only hydrate 200 tests = at most 400
+        // questions, regardless of library growth.
+        for (let i = 0; i < 250; i++) {
+            seedTest(`bulk-${i}`, [
+                { type: 'mcq-single', text: `Q${i}-a`, options: [{ text: 'a', isCorrect: true }] },
+                { type: 'mcq-single', text: `Q${i}-b`, options: [{ text: 'b', isCorrect: true }] },
+            ]);
+        }
+        mockUser = { _id: 'u-cap', isAdmin: false };
+        const res = await request(app).get('/api/tests/endless?limit=10');
+        expect(res.status).toBe(200);
+        // remaining = pool.length - selected.length; pool is bounded by
+        // 200 tests * 2 questions - 10 returned = 390 max.
+        expect(res.body.remaining).toBeLessThanOrEqual(400);
+        expect(res.body.questions.length).toBe(10);
     });
 
     it('preserves question text and option text so the UI can still render', async () => {
