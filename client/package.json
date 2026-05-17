@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "analyze": "ANALYZE=true vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "i18n:check": "node scripts/i18n-coverage.cjs"
   },
   "dependencies": {
     "anychart": "^8.14.1",
