@@ -99,3 +99,27 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      # Issue #53 — vitest coverage on both workspaces, threshold-gated
+      # in {client,server}/vitest.config.js.  Runs after the Playwright
+      # step so a vitest crash doesn't mask an E2E failure.  Skipped if
+      # @vitest/coverage-v8 isn't installed yet (continue-on-error).
+      - name: Coverage — client
+        continue-on-error: true
+        run: cd client && npm run test:coverage
+      - name: Coverage — server
+        continue-on-error: true
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-used-in-production-xx
+        run: cd server && npm run test:coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            client/coverage/
+            server/coverage/
+          retention-days: 7
