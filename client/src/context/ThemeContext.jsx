@@ -24,15 +24,27 @@ export function ThemeModeProvider({ children }) {
   const isDark = mode === 'dark' || (mode === 'system' && systemDark);
   const theme = isDark ? darkTheme : lightTheme;
 
+  // 3-way cycle: light → dark → system → light. Default state is 'system' so the
+  // toggle visits every mode and a user who once flipped to light/dark can return
+  // to following OS preference without clearing localStorage (closes #172).
   const toggleMode = useCallback(() => {
-    setMode(() => {
-      const next = isDark ? 'light' : 'dark';
+    setMode(prev => {
+      const next = prev === 'light' ? 'dark' : prev === 'dark' ? 'system' : 'light';
       localStorage.setItem('theme', next);
       return next;
     });
-  }, [isDark]);
+  }, []);
 
-  const value = useMemo(() => ({ mode, isDark, toggleMode, theme }), [mode, isDark, toggleMode, theme]);
+  const setModeExplicit = useCallback(newMode => {
+    if (newMode !== 'light' && newMode !== 'dark' && newMode !== 'system') return;
+    setMode(newMode);
+    localStorage.setItem('theme', newMode);
+  }, []);
+
+  const value = useMemo(
+    () => ({ mode, isDark, toggleMode, setMode: setModeExplicit, theme }),
+    [mode, isDark, toggleMode, setModeExplicit, theme]
+  );
 
   return (
     <ThemeContext.Provider value={value}>
