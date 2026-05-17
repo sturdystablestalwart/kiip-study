@@ -20,11 +20,23 @@
 	}
 
 	# API and uploads → backend
+	# Issue #196 — Caddy defaults request_body max_size to 10MB, but
+	# nginx.conf upstream allows 12MB and multer caps at 10MB.  Without
+	# this directive a 10.5MB upload silently truncates at the edge and
+	# the user sees a confusing "file too large" further downstream.
+	# 12MB matches the nginx headroom; the inner multer limit still
+	# enforces the per-file rule.
 	handle /api/* {
+		request_body {
+			max_size 12MB
+		}
 		reverse_proxy server:5000
 	}
 
 	handle /uploads/* {
+		request_body {
+			max_size 12MB
+		}
 		reverse_proxy server:5000
 	}
 
