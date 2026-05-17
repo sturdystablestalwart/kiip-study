@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -69,6 +69,12 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: ${({ theme }) => theme.layout.space[5]}px;
+  /* Issue #151 — dim + disable interaction during a filter-driven
+     refetch so the user gets immediate feedback that something is
+     loading without the page collapsing to empty. */
+  opacity: ${({ $refetching }) => ($refetching ? 0.5 : 1)};
+  pointer-events: ${({ $refetching }) => ($refetching ? 'none' : 'auto')};
+  transition: opacity ${({ theme }) => theme.motion.fastMs}ms ${({ theme }) => theme.motion.ease};
 
   ${below.mobile} {
     grid-template-columns: 1fr;
@@ -566,6 +572,22 @@ function Home() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Issue #151 — refetching tracks "filter changed, results pending"
+  // separate from `loading` (which is also true on the initial mount).
+  // The grid stays mounted with reduced opacity during a refetch so we
+  // don't flash an empty page or jump scroll while waiting.
+  const [refetching, setRefetching] = useState(false);
+  const filterBarRef = useRef(null);
+  // Used to detect "this fetch was triggered by a filter change" so
+  // we only scroll the user back to the filter bar in that case (not
+  // on Load More or the initial mount).
+  const filterChangeRef = useRef(false);
+  // Mirror of tests.length used inside fetchTests so we can decide
+  // refetching-vs-initial-load WITHOUT putting tests.length in the
+  // useCallback deps (which would cause the post-Load-More state
+  // change to recreate fetchTests, fire the dependent useEffect, and
+  // refetch from scratch in a loop).
+  const testsLenRef = useRef(0);
   const [error, setError] = useState(null);
   const [nextCursor, setNextCursor] = useState(null);
   const [total, setTotal] = useState(0);
@@ -592,6 +614,19 @@ function Home() {
 
   useEffect(() => { setUnitFilter(''); }, [levelFilter, setUnitFilter]);
 
+  // Issue #151 — flag the *next* fetch as filter-driven so the post-
+  // fetch handler knows to scroll back to the filter bar (vs. leaving
+  // the user mid-page after a list shrink).  We skip the initial mount
+  // by using a ref guard so the first paint doesn't scroll-jump.
+  const isInitialFilterMount = useRef(true);
+  useEffect(() => {
+    if (isInitialFilterMount.current) {
+      isInitialFilterMount.current = false;
+      return;
+    }
+    filterChangeRef.current = true;
+  }, [levelFilter, unitFilter, contentTypeFilter]);
+
   const levelOptions = curriculum.map(c => ({ value: c.level, label: c.levelName.ko }));
   const unitOptions = levelFilter
     ? (curriculum.find(c => c.level === levelFilter)?.units || [])
@@ -609,6 +644,12 @@ function Home() {
     try {
       if (append) {
         setLoadingMore(true);
+      } else if (testsLenRef.current > 0) {
+        // Issue #151 — we already have tests on screen; this is a
+        // filter-change refetch.  Don't toggle `loading` (which would
+        // show the global initial-load spinner / empty state) — use
+        // `refetching` so the grid stays mounted with dimmed opacity.
+        setRefetching(true);
       } else {
         setLoading(true);
       }
@@ -632,6 +673,14 @@ function Home() {
       }
       setNextCursor(res.data.nextCursor);
       setTotal(res.data.total);
+
+      // Issue #151 — after a filter-change refetch, scroll the filter
+      // bar into view so the user sees fresh results from the top
+      // instead of being stripped mid-page when the list shrinks.
+      if (!append && filterChangeRef.current && filterBarRef.current) {
+        filterBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      filterChangeRef.current = false;
     } catch (err) {
       if (err.name === 'CanceledError') return;
       console.error(err);
@@ -639,8 +688,14 @@ function Home() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setRefetching(false);
     }
   }, [levelFilter, unitFilter, contentTypeFilter]);
+
+  // Keep the ref in sync with the live tests.length so fetchTests can
+  // read it without depending on tests as a useCallback dependency
+  // (which would cause an infinite refetch loop on Load More).
+  useEffect(() => { testsLenRef.current = tests.length; }, [tests.length]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -872,7 +927,7 @@ function Home() {
         </EndlessCard>
       </DashboardSection>
 
-      <FilterBar>
+      <FilterBar ref={filterBarRef}>
         <SectionTitle style={{ margin: 0 }}>{t('home.allTests')}</SectionTitle>
         <FilterGroup>
           <FilterDropdown
@@ -912,7 +967,7 @@ function Home() {
       )}
 
       {tests.length > 0 && (
-        <Grid>
+        <Grid $refetching={refetching} aria-busy={refetching || undefined}>
           {tests.map(test => (
             <UiCard key={test._id} as={Link} to={`/test/${test._id}`} $interactive $padding="lg" style={{ position: 'relative', textDecoration: 'none', color: 'inherit' }}>
               {isAdmin && (
