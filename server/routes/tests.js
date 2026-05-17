@@ -295,15 +295,26 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
             return { ...ans, isCorrect };
         });
 
+        // Issue #132 — clamp client-supplied timings into [0, 4h] and
+        // reject Endless mode (it has its own /api/tests/endless route).
+        // Without these, a doctored client can post negative or zero
+        // duration "perfect runs" that poison stats / future leaderboards.
+        const MAX_SECONDS = 4 * 3600;
+        const clampSecs = (v) => Math.max(0, Math.min(Number(v) || 0, MAX_SECONDS));
+        const mode = req.body.mode || 'Test';
+        if (mode === 'Endless') {
+            return res.status(400).json({ message: 'Endless mode attempts must use /api/tests/endless' });
+        }
+
         const attempt = new Attempt({
             testId: req.params.id,
             userId: req.user._id,
             score: serverScore,
             totalQuestions: test.questions.length,
-            duration: req.body.duration,
-            overdueTime: req.body.overdueTime || 0,
+            duration: clampSecs(req.body.duration),
+            overdueTime: clampSecs(req.body.overdueTime),
             answers: verifiedAnswers,
-            mode: req.body.mode || 'Test'
+            mode,
         });
         const savedAttempt = await attempt.save();
         res.status(201).json(savedAttempt);
