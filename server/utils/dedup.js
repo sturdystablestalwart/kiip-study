@@ -12,7 +12,16 @@ function normalize(text) {
     .trim();
 }
 
-function findDuplicates(questions, threshold = 0.75) {
+// Issue #134 — yield to the event loop every N outer iterations so the
+// O(n²) compareTwoStrings sweep doesn't stall other requests for
+// multi-second windows.  setImmediate gives microtask-flush time +
+// network IO a fair shot between batches.
+const YIELD_EVERY = 50;
+function yieldEventLoop() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+async function findDuplicates(questions, threshold = 0.75) {
   const clusters = [];
   const seen = new Set();
 
@@ -25,9 +34,6 @@ function findDuplicates(questions, threshold = 0.75) {
 
     for (let j = i + 1; j < questions.length; j++) {
       if (seen.has(j)) continue;
-      // Skip comparing a question with itself (same test, same index).
-      // Only gate on testId when both questions have one defined — otherwise we
-      // would skip every comparison in tests/data without testId fields.
       if (questions[i].testId != null
           && questions[j].testId != null
           && String(questions[i].testId) === String(questions[j].testId)
@@ -41,7 +47,6 @@ function findDuplicates(questions, threshold = 0.75) {
 
     if (cluster.length > 1) {
       seen.add(i);
-      // Compute max similarity score across all pairs in the cluster
       const maxScore = Math.max(...cluster.slice(1).map(c => c.score || 0));
       clusters.push({
         similarity: maxScore / 100,
@@ -52,6 +57,10 @@ function findDuplicates(questions, threshold = 0.75) {
           questionIndex: c.question.questionIndex,
         })),
       });
+    }
+
+    if ((i + 1) % YIELD_EVERY === 0) {
+      await yieldEventLoop();
     }
   }
 
