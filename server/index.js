@@ -22,10 +22,22 @@ const logger = require('./utils/logger');
 // minimal env (or none) don't refuse to start.
 if (process.env.NODE_ENV !== 'test') {
     const { requireEnv, warnEnv } = require('./utils/envValidate');
-    requireEnv(['MONGO_URI', 'JWT_SECRET', 'CLIENT_URL']);
+    requireEnv(['MONGO_URI', 'JWT_SECRET', 'CLIENT_URL', 'ADMIN_EMAIL']);
     warnEnv(['GEMINI_API_KEY'], 'AI test generation + curriculum classification');
     warnEnv(['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'], 'magic-link auth');
     warnEnv(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'], 'Google OAuth sign-in');
+
+    // Issue #38 — ADMIN_EMAIL governs who gets the isAdmin flag on
+    // first login.  A typo (or missing var) means every login is
+    // non-admin and the operator silently has no admin UI.  Validate
+    // the format at boot.
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adminEmail)) {
+        throw new Error(
+            `ADMIN_EMAIL is set to "${adminEmail}" which is not a valid ` +
+            'email address.  Admin login would silently fail. Refusing to start.'
+        );
+    }
 }
 
 const app = express();
