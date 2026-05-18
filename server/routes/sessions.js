@@ -30,6 +30,18 @@ const sessionStartLimiter = mkLimiter({ windowMs: 10 * 60 * 1000, max: 20 });
 const sessionSaveLimiter = mkLimiter({ windowMs: 60 * 1000, max: 30 });
 const sessionSubmitLimiter = mkLimiter({ windowMs: 60 * 1000, max: 10 });
 
+// Issue #435 — short-circuit on invalid ObjectId in req.params so a
+// drive-by scanner hitting /api/sessions/foobar returns 404 instead of
+// triggering a CastError → 500 + stack-trace in the prod log.
+function requireObjectId(paramName = 'id') {
+    return (req, res, next) => {
+        if (!mongoose.Types.ObjectId.isValid(req.params[paramName])) {
+            return res.status(404).json({ message: 'Active session not found' });
+        }
+        next();
+    };
+}
+
 // Issue #60 — bounds for the PATCH /:id auto-save body.  Without these
 // a doctored client can ship remainingTime: -999999 or currentQuestion:
 // 999999 which poisons the auto-save state and can leak into the
@@ -113,7 +125,7 @@ router.post('/start', requireAuth, sessionStartLimiter, async (req, res) => {
 // prompt). When `expectedLastSavedAt` is absent we fall back to last-writer-
 // wins for back-compat with pre-fix clients. The response always includes
 // the new `lastSavedAt` so updated clients can roll it forward.
-router.patch('/:id', requireAuth, sessionSaveLimiter, patchSessionValidators, async (req, res) => {
+router.patch('/:id', requireAuth, requireObjectId(), sessionSaveLimiter, patchSessionValidators, async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -171,7 +183,7 @@ router.patch('/:id', requireAuth, sessionSaveLimiter, patchSessionValidators, as
 
 // POST /api/sessions/:id/submit
 // Score answers server-side, create an Attempt, mark session completed
-router.post('/:id/submit', requireAuth, sessionSubmitLimiter, async (req, res) => {
+router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter, async (req, res) => {
     try {
         const session = await TestSession.findOne({
             _id: req.params.id,
@@ -262,7 +274,7 @@ router.get('/active', requireAuth, async (req, res) => {
 
 // DELETE /api/sessions/:id
 // Abandon an active session (soft delete — set status to 'abandoned')
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireObjectId(), async (req, res) => {
     try {
         const session = await TestSession.findOneAndUpdate(
             {
