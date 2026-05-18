@@ -8,8 +8,22 @@ const loadSecret = require('../utils/loadSecret');
 // the existing boot-time guard test still matches.
 const JWT_SECRET = loadSecret('JWT_SECRET');
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
-if (process.env.NODE_ENV === 'production' && JWT_SECRET.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters in production');
+// Issue #485 — enforce the 32-char floor in EVERY non-test
+// environment (was production-only). A 4-char dev secret is
+// brute-forceable in seconds; a dev environment exposed on the LAN
+// is an impersonation vector. Production keeps the hard throw;
+// development emits a structured warn so the message is unmissable
+// without breaking local boot. NODE_ENV=test still uses short
+// secrets in CI / unit specs (no warn).
+if (JWT_SECRET.length < 32) {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET must be at least 32 characters in production');
+    } else if (process.env.NODE_ENV !== 'test') {
+        logger.warn(
+            { len: JWT_SECRET.length, minLen: 32 },
+            'JWT_SECRET is shorter than 32 chars — strengthen before exposing this environment'
+        );
+    }
 }
 
 const requireAuth = async (req, res, next) => {
