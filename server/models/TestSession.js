@@ -33,6 +33,19 @@ const TestSessionSchema = new mongoose.Schema({
 // Find an active (or any) session for a specific user + test combination
 TestSessionSchema.index({ userId: 1, testId: 1, status: 1 });
 
+// Issue #453 — partial unique index: at most one ACTIVE session per
+// (userId, testId). Closes the race in POST /api/sessions/start where
+// two parallel requests both pass the findOne check and create
+// duplicate active sessions. Completed/abandoned sessions are exempt
+// (they accumulate; the partial TTL below handles them).
+TestSessionSchema.index(
+    { userId: 1, testId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { status: 'active' },
+    },
+);
+
 // List resumable sessions on the user dashboard, sorted most-recently-saved first
 TestSessionSchema.index({ userId: 1, status: 1, lastSavedAt: -1 });
 

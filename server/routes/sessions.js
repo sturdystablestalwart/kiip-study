@@ -98,17 +98,34 @@ router.post('/start', requireAuth, sessionStartLimiter, async (req, res) => {
             return res.status(404).json({ message: 'Test not found' });
         }
 
-        const session = await TestSession.create({
-            userId: req.user._id,
-            testId,
-            mode,
-            answers: [],
-            currentQuestion: 0,
-            remainingTime: 30 * 60, // 30 minutes in seconds
-            status: 'active'
-        });
-
-        return res.status(201).json({ session, resumed: false });
+        // Issue #453 — partial unique index on (userId, testId) where
+        // status='active' converts a concurrent-create race into a
+        // duplicate-key error. Catch it and serve the already-created
+        // session as a resume instead.
+        try {
+            const session = await TestSession.create({
+                userId: req.user._id,
+                testId,
+                mode,
+                answers: [],
+                currentQuestion: 0,
+                remainingTime: 30 * 60, // 30 minutes in seconds
+                status: 'active'
+            });
+            return res.status(201).json({ session, resumed: false });
+        } catch (createErr) {
+            if (createErr && createErr.code === 11000) {
+                const concurrent = await TestSession.findOne({
+                    userId: req.user._id,
+                    testId,
+                    status: 'active'
+                });
+                if (concurrent) {
+                    return res.status(200).json({ session: concurrent, resumed: true });
+                }
+            }
+            throw createErr;
+        }
     } catch (err) {
         res.status(500).json({ message: safeError('Failed to start session', err) });
     }
