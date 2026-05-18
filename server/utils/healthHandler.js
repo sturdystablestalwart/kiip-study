@@ -66,4 +66,24 @@ function healthHandler(req, res) {
     });
 }
 
+// Issue #454 — public lean handler that doesn't leak missing-env-var
+// names, build SHA, or uptime to unauthenticated scanners. The HTTP
+// status code carries the actual signal for monitors / `wget --spider`.
+function healthHandlerPublic(req, res) {
+    const mongoState = mongoose.connection.readyState;
+    const mongoOk = mongoState === 1;
+    const env = envCheck();
+    const ok = mongoOk && env.ok;
+
+    if (!ok) {
+        logger.warn(
+            { mongoState, mongo: STATE_NAMES[mongoState] || 'unknown', envMissing: env.missing },
+            'health check degraded'
+        );
+    }
+
+    res.status(ok ? 200 : 503).json({ ok });
+}
+
 module.exports = healthHandler;
+module.exports.healthHandlerPublic = healthHandlerPublic;
