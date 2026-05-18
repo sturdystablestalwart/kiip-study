@@ -12,8 +12,29 @@ const destination = process.env.NODE_ENV === 'production'
 
 const base = pino({
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+    // Issue #490 — wildcard paths so nested password/token/jwt fields
+    // (e.g. req.body.password, req.query.token, details.jwt) are
+    // redacted too. Bare 'password' only matched root; the *.path /
+    // *.*.path forms reach into the most common nesting depths used
+    // by route handlers + supertest payloads. pino's fast-redact
+    // engine supports wildcards via the * segment.
     redact: {
-        paths: ['req.headers.cookie', 'req.headers.authorization', 'password', 'token', 'jwt'],
+        paths: [
+            'req.headers.cookie',
+            'req.headers.authorization',
+            'password',
+            'token',
+            'jwt',
+            '*.password',
+            '*.*.password',
+            '*.*.*.password',
+            '*.token',
+            '*.*.token',
+            '*.*.*.token',
+            '*.jwt',
+            '*.*.jwt',
+            '*.*.*.jwt',
+        ],
         remove: true,
     },
 }, destination);
