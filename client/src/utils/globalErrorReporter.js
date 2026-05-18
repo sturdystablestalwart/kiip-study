@@ -55,6 +55,26 @@ function report(payload) {
     } catch { /* never let telemetry mask the real error */ }
 }
 
+// Issue #459 — public helper for handled-error sites (page-level
+// try/catch blocks that previously fell back to console.error). PROD
+// posts to the same /api/_log/client-error endpoint (with source:
+// 'handled' so the server can distinguish in pino); dev mirrors to
+// console so the browser devtools experience is preserved.
+export function reportClientError(message, err, extra) {
+    if (typeof window === 'undefined') return;
+    const isProd = !!(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PROD);
+    if (isProd) {
+        report({
+            source: 'handled',
+            message: `${message}: ${err?.message ?? err ?? ''}`,
+            stack: err?.stack ?? '',
+            extra,
+        });
+    } else if (typeof console !== 'undefined') {
+        console.error(message, err, extra);
+    }
+}
+
 export function installGlobalErrorReporter() {
     if (typeof window === 'undefined' || !import.meta.env.PROD) return;
 

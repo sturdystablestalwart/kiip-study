@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import { useAuth } from '../context/AuthContext';
 import { below } from '../theme/breakpoints';
 import QuestionRenderer from '../components/QuestionRenderer';
@@ -516,7 +517,7 @@ function TestTaker() {
       } catch (err) {
         if (err.name === 'CanceledError') return;
         if (!err.response || err.response.status >= 500) {
-          console.error(err);
+          reportClientError('TestTaker initial fetch failed', err);
         }
         setError(err.response?.status === 404 ? t('common.notFound', 'Test not found') : t('common.error'));
       }
@@ -561,7 +562,7 @@ function TestTaker() {
         }
       } catch (sessionErr) {
         if (sessionErr.name === 'CanceledError') return;
-        console.error('Failed to start/resume session', sessionErr);
+        reportClientError('Failed to start/resume session', sessionErr);
       }
     };
     startSession();
@@ -642,7 +643,7 @@ function TestTaker() {
         autoSaveFailCount.current++;
         setSaveStatus('error');
         if (autoSaveFailCount.current >= 3) {
-          console.warn('Auto-save failed repeatedly — progress may not be saved');
+          reportClientError('Auto-save failed repeatedly — progress may not be saved', null);
         }
       });
     }, 30000);
@@ -808,7 +809,7 @@ function TestTaker() {
           setAttemptId(submitRes.data.attempt._id);
         }
       } catch (err) {
-        console.error('Failed to submit session', err);
+        reportClientError('Failed to submit session', err);
       }
     } else {
       // No active session — save to localStorage for anonymous, or direct API for authenticated
@@ -826,7 +827,7 @@ function TestTaker() {
         try {
           await api.post(`/api/tests/${id}/attempt`, attemptData);
         } catch (err) {
-          console.error('Failed to save attempt', err);
+          reportClientError('Failed to save attempt', err);
         }
       } else {
         saveAnonymousAttempt(attemptData);
@@ -870,7 +871,7 @@ function TestTaker() {
         setFlagNote('');
       }, 1500);
     } catch (err) {
-      console.error('Flag submit error:', err);
+      reportClientError('Flag submit error', err);
     } finally {
       setFlagSubmitting(false);
     }

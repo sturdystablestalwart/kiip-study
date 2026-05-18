@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import Modal from './ui/Modal';
 
 const PaletteContent = styled.div`
@@ -115,7 +116,7 @@ function CommandPalette({ onClose }) {
         setActiveIndex(0);
       } catch (err) {
         if (err.name === 'CanceledError') return;
-        console.error('Command palette search error:', err);
+        reportClientError('Command palette search error', err);
         setResults([]);
       } finally {
         setLoading(false);

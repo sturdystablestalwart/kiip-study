@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import useRequireAdmin from '../hooks/useRequireAdmin';
 import FilterDropdown from '../components/FilterDropdown';
 import { below } from '../theme/breakpoints';
@@ -168,7 +169,7 @@ function AdminDuplicates() {
       const res = await api.get(`/api/admin/duplicates?${params}`);
       setClusters(res.data.clusters || []);
     } catch (err) {
-      console.error('Scan failed:', err);
+      reportClientError('Scan failed', err);
       setError(err.response?.data?.message || err.message || t('common.error'));
     } finally {
       setScanning(false);

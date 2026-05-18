@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import { Button, Card } from '../components/ui';
 
 /* ───────── Styled Components ───────── */
@@ -370,7 +371,7 @@ function CreateTest() {
         });
         uploadedUrls.push(res.data.imageUrl);
       } catch (err) {
-        console.error('Upload failed', err);
+        reportClientError('Upload failed', err);
         failures.push(
           err.response?.data?.message ||
           t('create.uploadFailed', { name: file.name })
@@ -442,7 +443,7 @@ function CreateTest() {
         setRetryCountdown(retryAfter);
         setError(null);
       } else {
-        console.error(err);
+        reportClientError('CreateTest unhandled error', err);
         setError(err.response?.data?.message || t('create.generateError'));
       }
     } finally {
