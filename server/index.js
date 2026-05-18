@@ -10,7 +10,7 @@ const passport = require('passport');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 dotenv.config();
 
@@ -93,9 +93,12 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 // Global rate limiter — 100 requests per minute per IP (relaxed in test mode)
+// Issue #441 — IPv6-safe key (parallel to #23). Without ipKeyGenerator
+// the bucket is per /128 address, so an IPv6 attacker gets 2^64 buckets.
 app.use('/api', rateLimit({
     windowMs: 60 * 1000,
     max: process.env.NODE_ENV === 'test' ? 10000 : 100,
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
