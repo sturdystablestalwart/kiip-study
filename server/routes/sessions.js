@@ -253,7 +253,18 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
 
         const score = scoredAnswers.filter(a => a.isCorrect).length;
         const total = test.questions.length;
-        const duration = 30 * 60 - session.remainingTime; // seconds spent
+
+        // Issue #463 — compute duration from server-side wall clock
+        // (session.startedAt → now). The client-driven remainingTime
+        // can be frozen by a doctored client that never PATCHes,
+        // making the test appear to take 0 seconds. Wall-clock is
+        // server-authoritative; clamped via clampSecs (#132) so a
+        // multi-day-resumed session can't poison stats either.
+        const startedAtMs = session.startedAt
+            ? new Date(session.startedAt).getTime()
+            : Date.now();
+        const wallClockSeconds = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
+        const duration = clampSecs(wallClockSeconds);
 
         // Issue #433 — clamp client-supplied overdueTime into [0, 14400]
         // (mirrors #132 fix on POST /api/tests/:id/attempt). Without
