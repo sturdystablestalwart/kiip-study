@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Issue #452 — AnswerSchema has no _id consumer; scoring iterates by
+// questionIndex. Disable auto-_id to save ~12 bytes per answer.
 const AnswerSchema = new mongoose.Schema({
     questionIndex: { type: Number, required: true },
     selectedOptions: [{ type: Number }],
@@ -8,7 +10,7 @@ const AnswerSchema = new mongoose.Schema({
     blankAnswers: [{ type: String }],
     isCorrect: { type: Boolean, required: true },
     isOverdue: { type: Boolean, default: false }
-});
+}, { _id: false });
 
 const AttemptSchema = new mongoose.Schema({
     testId: { type: mongoose.Schema.Types.ObjectId, ref: 'Test' },

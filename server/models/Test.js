@@ -1,9 +1,16 @@
 const mongoose = require('mongoose');
 
+// Issue #452 — subdocs have no _id consumer; scoring + admin editor
+// address by array index. Disable auto-_id to save ~12 bytes per
+// subdoc (a 20-question × 4-option test was ~960 wasted bytes).
 const OptionSchema = new mongoose.Schema({
     text: { type: String, required: true },
     isCorrect: { type: Boolean, required: true, default: false }
-});
+}, { _id: false });
+
+const BlankSchema = new mongoose.Schema({
+    acceptedAnswers: [{ type: String }]
+}, { _id: false });
 
 const QuestionSchema = new mongoose.Schema({
     text: { type: String, required: true },
@@ -13,10 +20,8 @@ const QuestionSchema = new mongoose.Schema({
     type: { type: String, enum: ['mcq-single', 'mcq-multiple', 'short-answer', 'ordering', 'fill-in-the-blank'], default: 'mcq-single' },
     acceptedAnswers: [{ type: String }],
     correctOrder: [{ type: Number }],
-    blanks: [{
-        acceptedAnswers: [{ type: String }]
-    }]
-});
+    blanks: [BlankSchema]
+}, { _id: false });
 
 const TestSchema = new mongoose.Schema({
     title: { type: String, required: true },
