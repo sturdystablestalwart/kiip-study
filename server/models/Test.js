@@ -45,6 +45,13 @@ const TestSchema = new mongoose.Schema({
     shareId: { type: String, unique: true, sparse: true },
     questions: [QuestionSchema],
     createdAt: { type: Date, default: Date.now }
+}, {
+    // Issue #492 — mongoose auto-maintains updatedAt on every save() /
+    // findOneAndUpdate() / etc. so the admin Audit UI (#137 / #450) can
+    // show 'last edited' independently of createdAt. We keep our own
+    // createdAt (default: Date.now) for back-compat with pre-existing
+    // documents that don't have mongoose's underscored variant.
+    timestamps: { createdAt: false, updatedAt: true },
 });
 
 // Full-text search index on title, description
