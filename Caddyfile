@@ -86,6 +86,9 @@
 		Permissions-Policy "camera=(), microphone=(), payment=(), geolocation=(), interest-cohort=()"
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-site"
+		# Issue #497 — strip `Server: Caddy` so an attacker can't
+		# fingerprint the proxy version. Free reconnaissance otherwise.
+		-Server
 		# Issue #467 — CSP on every non-API response. Helmet's CSP only
 		# fires on Express-handled paths (/api, /uploads); the SPA shell
 		# is served from nginx → Caddy and was previously CSP-free.
