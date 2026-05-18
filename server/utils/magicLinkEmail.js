@@ -32,6 +32,21 @@ const bodies = {
     `,
 };
 
+// Issue #475 — plain-text alternative for multi-part MIME. Improves
+// spam-filter score on transactional mail and makes the link usable
+// in mutt / text-only mail.app / server-side aggregators / screen
+// readers that don't render HTML.
+const textBodies = {
+    en: (link) => `Sign in to KIIP Study\n\nThis link expires in 10 minutes:\n${link}\n\nIf you didn't request this, you can safely ignore this email.`,
+    ko: (link) => `KIIP Study 로그인\n\n이 링크는 10분 후 만료됩니다:\n${link}\n\n요청하지 않은 경우 무시하세요.`,
+    ru: (link) => `Вход в KIIP Study\n\nСсылка действительна 10 минут:\n${link}\n\nЕсли вы не запрашивали — проигнорируйте письмо.`,
+    es: (link) => `Iniciar sesión en KIIP Study\n\nEste enlace caduca en 10 minutos:\n${link}\n\nSi no solicitaste este, ignora este correo.`,
+};
+
+function buildText(lang, link) {
+    return (textBodies[lang] || textBodies.en)(link);
+}
+
 function buildHtml(lang, link) {
     const body = (bodies[lang] || bodies.en)(link);
     return `<!DOCTYPE html>
@@ -88,6 +103,9 @@ async function sendMagicLinkEmail(email, token, lang = 'en') {
         from: loadSecret('SMTP_FROM') || loadSecret('SMTP_USER'),
         to: email,
         subject,
+        // Issue #475 — multi-part MIME (text + html) for deliverability
+        // and plain-text-client compatibility.
+        text: buildText(lang, link),
         html,
     });
 }
