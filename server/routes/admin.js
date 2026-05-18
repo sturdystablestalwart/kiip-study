@@ -15,6 +15,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { parseTextWithLLM } = require('../utils/llm');
 const geminiQuota = require('../utils/geminiQuota');
 const { classifyTest } = require('../utils/classifier');
+const { validateQuestionShape } = require('../utils/llmValidator');
 const sharp = require('sharp');
 const AuditLog = require('../models/AuditLog');
 const safeError = require('../utils/safeError');
@@ -341,6 +342,15 @@ router.post('/tests/import', async (req, res) => {
             return res.status(400).json({ message: 'Title and at least one question are required' });
         }
 
+        // Issue #438 — shape-validate each question so a hand-crafted
+        // import file can't re-introduce previously-fixed render/score
+        // bugs that the LLM path's validator already catches.
+        try {
+            questions.forEach((q, idx) => validateQuestionShape(q, `question[${idx + 1}]`));
+        } catch (validationErr) {
+            return res.status(400).json({ message: validationErr.message });
+        }
+
         const newTest = new Test({
             title,
             description,
@@ -375,6 +385,19 @@ router.patch('/tests/:id', async (req, res) => {
         }
 
         const { title, description, level, unitNumber, section, contentType, source, questions } = req.body;
+
+        // Issue #438 — shape-validate every question before overwriting.
+        if (questions !== undefined) {
+            if (!Array.isArray(questions)) {
+                return res.status(400).json({ message: 'questions must be an array' });
+            }
+            try {
+                questions.forEach((q, idx) => validateQuestionShape(q, `question[${idx + 1}]`));
+            } catch (validationErr) {
+                return res.status(400).json({ message: validationErr.message });
+            }
+        }
+
         if (title !== undefined) test.title = title;
         if (description !== undefined) test.description = description;
         if (contentType !== undefined) test.contentType = contentType;
