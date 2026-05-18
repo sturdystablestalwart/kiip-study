@@ -17,6 +17,7 @@
 const express   = require('express');
 const PDFDocument = require('pdfkit');
 const mongoose  = require('mongoose');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const router  = express.Router();
 const safeError = require('../utils/safeError');
@@ -35,6 +36,24 @@ const MAX_QUESTIONS_PER_PDF = 500;
 
 // All PDF routes require a logged-in user
 router.use(requireAuth);
+
+// Issue #477 — PDF generation is CPU-bound (pdfkit + sharp). The
+// global /api limiter (100/min/IP) doesn't stop one logged-in user
+// from monopolising the worker pool by looping requests. Per-user
+// 6/min limit is plenty for the legitimate 'print a few practice
+// PDFs' flow. No-op in NODE_ENV=test so existing pdf-smoke tests
+// don't 429.
+const pdfLimiter = process.env.NODE_ENV === 'test'
+    ? (req, _res, next) => next()
+    : rateLimit({
+        windowMs: 60 * 1000,
+        max: 6,
+        keyGenerator: (req) => req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip),
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { message: 'Too many PDF downloads. Please wait a minute before retrying.' },
+    });
+router.use(pdfLimiter);
 
 // ---------------------------------------------------------------------------
 // Helper: build a sanitised filename from a string
