@@ -23,4 +23,14 @@ AuditLogSchema.index({ userId: 1, createdAt: -1 });
 // Look up all audit entries for a given document (test or flag)
 AuditLogSchema.index({ targetType: 1, targetId: 1 });
 
+// Issue #486 — 1-year TTL on AuditLog so the collection doesn't grow
+// unbounded over the project's lifetime. 1y is the typical
+// compliance-friendly default for non-financial audit trails. Mongo
+// reaps expired docs in a background job (~60s sweep cadence) so
+// queries against active rows are unaffected.
+AuditLogSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: 365 * 24 * 3600 }
+);
+
 module.exports = mongoose.model('AuditLog', AuditLogSchema);
