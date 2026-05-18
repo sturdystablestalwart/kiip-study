@@ -18,11 +18,38 @@
  * See issue #122.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useTranslation } from 'react-i18next';
 import Button from './ui/Button';
+
+// Issue #500 — persist a "dismissed-until" timestamp so closing the
+// prompt suppresses re-shows for SUPPRESS_HOURS instead of immediately
+// re-firing on the next SW poll / navigation.
+const DISMISS_KEY = 'kiip-sw-update-dismissed-until';
+const SUPPRESS_HOURS = 4;
+
+function isDismissed() {
+    if (typeof localStorage === 'undefined') return false;
+    try {
+        const raw = localStorage.getItem(DISMISS_KEY);
+        if (!raw) return false;
+        const until = Number(raw);
+        if (!Number.isFinite(until)) return false;
+        return Date.now() < until;
+    } catch {
+        return false;
+    }
+}
+
+function markDismissed() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+        const until = Date.now() + SUPPRESS_HOURS * 3600 * 1000;
+        localStorage.setItem(DISMISS_KEY, String(until));
+    } catch { /* quota / blocked storage — no-op */ }
+}
 
 const Banner = styled.div`
   position: fixed;
@@ -67,8 +94,13 @@ export default function UpdatePrompt({ useRegisterSWImpl = useRegisterSW } = {})
     updateServiceWorker,
   } = useRegisterSWImpl();
 
-  // Happy path: nothing to show.
-  if (!needRefresh && !offlineReady) return null;
+  // Issue #500 — read the persisted dismiss-until ONCE on mount.
+  // Re-checking on every render would risk the prompt re-showing
+  // mid-render after some other tab cleared the key.
+  const [suppressed, setSuppressed] = useState(() => isDismissed());
+
+  // Happy path: nothing to show (or dismissed inside the window).
+  if ((!needRefresh && !offlineReady) || suppressed) return null;
 
   const handleReload = () => {
     updateServiceWorker(true);
@@ -77,6 +109,12 @@ export default function UpdatePrompt({ useRegisterSWImpl = useRegisterSW } = {})
   const handleClose = () => {
     setOfflineReady(false);
     setNeedRefresh(false);
+    // Issue #500 — only suppress re-shows for the genuine update path.
+    // offlineReady-only banner is informational; not re-shown anyway.
+    if (needRefresh) {
+        markDismissed();
+        setSuppressed(true);
+    }
   };
 
   const message = needRefresh

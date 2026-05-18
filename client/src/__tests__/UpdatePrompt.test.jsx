@@ -120,4 +120,38 @@ describe('UpdatePrompt (#122): new-version banner', () => {
     // Container should be empty (no DOM noise).
     expect(container.firstChild).toBeNull();
   });
+
+  // Issue #500 — dismiss-until persistence so closing the prompt
+  // doesn't re-show on the next render after the SW re-polls.
+  it('(#500) writes a dismissed-until timestamp on close, and skips re-render while still dismissed', () => {
+    localStorage.removeItem('kiip-sw-update-dismissed-until');
+
+    mockRegister.needRefresh = true;
+    const { unmount } = renderPrompt();
+    fireEvent.click(screen.getByRole('button', { name: /close|dismiss/i }));
+    expect(localStorage.getItem('kiip-sw-update-dismissed-until')).toBeTruthy();
+    unmount();
+
+    // Second render: SW still reports needRefresh = true, but the
+    // persisted dismissed-until window is in the future, so the
+    // banner must NOT show.
+    mockRegister.needRefresh = true;
+    const { container } = renderPrompt();
+    expect(container.firstChild).toBeNull();
+
+    localStorage.removeItem('kiip-sw-update-dismissed-until');
+  });
+
+  it('(#500) does NOT mark dismissed when the close fires on an offlineReady-only banner', () => {
+    localStorage.removeItem('kiip-sw-update-dismissed-until');
+    mockRegister.needRefresh = false;
+    mockRegister.offlineReady = true;
+
+    renderPrompt();
+    fireEvent.click(screen.getByRole('button', { name: /close|dismiss/i }));
+
+    // No dismissal key should be persisted — offlineReady banners are
+    // informational and don't re-show anyway.
+    expect(localStorage.getItem('kiip-sw-update-dismissed-until')).toBeNull();
+  });
 });
