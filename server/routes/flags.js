@@ -52,7 +52,7 @@ router.post('/', requireAuth, flagSubmitLimiter, async (req, res) => {
                 note: note?.slice(0, 500) || '',
                 status: 'open'
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true, context: 'query' }
         );
 
         res.status(201).json(flag);

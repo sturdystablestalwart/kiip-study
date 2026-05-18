@@ -526,7 +526,7 @@ router.patch('/flags/:id', async (req, res) => {
         const flag = await Flag.findByIdAndUpdate(
             req.params.id,
             { status, resolution: resolution || '' },
-            { new: true }
+            { new: true, runValidators: true, context: 'query' }
         );
 
         if (!flag) {
