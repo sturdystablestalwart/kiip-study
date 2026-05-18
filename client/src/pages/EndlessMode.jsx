@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import { useAuth } from '../context/AuthContext';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { scoreQuestion } from '../utils/scoring';
@@ -310,7 +311,7 @@ function EndlessMode() {
       if (err.response?.status === 401) {
         setAuthError(true);
       } else {
-        console.error('Failed to fetch endless batch:', err);
+        reportClientError('Failed to fetch endless batch', err);
       }
       setQuestions([]);
     } finally {
@@ -347,7 +348,7 @@ function EndlessMode() {
         sourceQuestions
       });
     } catch (err) {
-      console.error('Failed to save endless attempt:', err);
+      reportClientError('Failed to save endless attempt', err);
     }
   }, [questions, answers]);
 

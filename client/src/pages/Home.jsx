@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import useUrlState from '../hooks/useUrlState';
 import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
@@ -683,7 +684,7 @@ function Home() {
       filterChangeRef.current = false;
     } catch (err) {
       if (err.name === 'CanceledError') return;
-      console.error(err);
+      reportClientError('Home unhandled error', err);
       setError(err.response?.data?.message || err.message || 'Could not reach the server');
     } finally {
       setLoading(false);
@@ -720,7 +721,7 @@ function Home() {
       if (recent.status === 'fulfilled') {
         setRecentAttempts(recent.value.data);
       } else if (!isCanceled(recent.reason)) {
-        console.error('Failed to fetch recent attempts:', recent.reason);
+        reportClientError('Failed to fetch recent attempts', recent.reason);
       }
 
       if (sessions.status === 'fulfilled') {
@@ -733,13 +734,13 @@ function Home() {
           )
         );
       } else if (!isCanceled(sessions.reason)) {
-        console.error('Failed to fetch active sessions:', sessions.reason);
+        reportClientError('Failed to fetch active sessions', sessions.reason);
       }
 
       if (diff.status === 'fulfilled') {
         setDifficultyMap(diff.value.data.difficulty || {});
       } else if (!isCanceled(diff.reason)) {
-        console.error('Failed to fetch difficulty data:', diff.reason);
+        reportClientError('Failed to fetch difficulty data', diff.reason);
       }
     });
 
@@ -765,7 +766,7 @@ function Home() {
       setTests(prev => prev.filter(t => t._id !== deleteModal.testId));
       setDeleteModal({ show: false, testId: null, testTitle: '' });
     } catch (err) {
-      console.error(err);
+      reportClientError('Home action failed', err);
       showToast(t('home.deleteFailed'), 'error');
     } finally {
       setDeleting(false);
@@ -799,7 +800,7 @@ function Home() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       // 401 is already handled by the axios singleton (#171 toast).
-      console.error('PDF download failed:', err);
+      reportClientError('PDF download failed', err);
     }
   };
 
@@ -813,7 +814,7 @@ function Home() {
       setCopiedTestId(testId);
       setTimeout(() => setCopiedTestId(null), 2000);
     } catch (err) {
-      console.error('Failed to share test:', err);
+      reportClientError('Failed to share test', err);
     } finally {
       setSharingTestId(null);
     }

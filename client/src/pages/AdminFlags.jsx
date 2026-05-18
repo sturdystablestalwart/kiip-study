@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import useRequireAdmin from '../hooks/useRequireAdmin';
 import { formatDate } from '../utils/dateFormat';
 import { Button, Card } from '../components/ui';
@@ -187,7 +188,7 @@ function AdminFlags() {
             setNextCursor(res.data.nextCursor);
         } catch (err) {
             if (err.name === 'CanceledError') return;
-            console.error('Failed to fetch flags:', err);
+            reportClientError('Failed to fetch flags', err);
         } finally {
             setLoading(false);
         }
@@ -209,7 +210,7 @@ function AdminFlags() {
             });
             setFlags(prev => prev.filter(f => f._id !== flagId));
         } catch (err) {
-            console.error('Failed to update flag:', err);
+            reportClientError('Failed to update flag', err);
         } finally {
             setUpdating(prev => ({ ...prev, [flagId]: false }));
         }

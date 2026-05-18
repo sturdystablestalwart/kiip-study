@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import useRequireAdmin from '../hooks/useRequireAdmin';
 import { below } from '../theme/breakpoints';
 import { Button, Card, Badge } from '../components/ui';
@@ -269,7 +270,7 @@ function AdminBulkImport() {
       });
       setPreview(res.data);
     } catch (err) {
-      console.error('Upload failed:', err);
+      reportClientError('Upload failed', err);
       setError(err.response?.data?.message || err.message || t('common.error'));
     } finally {
       setUploading(false);
@@ -329,7 +330,7 @@ function AdminBulkImport() {
       setResult(res.data);
       setPreview(null);
     } catch (err) {
-      console.error('Confirm failed:', err);
+      reportClientError('Confirm failed', err);
       setError(err.response?.data?.message || err.message || t('common.error'));
     } finally {
       setConfirming(false);

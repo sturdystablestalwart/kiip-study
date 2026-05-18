@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import { reportClientError } from '../utils/globalErrorReporter';
 import { formatDate } from '../utils/dateFormat';
 import { useAuth } from '../context/AuthContext';
 import { below } from '../theme/breakpoints';
@@ -305,7 +306,7 @@ function Dashboard() {
         setTypeStats(typesRes.data);
       } catch (err) {
         if (err.name === 'CanceledError') return;
-        console.error('Failed to load stats', err);
+        reportClientError('Failed to load stats', err);
       } finally {
         setLoading(false);
       }
@@ -328,7 +329,7 @@ function Dashboard() {
       setAttemptsNextCursor(res.data.nextCursor);
     } catch (err) {
       if (err.name === 'CanceledError') return;
-      console.error('Failed to fetch attempts', err);
+      reportClientError('Failed to fetch attempts', err);
     } finally {
       setLoadingAttempts(false);
     }
