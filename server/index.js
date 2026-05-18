@@ -101,7 +101,17 @@ app.use(morgan(
         : ':method :safeurl :status :response-time ms reqId=:reqid',
 ));
 app.use(express.json({ limit: '1mb' }));
-app.use(cookieParser());
+// Issue #487 — sign the JWT cookie at the cookie-parser layer too.
+// The JWT HS256 sig is already the canonical integrity boundary; the
+// cookie-parser HMAC adds a second independent check (different
+// algorithm, can use a different secret) so cookie tampering is
+// rejected one layer earlier than verify(). Falls back to JWT_SECRET
+// if COOKIE_SECRET is not configured, so single-secret deployments
+// still work; ops can rotate to a distinct COOKIE_SECRET for
+// genuine defense-in-depth.
+const loadSecretBoot = require('./utils/loadSecret');
+const COOKIE_SECRET = loadSecretBoot('COOKIE_SECRET') || loadSecretBoot('JWT_SECRET');
+app.use(cookieParser(COOKIE_SECRET));
 app.use(passport.initialize());
 
 // Global rate limiter — 100 requests per minute per IP (relaxed in test mode)

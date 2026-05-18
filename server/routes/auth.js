@@ -50,10 +50,14 @@ const authLimiter = rateLimit({
     message: { message: 'Too many auth requests, please try again later.' },
 });
 
+// Issue #487 — `signed: true` so cookie-parser HMACs the value with
+// COOKIE_SECRET (falls back to JWT_SECRET at boot, see index.js).
+// Reads happen via req.signedCookies.jwt instead of req.cookies.jwt.
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
+    signed: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/'
 };
@@ -201,7 +205,10 @@ router.get('/google/callback', authLimiter, (req, res, next) => {
 // GET /api/auth/me — returns null instead of 401 to avoid browser console errors
 router.get('/me', async (req, res) => {
     try {
-        const token = req.cookies?.jwt;
+        // Issue #487 — signedCookies first (HMAC-verified), fall back
+        // to legacy req.cookies for grace-period during the rollout
+        // (old cookies set before this PR landed are unsigned).
+        const token = req.signedCookies?.jwt || req.cookies?.jwt;
         if (!token) return res.json(null);
 
         const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'kiip-study', audience: 'kiip-study-api', algorithms: ['HS256'] });

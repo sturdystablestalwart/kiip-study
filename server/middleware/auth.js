@@ -28,7 +28,12 @@ if (JWT_SECRET.length < 32) {
 
 const requireAuth = async (req, res, next) => {
     try {
-        const token = req.cookies?.jwt;
+        // Issue #487 — signedCookies first (HMAC-verified by
+        // cookie-parser with COOKIE_SECRET), fall back to plain
+        // req.cookies for grace-period rollout (cookies set before
+        // this change landed are unsigned). The JWT signature
+        // verification below is the canonical integrity gate either way.
+        const token = req.signedCookies?.jwt || req.cookies?.jwt;
         if (!token) {
             return res.status(401).json({ message: 'Authentication required' });
         }
