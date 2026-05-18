@@ -6,9 +6,18 @@
 const MONGO_OPS = new Set(['$gt','$gte','$lt','$lte','$ne','$in','$nin','$regex','$exists','$or','$and','$not','$nor','$where','$elemMatch','$size','$type','$mod','$text','$all']);
 const PROTO_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-function sanitize(obj) {
+// Issue #444 — bound recursion depth so adversary-supplied deeply-
+// nested JSON (~125k levels fits in our 1MB body cap; Node's default
+// call stack is ~10k frames) can't trigger a RangeError DoS. Beyond
+// MAX_DEPTH the sub-tree is treated as opaque (no recursion); the
+// suspicious payload is still rejected later by the route's
+// express-validator gates.
+const MAX_DEPTH = 32;
+
+function sanitize(obj, depth = 0) {
+    if (depth > MAX_DEPTH) return obj;
     if (!obj || typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) { obj.forEach(sanitize); return obj; }
+    if (Array.isArray(obj)) { obj.forEach((v) => sanitize(v, depth + 1)); return obj; }
     for (const key of Object.keys(obj)) {
         if (PROTO_KEYS.has(key) || key.startsWith('$') || key.includes('.')) {
             delete obj[key];
@@ -20,7 +29,7 @@ function sanitize(obj) {
                     continue;
                 }
             }
-            sanitize(obj[key]);
+            sanitize(obj[key], depth + 1);
         }
     }
     return obj;
