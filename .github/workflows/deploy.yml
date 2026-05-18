@@ -149,3 +149,38 @@ jobs:
               echo "Rollback restored a healthy deploy" && exit 1   # exit 1 so CI run shows failed deploy
             fi
             echo "ROLLBACK ALSO UNHEALTHY — manual intervention required" && exit 2
+
+      # Issue #472 — deploy outcome notification so a tag-triggered
+      # deploy that fired while the operator was away is visible
+      # without having to scrub the Actions dashboard. Discord webhook
+      # is zero-setup; replace the URL with a Slack incoming-webhook
+      # if Slack is the preferred channel (same payload shape via
+      # generic curl). When DEPLOY_WEBHOOK_URL is unset the step
+      # no-ops silently so private-fork rebuilds don't spam someone
+      # else's channel.
+      - name: Notify deploy outcome
+        if: always()
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ -z "${DEPLOY_WEBHOOK_URL:-}" ]; then
+            echo "DEPLOY_WEBHOOK_URL secret not set — skipping notification"
+            exit 0
+          fi
+          if [ "${JOB_STATUS}" = "success" ]; then
+            COLOR=3066993   # green
+            EMOJI="✅"
+          else
+            COLOR=15158332  # red
+            EMOJI="❌"
+          fi
+          RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
+          PAYLOAD=$(printf '{"embeds":[{"title":"%s Deploy %s","description":"ref: `%s`\\nsha: `%s`\\n[run logs](%s)","color":%s}]}' \
+            "$EMOJI" "$JOB_STATUS" "$REF_NAME" "$SHA" "$RUN_URL" "$COLOR")
+          curl -sS -H "Content-Type: application/json" \
+            -d "$PAYLOAD" "$DEPLOY_WEBHOOK_URL" || echo "WARN: webhook post failed; not blocking job"
