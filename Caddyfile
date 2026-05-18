@@ -81,5 +81,12 @@
 		Permissions-Policy "camera=(), microphone=(), payment=(), geolocation=(), interest-cohort=()"
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-site"
+		# Issue #467 — CSP on every non-API response. Helmet's CSP only
+		# fires on Express-handled paths (/api, /uploads); the SPA shell
+		# is served from nginx → Caddy and was previously CSP-free.
+		# Directives mirror helmet's server-side config for consistency.
+		# frame-ancestors / base-uri / form-action close the
+		# clickjacking + base-tag + form-hijack defense-in-depth gaps.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 	}
 }
