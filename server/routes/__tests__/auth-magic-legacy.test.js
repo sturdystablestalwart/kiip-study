@@ -60,7 +60,9 @@ const authRouter = require('../auth.js');
 function buildApp() {
     const app = express();
     app.use(express.json());
-    app.use(cookieParser());
+    // Issue #487 — cookie-parser now needs a secret because the
+    // auth route sets `signed: true` on the jwt cookie.
+    app.use(cookieParser('test-cookie-secret'));
     app.use('/api/auth', authRouter);
     return app;
 }
