@@ -146,9 +146,18 @@ app.use('/api', createOriginCheck(ALLOWED_ORIGINS));
 
 // Serve uploaded images (auth-gated for documents/temp, public for images)
 const { requireAuth } = require('./middleware/auth');
+// Issue #446 — `immutable` per RFC 8246 contracts the URL's bytes
+// never change; pair it with an effectively-infinite TTL (1y). Upload
+// filenames in this app are content-derived (admin.js: img-{ts}-{rand}
+// -opt.webp), so new content gets a new filename — they really are
+// immutable in practice.
 app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images'), {
-    maxAge: '7d',
+    maxAge: '365d',
     immutable: true,
+    setHeaders: (res) => {
+        // Re-affirm explicit value (defense against express.static defaults drift).
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    },
 }));
 app.use('/uploads/documents', requireAuth, express.static(path.join(__dirname, 'uploads/documents')));
 // Do NOT serve /uploads/temp — temp files are internal only
