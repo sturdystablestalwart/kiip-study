@@ -185,11 +185,16 @@ router.patch('/:id', requireAuth, requireObjectId(), sessionSaveLimiter, patchSe
 // Score answers server-side, create an Attempt, mark session completed
 router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter, async (req, res) => {
     try {
-        const session = await TestSession.findOne({
-            _id: req.params.id,
-            userId: req.user._id,
-            status: 'active'
-        });
+        // Issue #436 — atomically claim the session (active → completed)
+        // before doing any other work. Two concurrent submits race on this
+        // single-document update; only the winner proceeds, the loser
+        // finds no active session and returns 404. Prevents duplicate
+        // Attempt rows from double-submits.
+        const session = await TestSession.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id, status: 'active' },
+            { $set: { status: 'completed' } },
+            { new: false }
+        );
 
         if (!session) {
             return res.status(404).json({ message: 'Active session not found' });
@@ -197,6 +202,11 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
 
         const test = await Test.findById(session.testId);
         if (!test) {
+            // Roll the claim back so the user can retry once test exists.
+            await TestSession.findOneAndUpdate(
+                { _id: req.params.id, userId: req.user._id, status: 'completed' },
+                { $set: { status: 'active' } }
+            ).catch(() => {});
             return res.status(404).json({ message: 'Test not found' });
         }
 
@@ -230,20 +240,28 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
         // Issue #433 — clamp client-supplied overdueTime into [0, 14400]
         // (mirrors #132 fix on POST /api/tests/:id/attempt). Without
         // this a doctored client can post 9_999_999_999 and poison stats.
-        const attempt = await Attempt.create({
-            testId: session.testId,
-            userId: req.user._id,
-            score,
-            totalQuestions: total,
-            duration,
-            overdueTime: clampSecs(req.body.overdueTime),
-            answers: scoredAnswers,
-            mode: session.mode
-        });
-
-        // Mark the session as completed
-        session.status = 'completed';
-        await session.save();
+        // Issue #436 — if Attempt.create throws after the session was
+        // claimed, roll the session back to 'active' so the user can retry
+        // without an orphaned 'completed' session.
+        let attempt;
+        try {
+            attempt = await Attempt.create({
+                testId: session.testId,
+                userId: req.user._id,
+                score,
+                totalQuestions: total,
+                duration,
+                overdueTime: clampSecs(req.body.overdueTime),
+                answers: scoredAnswers,
+                mode: session.mode
+            });
+        } catch (createErr) {
+            await TestSession.findOneAndUpdate(
+                { _id: req.params.id, userId: req.user._id, status: 'completed' },
+                { $set: { status: 'active' } }
+            ).catch(() => {});
+            throw createErr;
+        }
 
         const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
