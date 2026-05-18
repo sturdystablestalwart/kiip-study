@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const { body, validationResult } = require('express-validator');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -26,9 +26,14 @@ const logger = require('../utils/logger');
 router.use(requireAuth, requireAdmin);
 
 // --- Rate Limiting (10 requests per minute) ---
+// Issue #449 — key by req.user._id (admins are pinned post-auth) so
+// multiple admins on the same NAT IP don't share the 10/min bucket,
+// and IPv6 host-bit rotation can't evade. Falls back to ipKeyGenerator()
+// if req.user is somehow missing (#441 IPv6-safe fallback).
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
+    keyGenerator: (req) => req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip),
     message: { message: 'Too many requests. Please wait a minute before trying again.' },
     standardHeaders: true,
     legacyHeaders: false
