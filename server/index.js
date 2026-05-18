@@ -133,6 +133,15 @@ app.use(helmet({
       connectSrc: ["'self'", "https://accounts.google.com"],
     },
   },
+  // Issue #484 — match the Caddy edge HSTS so /api/* responses don't
+  // silently downgrade to helmet's 180-day default. Caddy ships
+  // 1y + includeSubDomains + preload (#468); replicate here so an
+  // /api/* response is identical regardless of which layer wrote it.
+  hsts: {
+    maxAge: 31536000,           // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
