@@ -8,6 +8,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const pdf = require('pdf-parse');
@@ -39,6 +40,24 @@ const apiLimiter = rateLimit({
     legacyHeaders: false
 });
 
+// Issue #451 — derive extension from validated mimetype (never trust
+// client-supplied filename suffix) and use crypto.randomUUID() for the
+// collision-resistant, unguessable filename body.
+const MIME_TO_EXT_DOC = {
+    'application/pdf': '.pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'text/plain': '.txt',
+    'text/markdown': '.md',
+};
+const MIME_TO_EXT_IMG = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/bmp': '.bmp',
+    'image/tiff': '.tiff',
+};
+
 // --- Multer Setup for Documents ---
 const documentStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -49,9 +68,8 @@ const documentStorage = multer.diskStorage({
         cb(null, dir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, 'doc-' + uniqueSuffix + ext);
+        const ext = MIME_TO_EXT_DOC[file.mimetype] || '.bin';
+        cb(null, 'doc-' + crypto.randomUUID() + ext);
     }
 });
 
@@ -88,9 +106,9 @@ const imageStorage = multer.diskStorage({
         cb(null, dir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, 'img-' + uniqueSuffix + ext);
+        // Issue #451 — see MIME_TO_EXT_DOC; uuid + mime-derived ext.
+        const ext = MIME_TO_EXT_IMG[file.mimetype] || '.bin';
+        cb(null, 'img-' + crypto.randomUUID() + ext);
     }
 });
 
