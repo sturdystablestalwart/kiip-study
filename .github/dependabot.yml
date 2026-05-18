@@ -59,3 +59,18 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+
+  # Issue #494 — track base-image CVEs on the ops images too. caddy
+  # and alpine+mongo-tools have their own CVE feeds; without these
+  # entries dependabot doesn't open PRs when upstream tags advance.
+  - package-ecosystem: "docker"
+    directory: "/ops/caddy"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+
+  - package-ecosystem: "docker"
+    directory: "/ops/backup"
+    schedule:
+      interval: "weekly"
+      day: "monday"
