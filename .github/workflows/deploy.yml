@@ -124,15 +124,30 @@ jobs:
             docker compose build
             docker compose up -d
 
-            for i in $(seq 1 30); do
+            # Issue #473 — health-check window bumped to 5 minutes
+            # because a fresh-DB boot has to also: connect mongo
+            # (~5s cold), seed the KIIP curriculum (~1-3s for 6
+            # levels × 100s of units), and optionally run autoImporter
+            # over additionalContext/tests via Gemini (~3-5s per file
+            # when ENABLE_AUTO_IMPORT=true). 150s was tight on cold
+            # boots; 300s leaves comfortable headroom without losing
+            # the rollback signal.
+            HEALTH_TIMEOUT_S=300
+            HEALTH_CHECK_INTERVAL_S=5
+            HEALTH_ATTEMPTS=$((HEALTH_TIMEOUT_S / HEALTH_CHECK_INTERVAL_S))
+            for i in $(seq 1 "$HEALTH_ATTEMPTS"); do
               if curl -sf http://localhost:80/health; then
-                echo "Deploy successful"
+                echo "Deploy successful (health check passed at attempt ${i}/${HEALTH_ATTEMPTS}, ~$((i * HEALTH_CHECK_INTERVAL_S))s)"
                 exit 0
               fi
-              sleep 5
+              # Echo periodic status so a slow boot doesn't look frozen in CI logs.
+              if [ $((i % 6)) -eq 0 ]; then
+                echo "Health probe still failing at attempt ${i}/${HEALTH_ATTEMPTS} (~$((i * HEALTH_CHECK_INTERVAL_S))s elapsed)"
+              fi
+              sleep "$HEALTH_CHECK_INTERVAL_S"
             done
 
-            echo "Health check failed after 150s — rolling back"
+            echo "Health check failed after ${HEALTH_TIMEOUT_S}s — rolling back"
             # If we snapshotted images, re-tag them as the names compose
             # would build to and bounce containers.  Compose still has
             # the up-to-date images cached locally; pulling isn't needed.
