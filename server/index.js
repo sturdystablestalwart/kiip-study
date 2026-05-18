@@ -47,7 +47,19 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Middleware
-app.use(compression());
+// Issue #443 — defense-in-depth against BREACH-style adaptive
+// compression attacks: skip /api/auth/* (responses can carry
+// token-shaped material reflected from attacker-influenced query
+// params or redirect fragments). For non-auth paths, fall through to
+// the default compression.filter so pre-compressed assets aren't
+// re-compressed.
+app.use(compression({
+    filter: (req, res) => {
+        if (req.path && req.path.startsWith('/api/auth/')) return false;
+        return compression.filter(req, res);
+    },
+    threshold: 1024,
+}));
 const ALLOWED_ORIGINS = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
 app.use(cors({
     origin: (origin, cb) => {
