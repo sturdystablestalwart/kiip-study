@@ -213,11 +213,21 @@ if (!fs.existsSync(documentsDir)) {
 //     hides connection leaks; 20 is enough headroom.
 //   - family=4 keeps the resolver on IPv4 so `localhost` doesn't ping
 //     ::1 first on dual-stacks where mongo only binds v4.
+// Issue #495 — autoIndex false in production: avoid an
+// ensureIndex pass on every restart (locks writes on large
+// collections). Indexes are created at first dev boot and
+// remain afterwards; for new indexes ship a one-shot migration.
+// retryWrites/retryReads explicit so a URI without the flag
+// (legacy ops, copy-paste from older docs) still retries on
+// transient network errors.
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kiip_test_app', {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 30000,
     maxPoolSize: 20,
     family: 4,
+    autoIndex: process.env.NODE_ENV !== 'production',
+    retryWrites: true,
+    retryReads: true,
 })
 .then(async () => {
     console.log('MongoDB Connected');
