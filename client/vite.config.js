@@ -83,7 +83,14 @@ export default defineConfig({
     // private methods, optional chaining, nullish coalescing).
     target: 'es2022',
     cssTarget: 'chrome91',
-    sourcemap: false,
+    // Issue #478 — 'hidden' emits sourcemaps to dist/assets/*.map but
+    // does NOT append the sourceMappingURL footer to the JS files, so
+    // browsers don't auto-fetch them. They're available for the ops
+    // engineer to download from the build artifact / image and run a
+    // minified stack from /api/_log/client-error (#185/#31) through
+    // stacktrace resolution. Caddy / nginx do not serve unknown .map
+    // files by default so the sourcemap stays internal.
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         manualChunks(id) {
