@@ -20,6 +20,11 @@ function extractJSONBody(raw) {
 }
 
 const MAX_ATTEMPTS = 2;
+// Issue #456 — per-Gemini-call timeout. The SDK has no default
+// timeout, so a hung remote connection holds the admin request open
+// until the OS socket times out (~minutes). 30s is well above any
+// real Gemini round-trip on this prompt size.
+const LLM_CALL_TIMEOUT_MS = 30_000;
 
 // Issue #455 — sanitize the delimiter so a malicious PDF containing
 // `</USER_DOCUMENT>` can't escape its block and inject instructions.
@@ -89,7 +94,17 @@ ${userDoc}
     let lastErr;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
-            const result = await model.generateContent(prompt);
+            // Issue #456 — bound the call with Promise.race so a stuck
+            // Gemini connection can't hold the request open until the
+            // OS times out the socket. The SDK's signal: option is
+            // version-fragile, so we use the portable manual timer.
+            const result = await Promise.race([
+                model.generateContent(prompt),
+                new Promise((_, reject) => setTimeout(
+                    () => reject(new Error(`LLM_TIMEOUT: Gemini call exceeded ${LLM_CALL_TIMEOUT_MS}ms`)),
+                    LLM_CALL_TIMEOUT_MS
+                )),
+            ]);
             const response = await result.response;
             const jsonText = extractJSONBody(response.text());
             const parsed = JSON.parse(jsonText);
