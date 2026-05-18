@@ -1,13 +1,31 @@
 const pino = require('pino');
 const { AsyncLocalStorage } = require('async_hooks');
 
+// Issue #489 — async destination for production so a burst (e.g.
+// autoImporter 100 entries / file × N files, or Gemini 429 spurt)
+// doesn't block the event loop on every log call. Dev + test keep
+// the synchronous default for deterministic / interactive output.
+// destination(1) = stdout, sync.
+const destination = process.env.NODE_ENV === 'production'
+    ? pino.destination({ sync: false })
+    : pino.destination(1);
+
 const base = pino({
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
     redact: {
         paths: ['req.headers.cookie', 'req.headers.authorization', 'password', 'token', 'jwt'],
         remove: true,
     },
-});
+}, destination);
+
+// Issue #489 — flush the async buffer on graceful shutdown so the
+// last lines aren't dropped at SIGTERM. No-op on sync destinations.
+function flushLogger() {
+    try { base.flush(); } catch { /* no-op on sync destination */ }
+}
+process.on('SIGTERM', flushLogger);
+process.on('SIGINT', flushLogger);
+process.on('beforeExit', flushLogger);
 
 // Issue #33 — request-scoped context.  A single API call may emit
 // log lines from auth middleware, sanitizer, route handler, mongoose
