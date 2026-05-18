@@ -830,7 +830,13 @@ function TestTaker() {
           reportClientError('Failed to save attempt', err);
         }
       } else {
-        saveAnonymousAttempt(attemptData);
+        // Issue #462 — saveAnonymousAttempt now returns { ok, reason };
+        // surface a non-fatal toast so the user knows their pre-login
+        // attempt didn't persist (Safari Private quota=0, etc.).
+        const result = saveAnonymousAttempt(attemptData);
+        if (!result.ok) {
+          reportClientError(`Anonymous attempt could not be saved locally (${result.reason})`, null);
+        }
       }
     }
   };
