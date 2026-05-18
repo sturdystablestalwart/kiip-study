@@ -20,6 +20,9 @@ const isTest = process.env.NODE_ENV === 'test';
 const magicLinkLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: isTest ? 10000 : 15,
+    // Issue #441 — IPv6-safe key (parallel to #23). Without ipKeyGenerator,
+    // an IPv6 attacker controls a /64 prefix and gets 2^64 buckets.
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
@@ -40,6 +43,8 @@ const magicLinkEmailLimiter = rateLimit({
 const authLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 20,
+    // Issue #441 — IPv6-safe key (parallel to #23).
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many auth requests, please try again later.' },
