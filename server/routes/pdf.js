@@ -112,6 +112,13 @@ router.get('/test/:id', async (req, res) => {
             return res.status(400).json({ message: 'variant must be "blank" or "answerKey"' });
         }
 
+        // Issue #476 — restrict answer-key variant to admins. The PDF
+        // route was a parallel exfiltration channel that bypassed the
+        // /api/tests/:id projection guard from closed #108/#107.
+        if (variant === 'answerKey' && !req.user?.isAdmin) {
+            return res.status(403).json({ message: 'Admin access required for answer-key variant' });
+        }
+
         const test = await Test.findById(id).lean();
         if (!test) {
             return res.status(404).json({ message: 'Test not found' });
