@@ -362,6 +362,9 @@ const shutdown = (signal) => {
     logger.info({ signal }, 'Shutdown signal received, closing gracefully');
     const forced = setTimeout(() => {
         logger.error({ signal }, 'Forced shutdown after 30s timeout');
+        // Issue #502 — flush pino before exit so the last lines aren't
+        // lost when the async transport's buffer hasn't drained.
+        try { logger.flush(); } catch { /* sync transport / no-op */ }
         process.exit(1);
     }, 30000);
     server.close(async () => {
@@ -373,6 +376,10 @@ const shutdown = (signal) => {
             logger.error({ err }, 'Failed to close mongo connection during shutdown');
         }
         clearTimeout(forced);
+        // Issue #502 — flush pino before exit; async transport buffer
+        // can otherwise drop the last "Shutdown signal received…" /
+        // "Failed to close mongo…" lines on container restart.
+        try { logger.flush(); } catch { /* sync transport / no-op */ }
         process.exit(mongoFailed ? 2 : 0);
     });
 };
