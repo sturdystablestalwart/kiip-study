@@ -35,6 +35,8 @@ server_*.log
 # Test outputs
 test-results/
 playwright-report/
+coverage/
+**/coverage/
 test-failure.png
 *.png
 !additionalContext/**/*.png

@@ -88,13 +88,13 @@ jobs:
           JWT_SECRET: ci-test-secret-not-used-in-production-xx
 
       # Issue #53 — vitest coverage on both workspaces, threshold-gated
-      # in {client,server}/vitest.config.js.  continue-on-error so a
-      # missing @vitest/coverage-v8 doesn't fail the build.
+      # in {client,server}/vitest.config.js.
+      # Issue #470 — `@vitest/coverage-v8` is now in both workspaces'
+      # devDeps so `npm ci` guarantees the binary. Hard-fail on threshold
+      # breach instead of silently masking regressions via continue-on-error.
       - name: Coverage — client
-        continue-on-error: true
         run: cd client && npm run test:coverage
       - name: Coverage — server
-        continue-on-error: true
         env:
           NODE_ENV: test
           JWT_SECRET: ci-test-secret-not-used-in-production-xx
