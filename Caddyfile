@@ -71,7 +71,12 @@
 	}
 
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Issue #468 — add `preload` so the domain is eligible for
+		# submission to https://hstspreload.org/. Operators on a real
+		# domain can then submit once max-age + includeSubDomains have
+		# soaked. Cost on non-preload deployments is zero — browsers
+		# ignore the directive without an explicit submission.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
