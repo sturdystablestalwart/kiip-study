@@ -45,7 +45,13 @@ api.interceptors.response.use(
             window.dispatchEvent(new CustomEvent('auth:expired'));
             showToast(i18n.t('common.sessionExpired'), 'warning', 6000);
             setTimeout(() => { sessionExpiredShown = false; }, 5000);
-        } else if (!error.response && error.code !== 'ECONNABORTED') {
+        } else if (error.code === 'ECONNABORTED') {
+            // Issue #461 — surface the 15s axios timeout instead of
+            // silently dropping it. A timed-out request leaves the user
+            // staring at an apparently-saved or still-spinning state
+            // unless this toast fires.
+            showToast(i18n.t('common.requestTimeout'), 'error', 6000);
+        } else if (!error.response) {
             showToast(i18n.t('common.networkError'), 'error', 8000);
         }
 

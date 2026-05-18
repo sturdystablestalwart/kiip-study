@@ -284,6 +284,7 @@
     "errorDesc": "Ocurrió un error inesperado. Recargar la página suele solucionarlo.",
     "sessionExpired": "La sesión expiró — inicia sesión de nuevo",
     "networkError": "No se puede conectar al servidor. Revisa tu conexión.",
+    "requestTimeout": "La solicitud caducó — vuelve a intentarlo.",
     "loadMore": "Cargar más",
     "unknown": "Desconocido",
     "updateAvailable": "Hay una nueva versión disponible",
