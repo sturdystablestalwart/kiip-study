@@ -43,8 +43,10 @@ function consume(userId) {
     return { allowed: true, remaining: limit - (used + 1) };
 }
 
-// Periodic reaper — drops yesterday's keys so the map doesn't grow with
-// every distinct admin × distinct day.
+// Periodic reaper (issue #491) — drops non-today keys so the map
+// doesn't grow with every distinct admin × distinct day over a
+// multi-week uptime window. Hourly cadence; unref()d so vitest can
+// exit cleanly and skipped in NODE_ENV=test for deterministic specs.
 if (process.env.NODE_ENV !== 'test') {
     const reaper = setInterval(() => {
         const todayKey = new Date().toISOString().slice(0, 10);
