@@ -8,6 +8,7 @@ const Attempt = require('../models/Attempt');
 const Test = require('../models/Test');
 const { requireAuth } = require('../middleware/auth');
 const { scoreQuestion } = require('../utils/scoring');
+const { clampSecs } = require('../utils/clampSecs');
 const safeError = require('../utils/safeError');
 
 // Issue #36 — per-user rate limits.  The 100 req/min global limiter
@@ -214,15 +215,16 @@ router.post('/:id/submit', requireAuth, sessionSubmitLimiter, async (req, res) =
         const total = test.questions.length;
         const duration = 30 * 60 - session.remainingTime; // seconds spent
 
-        const { overdueTime } = req.body;
-
+        // Issue #433 — clamp client-supplied overdueTime into [0, 14400]
+        // (mirrors #132 fix on POST /api/tests/:id/attempt). Without
+        // this a doctored client can post 9_999_999_999 and poison stats.
         const attempt = await Attempt.create({
             testId: session.testId,
             userId: req.user._id,
             score,
             totalQuestions: total,
             duration,
-            overdueTime: overdueTime || 0,
+            overdueTime: clampSecs(req.body.overdueTime),
             answers: scoredAnswers,
             mode: session.mode
         });
