@@ -116,6 +116,15 @@ ${userDoc}
                 { err, attempt, maxAttempts: MAX_ATTEMPTS },
                 'LLM parse attempt failed'
             );
+            // Issue #457 — exponential backoff + jitter between retries
+            // so a 429 doesn't immediately burn another quota token
+            // and so transient 5xx have time to clear remotely.
+            if (attempt < MAX_ATTEMPTS) {
+                const baseMs = 500;
+                const maxMs = 5_000;
+                const delay = Math.min(maxMs, baseMs * 2 ** (attempt - 1)) + Math.floor(Math.random() * 250);
+                await new Promise((r) => setTimeout(r, delay));
+            }
         }
     }
     logger.error({ err: lastErr }, 'LLM Parsing Error');
