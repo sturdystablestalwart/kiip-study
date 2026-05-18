@@ -90,6 +90,9 @@ const logger = {
     error: wrap('error'),
     fatal: wrap('fatal'),
     child: (bindings) => base.child(bindings),
+    // Issue #502 — expose flush so the shutdown handler in
+    // server/index.js can drain the async buffer before process.exit.
+    flush: () => flushLogger(),
     requestContext,
     setContextField,
 };
