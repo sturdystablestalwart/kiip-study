@@ -304,16 +304,28 @@ const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+// Issue #445 — graceful shutdown surfaces mongo-close failures via
+// pino and uses distinct exit codes so the operator can tell from
+// container logs which path was taken:
+//   0 = clean shutdown
+//   1 = forced timeout (server.close didn't finish in 30s)
+//   2 = mongoose.connection.close() rejected
 const shutdown = (signal) => {
-    console.log(`${signal} received, shutting down gracefully...`);
+    logger.info({ signal }, 'Shutdown signal received, closing gracefully');
     const forced = setTimeout(() => {
-        console.error('Forced shutdown after 30s timeout');
+        logger.error({ signal }, 'Forced shutdown after 30s timeout');
         process.exit(1);
     }, 30000);
     server.close(async () => {
-        try { await mongoose.connection.close(); } catch (e) { /* ignore */ }
+        let mongoFailed = false;
+        try {
+            await mongoose.connection.close();
+        } catch (err) {
+            mongoFailed = true;
+            logger.error({ err }, 'Failed to close mongo connection during shutdown');
+        }
         clearTimeout(forced);
-        process.exit(0);
+        process.exit(mongoFailed ? 2 : 0);
     });
 };
 
