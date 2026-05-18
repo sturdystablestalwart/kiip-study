@@ -73,7 +73,12 @@ export default defineConfig({
     }),
   ].filter(Boolean),
   server: {
-    host: true,
+    // Issue #488 — `host: true` binds 0.0.0.0 (LAN-exposed). Gate
+    // behind VITE_HOST_ALL=true so the dev server defaults to
+    // localhost-only. Set the env var when testing on a phone over
+    // the same WiFi or sharing the dev URL with a coworker.
+    // eslint-disable-next-line no-undef
+    host: process.env.VITE_HOST_ALL === 'true',
   },
   build: {
     // Issue #207 — pin the JS+CSS target explicitly instead of relying on
