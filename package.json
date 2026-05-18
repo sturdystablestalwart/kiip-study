@@ -36,7 +36,7 @@
     "@playwright/mcp": "^0.0.75",
     "@playwright/test": "^1.60.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.2"
+    "lint-staged": "^17.0.5"
   },
   "lint-staged": {
     "client/src/**/*.{js,jsx}": [
