@@ -26,6 +26,16 @@ const MAX_ATTEMPTS = 2;
 // real Gemini round-trip on this prompt size.
 const LLM_CALL_TIMEOUT_MS = 30_000;
 
+// Issue #458 — single shared model instance per process (matches
+// closed #145 in classifier.js). Avoids allocating a throwaway
+// model + config closure on every admin generation.
+const sharedModel = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: {
+        responseMimeType: 'application/json',
+    },
+});
+
 // Issue #455 — sanitize the delimiter so a malicious PDF containing
 // `</USER_DOCUMENT>` can't escape its block and inject instructions.
 function sanitizeUserDoc(text) {
@@ -34,12 +44,9 @@ function sanitizeUserDoc(text) {
 }
 
 const parseTextWithLLM = async (text) => {
-    const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        generationConfig: {
-            responseMimeType: 'application/json',
-        },
-    });
+    // Issue #458 — use the module-level sharedModel instead of
+    // re-instantiating per call.
+    const model = sharedModel;
 
     // Issue #455 — wrap admin-uploaded text in an explicit delimited
     // block and tell the model not to follow instructions found inside
