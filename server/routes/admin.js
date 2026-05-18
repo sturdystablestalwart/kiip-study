@@ -411,6 +411,12 @@ router.patch('/tests/:id', async (req, res) => {
             }
         }
 
+        // Issue #450 — snapshot pre-update field-level values for the audit log.
+        const editableFields = ['title', 'description', 'level', 'unitNumber', 'section', 'contentType', 'source'];
+        const before = {};
+        for (const f of editableFields) before[f] = test[f];
+        const beforeQuestionsCount = Array.isArray(test.questions) ? test.questions.length : 0;
+
         if (title !== undefined) test.title = title;
         if (description !== undefined) test.description = description;
         if (contentType !== undefined) test.contentType = contentType;
@@ -421,12 +427,27 @@ router.patch('/tests/:id', async (req, res) => {
         if (questions !== undefined) test.questions = questions;
 
         const savedTest = await test.save();
+
+        // Issue #450 — record field-level diff plus questions count
+        // before/after, so a bad-faith or compromised admin can be
+        // traced (which fields changed, how the question bank moved).
+        const changedFields = [];
+        for (const f of editableFields) {
+            if (req.body[f] !== undefined && req.body[f] !== before[f]) changedFields.push(f);
+        }
+        if (questions !== undefined) changedFields.push('questions');
+
         AuditLog.create({
             userId: req.user._id,
             action: 'test.edit',
             targetType: 'Test',
             targetId: savedTest._id,
-            details: { title: savedTest.title }
+            details: {
+                title: savedTest.title,
+                changedFields,
+                questionsBefore: beforeQuestionsCount,
+                questionsAfter: Array.isArray(savedTest.questions) ? savedTest.questions.length : 0,
+            }
         }).catch(e => logger.error({ err: e }, 'Audit log failed'));
         res.json(savedTest);
     } catch (err) {
