@@ -145,7 +145,7 @@ const { createOriginCheck } = require('./middleware/originCheck');
 app.use('/api', createOriginCheck(ALLOWED_ORIGINS));
 
 // Serve uploaded images (auth-gated for documents/temp, public for images)
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireAdmin } = require('./middleware/auth');
 // Issue #446 — `immutable` per RFC 8246 contracts the URL's bytes
 // never change; pair it with an effectively-infinite TTL (1y). Upload
 // filenames in this app are content-derived (admin.js: img-{ts}-{rand}
@@ -287,9 +287,14 @@ app.get('/', (req, res) => {
 // /health gates HTTP status on mongoose.connection.readyState so external
 // monitors (StatusCake, Docker compose wget healthcheck) detect degraded
 // mongo as unhealthy instead of always-200. See utils/healthHandler.js.
+// Issue #454 — public path is now LEAN (just { ok }) so unauthenticated
+// scanners can't enumerate missing env-var names, build sha, or uptime.
+// Full verbose payload moved to /api/health/internal (admin-gated).
 const healthHandler = require('./utils/healthHandler');
-app.get('/health', healthHandler);
-app.get('/api/health', healthHandler);
+const { healthHandlerPublic } = healthHandler;
+app.get('/health', healthHandlerPublic);
+app.get('/api/health', healthHandlerPublic);
+app.get('/api/health/internal', requireAuth, requireAdmin, healthHandler);
 
 // Production error handler — hide stack traces from clients
 app.use((err, req, res, _next) => {
