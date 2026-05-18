@@ -52,10 +52,17 @@ function getTransporter() {
     const smtpUser = loadSecret('SMTP_USER');
     const smtpPass = loadSecret('SMTP_PASS');
     if (smtpUser && smtpPass) {
+        // Issue #474 — host/port/secure now configurable. Defaults
+        // preserve previous behavior (Gmail 587 STARTTLS) so operators
+        // who never set the env vars see zero change. SMTP_SECURE:
+        // 'true' for implicit TLS on 465; default 'false' means
+        // STARTTLS upgrade on 587.
+        const portRaw = process.env.SMTP_PORT;
+        const portParsed = portRaw ? parseInt(portRaw, 10) : 587;
         transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: Number.isFinite(portParsed) && portParsed > 0 ? portParsed : 587,
+            secure: process.env.SMTP_SECURE === 'true',
             auth: { user: smtpUser, pass: smtpPass },
         });
         return transporter;
