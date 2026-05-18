@@ -7,6 +7,7 @@ const Attempt = require('../models/Attempt');
 const { scoreQuestion } = require('../utils/scoring');
 const { parseTextWithLLM } = require('../utils/llm');
 const { requireAuth } = require('../middleware/auth');
+const { clampSecs } = require('../utils/clampSecs');
 const safeError = require('../utils/safeError');
 const logger = require('../utils/logger');
 const publicTestProjection = require('../utils/publicTestProjection');
@@ -27,6 +28,23 @@ const attemptMigrateLimiter = process.env.NODE_ENV === 'test'
         standardHeaders: true,
         legacyHeaders: false,
     });
+
+// Issue #434 — per-user limiter for endless attempt submission to stop
+// a logged-in attacker from filling the Attempt collection at line rate
+// (the global 100/min/IP is shared with every other call). No-op in
+// NODE_ENV=test so existing endless-mode happy-path tests don't 429.
+const endlessAttemptLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+        windowMs: 60 * 1000,
+        max: 10,
+        keyGenerator: (req) => req.user?._id ? String(req.user._id) : ipKeyGenerator(req.ip),
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+// Issue #434 — cap for endless answers payload (matches MAX_ANSWERS in sessions.js).
+const ENDLESS_MAX_ANSWERS = 200;
 
 // ============================================
 // ROUTES
@@ -251,11 +269,15 @@ router.get('/endless', requireAuth, async (req, res) => {
 });
 
 // POST save endless mode chunk attempt (server-side score verification)
-router.post('/endless/attempt', requireAuth, async (req, res) => {
+router.post('/endless/attempt', requireAuth, endlessAttemptLimiter, async (req, res) => {
     try {
-        const { answers, duration, sourceQuestions } = req.body;
-        if (!answers || !answers.length) {
+        const { answers, sourceQuestions } = req.body;
+        if (!Array.isArray(answers) || answers.length === 0) {
             return res.status(400).json({ message: 'No answers provided' });
+        }
+        // Issue #434 — cap payload size to prevent unbounded storage growth.
+        if (answers.length > ENDLESS_MAX_ANSWERS) {
+            return res.status(400).json({ message: `answers exceeds maximum of ${ENDLESS_MAX_ANSWERS}` });
         }
         if (!sourceQuestions || sourceQuestions.length !== answers.length) {
             return res.status(400).json({ message: 'sourceQuestions must match answers length' });
@@ -282,7 +304,7 @@ router.post('/endless/attempt', requireAuth, async (req, res) => {
             userId: req.user._id,
             score,
             totalQuestions: answers.length,
-            duration: duration || 0,
+            duration: clampSecs(req.body.duration),
             overdueTime: 0,
             answers: verifiedAnswers,
             sourceQuestions: sourceQuestions || [],
@@ -329,12 +351,11 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
             return { ...ans, isCorrect };
         });
 
-        // Issue #132 — clamp client-supplied timings into [0, 4h] and
-        // reject Endless mode (it has its own /api/tests/endless route).
-        // Without these, a doctored client can post negative or zero
-        // duration "perfect runs" that poison stats / future leaderboards.
-        const MAX_SECONDS = 4 * 3600;
-        const clampSecs = (v) => Math.max(0, Math.min(Number(v) || 0, MAX_SECONDS));
+        // Issue #132 — clamp client-supplied timings into [0, 4h] (via
+        // shared utils/clampSecs) and reject Endless mode (it has its
+        // own /api/tests/endless route). Without these, a doctored
+        // client can post negative or zero duration "perfect runs"
+        // that poison stats / future leaderboards.
         const mode = req.body.mode || 'Test';
         if (mode === 'Endless') {
             return res.status(400).json({ message: 'Endless mode attempts must use /api/tests/endless' });
