@@ -236,7 +236,8 @@ router.patch('/preferences', requireAuth, async (req, res) => {
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ error: 'No valid preferences provided' });
         }
-        const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+        // Issue #442 — runValidators so the User.preferences enums fire on update.
+        const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true, context: 'query' });
         res.json({ preferences: user.preferences });
     } catch (err) {
         logger.error({ err }, 'PATCH /api/auth/preferences failed');
@@ -387,7 +388,7 @@ router.get('/magic/verify', async (req, res) => {
         const record = await MagicLink.findOneAndUpdate(
             { tokenHash, used: false, expiresAt: { $gt: new Date() } },
             { $set: { used: true, usedAt: new Date() } },
-            { new: true }
+            { new: true, runValidators: true, context: 'query' }
         );
 
         const clientUrl = getClientUrl();

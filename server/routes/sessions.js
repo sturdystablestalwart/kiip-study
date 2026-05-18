@@ -152,7 +152,7 @@ router.patch('/:id', requireAuth, requireObjectId(), sessionSaveLimiter, patchSe
             filter.lastSavedAt = parsed;
         }
 
-        const session = await TestSession.findOneAndUpdate(filter, { $set: set }, { new: true });
+        const session = await TestSession.findOneAndUpdate(filter, { $set: set }, { new: true, runValidators: true, context: 'query' });
 
         if (!session) {
             // Either the session genuinely doesn't exist / is not active / not
@@ -193,7 +193,7 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
         const session = await TestSession.findOneAndUpdate(
             { _id: req.params.id, userId: req.user._id, status: 'active' },
             { $set: { status: 'completed' } },
-            { new: false }
+            { new: false, runValidators: true, context: 'query' }
         );
 
         if (!session) {
@@ -205,7 +205,8 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
             // Roll the claim back so the user can retry once test exists.
             await TestSession.findOneAndUpdate(
                 { _id: req.params.id, userId: req.user._id, status: 'completed' },
-                { $set: { status: 'active' } }
+                { $set: { status: 'active' } },
+                { runValidators: true, context: 'query' }
             ).catch(() => {});
             return res.status(404).json({ message: 'Test not found' });
         }
@@ -258,7 +259,8 @@ router.post('/:id/submit', requireAuth, requireObjectId(), sessionSubmitLimiter,
         } catch (createErr) {
             await TestSession.findOneAndUpdate(
                 { _id: req.params.id, userId: req.user._id, status: 'completed' },
-                { $set: { status: 'active' } }
+                { $set: { status: 'active' } },
+                { runValidators: true, context: 'query' }
             ).catch(() => {});
             throw createErr;
         }
@@ -301,7 +303,7 @@ router.delete('/:id', requireAuth, requireObjectId(), async (req, res) => {
                 status: 'active'
             },
             { status: 'abandoned' },
-            { new: true }
+            { new: true, runValidators: true, context: 'query' }
         );
 
         if (!session) {
