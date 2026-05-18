@@ -13,6 +13,7 @@ const logger = require('../utils/logger');
 const AuditLog = require('../models/AuditLog');
 const safeError = require('../utils/safeError');
 const loadSecret = require('../utils/loadSecret');
+const { getAdminEmail } = require('../utils/envValidate');
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -106,7 +107,7 @@ passport.use(new GoogleStrategy({
             let user = await User.findOne({ googleId: profile.id });
 
             if (!user) {
-                const isAdmin = email === process.env.ADMIN_EMAIL;
+                const isAdmin = email === getAdminEmail();
 
                 user = await User.create({
                     googleId: profile.id,
@@ -118,7 +119,7 @@ passport.use(new GoogleStrategy({
             }
 
             // Sync admin status on every login (allows revoking/granting via env var)
-            const shouldBeAdmin = email === process.env.ADMIN_EMAIL;
+            const shouldBeAdmin = email === getAdminEmail();
             if (user.isAdmin !== shouldBeAdmin) {
                 const wasAdmin = user.isAdmin;
                 user.isAdmin = shouldBeAdmin;
@@ -414,7 +415,7 @@ router.get('/magic/verify', async (req, res) => {
                 await user.save();
             }
         } else {
-            const isAdmin = record.email === process.env.ADMIN_EMAIL;
+            const isAdmin = record.email === getAdminEmail();
             user = await User.create({
                 email: record.email,
                 displayName: record.email.split('@')[0],
@@ -423,7 +424,7 @@ router.get('/magic/verify', async (req, res) => {
             });
         }
 
-        const shouldBeAdmin = record.email === process.env.ADMIN_EMAIL;
+        const shouldBeAdmin = record.email === getAdminEmail();
         if (user.isAdmin !== shouldBeAdmin) {
             const wasAdmin = user.isAdmin;
             user.isAdmin = shouldBeAdmin;

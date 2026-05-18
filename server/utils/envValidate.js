@@ -30,4 +30,12 @@ function warnEnv(keys, featureLabel) {
     }
 }
 
-module.exports = { requireEnv, warnEnv };
+// Issue #439 — return ADMIN_EMAIL trimmed + lowercased so the
+// comparison against passport's (always-lowercase) user email is not
+// silently denied by a mixed-case env value. Returns '' when unset so
+// callers can short-circuit without crashing.
+function getAdminEmail() {
+    return (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+}
+
+module.exports = { requireEnv, warnEnv, getAdminEmail };
