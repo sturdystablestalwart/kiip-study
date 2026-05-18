@@ -7,6 +7,7 @@ const Flag = require('../models/Flag');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const fsp = require('fs/promises');
 const { body, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const pdf = require('pdf-parse');
@@ -196,7 +197,7 @@ router.post('/tests/upload', imageUpload.single('image'), async (req, res) => {
             .webp({ quality: 82 })
             .toFile(optimizedPath);
 
-        try { fs.unlinkSync(originalPath); }
+        try { await fsp.unlink(originalPath); }
         catch (delErr) { logger.warn({ err: delErr, path: originalPath }, 'Failed to delete original after webp conversion'); }
 
         res.json({
@@ -232,7 +233,7 @@ router.post('/tests/upload-multiple', imageUpload.array('images', 20), async (re
                 .webp({ quality: 82 })
                 .toFile(optimizedPath);
 
-            try { fs.unlinkSync(file.path); }
+            try { await fsp.unlink(file.path); }
             catch (delErr) { logger.warn({ err: delErr, path: file.path }, 'Failed to delete original after webp conversion'); }
 
             uploadedFiles.push({
@@ -264,18 +265,18 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
 
     try {
         if (req.file.mimetype === 'application/pdf') {
-            const dataBuffer = fs.readFileSync(filePath);
+            const dataBuffer = await fsp.readFile(filePath);
             const data = await pdf(dataBuffer);
             text = data.text;
         } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             const result = await mammoth.extractRawText({ path: filePath });
             text = result.value;
         } else {
-            text = fs.readFileSync(filePath, 'utf-8');
+            text = await fsp.readFile(filePath, 'utf-8');
         }
 
         if (text.trim().length < 200) {
-            fs.unlinkSync(filePath);
+            await fsp.unlink(filePath).catch(() => {});
             return res.status(400).json({
                 message: 'Document contains less than 200 characters of text.'
             });
@@ -292,7 +293,7 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
                 { userId: req.user?._id, used: quota.used, limit: quota.limit },
                 'Gemini per-admin daily quota exceeded (file)',
             );
-            try { fs.unlinkSync(filePath); } catch { /* ignore */ }
+            await fsp.unlink(filePath).catch(() => {});
             return res.status(429).json({
                 message: `Daily AI generation limit reached (${quota.limit}). Resets at 00:00 UTC.`,
             });
@@ -301,7 +302,7 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
         const data = await parseTextWithLLM(text);
 
         if (!data.questions || data.questions.length === 0) {
-            fs.unlinkSync(filePath);
+            await fsp.unlink(filePath).catch(() => {});
             return res.status(400).json({
                 message: 'AI could not generate any questions from the document.'
             });
@@ -316,7 +317,7 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
             ...classification
         });
         const savedTest = await newTest.save();
-        fs.unlinkSync(filePath);
+        await fsp.unlink(filePath).catch(() => {});
         AuditLog.create({
             userId: req.user._id,
             action: 'test.generate-from-file',
@@ -326,8 +327,11 @@ router.post('/tests/generate-from-file', apiLimiter, documentUpload.single('file
         }).catch(e => logger.error({ err: e }, 'Audit log failed'));
         res.status(201).json(savedTest);
     } catch (err) {
-        try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); }
-        catch (delErr) { logger.error({ err: delErr }, 'File cleanup failed'); }
+        await fsp.unlink(filePath).catch((delErr) => {
+            if (delErr && delErr.code !== 'ENOENT') {
+                logger.error({ err: delErr }, 'File cleanup failed');
+            }
+        });
         logger.error({ err }, 'File Generation Error');
         res.status(400).json({ message: safeError('Failed to process document', err) });
     }
