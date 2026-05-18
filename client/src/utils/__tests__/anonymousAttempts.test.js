@@ -45,6 +45,42 @@ describe('anonymousAttempts', () => {
             expect(result[0].createdAt).toBeDefined();
         });
 
+        // Issue #462 — return { ok } instead of throwing on storage failure.
+        it('returns { ok: true } on happy path', () => {
+            const r = saveAnonymousAttempt({ testId: 'abc', score: 1, totalQuestions: 1 });
+            expect(r).toEqual({ ok: true });
+        });
+
+        it('returns { ok: false, reason: "QuotaExceededError" } on quota exhaustion (does NOT throw)', () => {
+            const original = localStorage.setItem;
+            localStorage.setItem = () => {
+                const err = new Error('quota');
+                err.name = 'QuotaExceededError';
+                throw err;
+            };
+            try {
+                const r = saveAnonymousAttempt({ testId: 'abc', score: 1, totalQuestions: 1 });
+                expect(r).toEqual({ ok: false, reason: 'QuotaExceededError' });
+            } finally {
+                localStorage.setItem = original;
+            }
+        });
+
+        it('returns { ok: false, reason: "SecurityError" } when Firefox blocks storage', () => {
+            const original = localStorage.setItem;
+            localStorage.setItem = () => {
+                const err = new Error('blocked');
+                err.name = 'SecurityError';
+                throw err;
+            };
+            try {
+                const r = saveAnonymousAttempt({ testId: 'x', score: 0, totalQuestions: 1 });
+                expect(r).toEqual({ ok: false, reason: 'SecurityError' });
+            } finally {
+                localStorage.setItem = original;
+            }
+        });
+
         it('appends to existing attempts', () => {
             saveAnonymousAttempt({ testId: '1', score: 5 });
             saveAnonymousAttempt({ testId: '2', score: 8 });
