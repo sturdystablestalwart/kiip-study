@@ -192,7 +192,10 @@ router.post('/tests/upload', imageUpload.single('image'), async (req, res) => {
     const optimizedPath = path.join(path.dirname(originalPath), optimizedFilename);
 
     try {
-        await sharp(originalPath)
+        // Issue #448 — cap decoded pixel count so a 10MB upload that
+        // decodes to 50000×50000 (decompression-bomb) cannot OOM the
+        // worker. 50M pixels ≈ 7000×7000, well above any real photo.
+        await sharp(originalPath, { limitInputPixels: 50_000_000 })
             .resize({ width: 1200, withoutEnlargement: true })
             .webp({ quality: 82 })
             .toFile(optimizedPath);
@@ -228,7 +231,8 @@ router.post('/tests/upload-multiple', imageUpload.array('images', 20), async (re
         const optimizedFilename = `${baseName}-opt.webp`;
         const optimizedPath = path.join(path.dirname(file.path), optimizedFilename);
         try {
-            await sharp(file.path)
+            // Issue #448 — see comment on /tests/upload above; same cap.
+            await sharp(file.path, { limitInputPixels: 50_000_000 })
                 .resize({ width: 1200, withoutEnlargement: true })
                 .webp({ quality: 82 })
                 .toFile(optimizedPath);
