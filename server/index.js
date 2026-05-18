@@ -64,7 +64,12 @@ const ALLOWED_ORIGINS = (process.env.CLIENT_URL || 'http://localhost:5173').spli
 app.use(cors({
     origin: (origin, cb) => {
         if (!origin || ALLOWED_ORIGINS.includes(origin)) cb(null, true);
-        else cb(new Error('CORS not allowed'));
+        // Issue #496 — cb(null, false) instead of cb(new Error(...))
+        // so the cors middleware quietly omits Access-Control-Allow-Origin.
+        // The browser refuses the response cross-origin without our
+        // global error handler producing a 500 + stack-trace pino log
+        // on every drive-by scanner probe.
+        else cb(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
