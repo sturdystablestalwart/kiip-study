@@ -277,11 +277,6 @@ if (!isTest) {
 const MAGIC_LINK_PAD_MIN_MS = 250;
 const MAGIC_LINK_PAD_JITTER_MS = 100;
 
-function approximateSendDelay() {
-    const ms = MAGIC_LINK_PAD_MIN_MS + Math.floor(Math.random() * MAGIC_LINK_PAD_JITTER_MS);
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function padToConstantTime(startedAt) {
     const elapsed = Date.now() - startedAt;
     const target = MAGIC_LINK_PAD_MIN_MS + Math.floor(Math.random() * MAGIC_LINK_PAD_JITTER_MS);
