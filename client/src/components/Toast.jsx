@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 
 const slideIn = keyframes`
@@ -164,16 +165,29 @@ export default function Toast() {
     startExit(id);
   };
 
+  const { t } = useTranslation('common');
+  const dismissLabel = t('common.dismissToast', 'Dismiss notification');
+  // Issue #483 — split error toasts (interrupting/assertive) from
+  // info/success (queued/polite) so a destructive failure announces
+  // immediately instead of queuing behind earlier speech.
+  const renderItem = (toast) => (
+    <ToastItem key={toast.id} $exiting={toast.exiting} $type={toast.type}>
+      {toast.message}
+      <DismissButton onClick={() => dismiss(toast.id)} aria-label={dismissLabel}>
+        &times;
+      </DismissButton>
+    </ToastItem>
+  );
+  const errorToasts = toasts.filter(toast => toast.type === 'error');
+  const otherToasts = toasts.filter(toast => toast.type !== 'error');
   return (
-    <ToastContainer role="status" aria-live="polite">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} $exiting={toast.exiting} $type={toast.type}>
-          {toast.message}
-          <DismissButton onClick={() => dismiss(toast.id)} aria-label="Dismiss">
-            &times;
-          </DismissButton>
-        </ToastItem>
-      ))}
-    </ToastContainer>
+    <>
+      <ToastContainer role="status" aria-live="polite">
+        {otherToasts.map(renderItem)}
+      </ToastContainer>
+      <ToastContainer role="alert" aria-live="assertive">
+        {errorToasts.map(renderItem)}
+      </ToastContainer>
+    </>
   );
 }

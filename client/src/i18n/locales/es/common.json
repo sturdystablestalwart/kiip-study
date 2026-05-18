@@ -285,6 +285,7 @@
     "sessionExpired": "La sesión expiró — inicia sesión de nuevo",
     "networkError": "No se puede conectar al servidor. Revisa tu conexión.",
     "requestTimeout": "La solicitud caducó — vuelve a intentarlo.",
+    "dismissToast": "Cerrar notificación",
     "loadMore": "Cargar más",
     "unknown": "Desconocido",
     "updateAvailable": "Hay una nueva versión disponible",

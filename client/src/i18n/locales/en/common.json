@@ -286,6 +286,7 @@
     "sessionExpired": "Session expired — please sign in again",
     "networkError": "Cannot reach the server. Check your connection.",
     "requestTimeout": "Request timed out — please retry.",
+    "dismissToast": "Dismiss notification",
     "loadMore": "Load more",
     "unknown": "Unknown",
     "saving": "Saving...",
