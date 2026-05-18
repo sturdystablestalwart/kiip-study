@@ -399,6 +399,13 @@ router.patch('/tests/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/tests/:id
+// Issue #437 — order the two writes so a partial failure does NOT lose
+// user data:
+//   1) delete the Test FIRST (if this throws, Attempts are untouched)
+//   2) write the AuditLog (so an operator can always trace what happened)
+//   3) deleteMany Attempts (if this throws, the Attempts orphan
+//      pointing at a now-missing testId — recoverable by a sweeper job,
+//      whereas pre-fix order destroyed Attempts permanently on retry).
 router.delete('/tests/:id', async (req, res) => {
     try {
         const test = await Test.findById(req.params.id);
@@ -407,15 +414,30 @@ router.delete('/tests/:id', async (req, res) => {
         }
 
         const deletedTitle = test.title;
-        await Attempt.deleteMany({ testId: req.params.id });
+
         await Test.findByIdAndDelete(req.params.id);
-        AuditLog.create({
-            userId: req.user._id,
-            action: 'test.delete',
-            targetType: 'Test',
-            targetId: req.params.id,
-            details: { title: deletedTitle }
-        }).catch(e => logger.error({ err: e }, 'Audit log failed'));
+
+        try {
+            await AuditLog.create({
+                userId: req.user._id,
+                action: 'test.delete',
+                targetType: 'Test',
+                targetId: req.params.id,
+                details: { title: deletedTitle }
+            });
+        } catch (auditErr) {
+            logger.error({ err: auditErr }, 'Audit log failed');
+        }
+
+        try {
+            await Attempt.deleteMany({ testId: req.params.id });
+        } catch (attemptsErr) {
+            logger.error({ err: attemptsErr, testId: req.params.id }, 'Attempts deleteMany failed — orphans pending sweep');
+            return res.status(200).json({
+                message: 'Test deleted; attempts cleanup pending',
+                partial: true
+            });
+        }
 
         res.json({ message: 'Test deleted successfully' });
     } catch (err) {
