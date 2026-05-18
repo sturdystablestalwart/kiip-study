@@ -73,6 +73,13 @@ const documentStorage = multer.diskStorage({
     }
 });
 
+// Issue #499 — require BOTH the mimetype allowlist AND a matching
+// extension. The OR-shape previously accepted an .exe with
+// Content-Type: application/pdf (attacker-controlled header) or a
+// binary blob renamed to payload.pdf. Mimetype is set by the
+// uploader and cannot be trusted on its own; extension is similar.
+// Requiring both narrows the attack surface materially before the
+// content-sniffing pdf-parse runs and writes to disk.
 const documentFilter = (req, file, cb) => {
     const allowedTypes = [
         'application/pdf',
@@ -83,7 +90,7 @@ const documentFilter = (req, file, cb) => {
     const allowedExtensions = ['.pdf', '.docx', '.txt', '.md'];
     const ext = path.extname(file.originalname).toLowerCase();
 
-    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
+    if (allowedTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
         cb(null, true);
     } else {
         cb(new Error('Only PDF, DOCX, TXT, and MD files are allowed'), false);
@@ -112,12 +119,18 @@ const imageStorage = multer.diskStorage({
     }
 });
 
+// Issue #499 — require BOTH a known mimetype AND a matching
+// extension. Pre-fix accepted .svg uploaded with mimetype image/png
+// (which sharp would then refuse, but the file already wrote to
+// disk). The allowed-extension list mirrors the allowed-mimetype list.
+const ALLOWED_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tif', '.tiff'];
 const imageFilter = (req, file, cb) => {
     const allowedTypes = [
         'image/jpeg', 'image/png', 'image/gif',
         'image/webp', 'image/bmp', 'image/tiff'
     ];
-    if (allowedTypes.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(file.mimetype) && ALLOWED_IMAGE_EXTS.includes(ext)) {
         cb(null, true);
     } else {
         cb(new Error('Only JPEG, PNG, GIF, WebP, BMP, and TIFF images are allowed'), false);
