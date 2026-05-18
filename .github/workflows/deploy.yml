@@ -83,6 +83,37 @@ jobs:
               fi
             done
 
+            # Issue #471 — pre-deploy mongodump so a destructive code
+            # path during this deploy is recoverable. Image rollback
+            # (above) restores the OLD containers but cannot undo
+            # writes to the persistent mongo_data volume. Keeps the
+            # last 5 pre-deploy snapshots alongside the daily backup
+            # container output.
+            DEPLOY_SHA=$(git rev-parse --short HEAD)
+            SNAP="/data/db/pre-deploy-${DEPLOY_SHA}.archive"
+            HOST_BACKUP_DIR="${DEPLOY_PATH}/backups"
+            mkdir -p "$HOST_BACKUP_DIR"
+            if docker ps --format '{{.Names}}' | grep -q '^kiip-mongo$'; then
+              echo "Snapshotting mongo to pre-deploy-${DEPLOY_SHA}.archive.gz"
+              # Auth-aware (#465). Source the running container's env
+              # so the script doesn't have to know the credentials.
+              MONGO_USER=$(docker exec kiip-mongo printenv MONGO_INITDB_ROOT_USERNAME)
+              MONGO_PASS=$(docker exec kiip-mongo printenv MONGO_INITDB_ROOT_PASSWORD)
+              docker exec kiip-mongo mongodump \
+                --uri="mongodb://${MONGO_USER}:${MONGO_PASS}@localhost:27017/kiip_test_app?authSource=admin" \
+                --archive="$SNAP" --gzip || {
+                  echo "WARNING: pre-deploy mongodump failed; proceeding anyway"
+                }
+              if docker exec kiip-mongo test -f "$SNAP"; then
+                docker cp "kiip-mongo:${SNAP}" "${HOST_BACKUP_DIR}/pre-deploy-${DEPLOY_SHA}.archive.gz"
+                docker exec kiip-mongo rm -f "$SNAP"
+                # Retain only the 5 most-recent pre-deploy snapshots.
+                ls -1t "${HOST_BACKUP_DIR}"/pre-deploy-*.archive.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+              fi
+            else
+              echo "No running kiip-mongo container — skipping pre-deploy snapshot (first deploy)."
+            fi
+
             # Issue #191 — explicitly enable BuildKit + compose CLI build
             # so docker-compose `cache_from` + BUILDKIT_INLINE_CACHE=1 args
             # actually populate / consume layer cache from the previously
