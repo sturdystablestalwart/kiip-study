@@ -285,6 +285,7 @@
     "errorDesc": "An unexpected error occurred. Reloading the page will usually fix this.",
     "sessionExpired": "Session expired — please sign in again",
     "networkError": "Cannot reach the server. Check your connection.",
+    "requestTimeout": "Request timed out — please retry.",
     "loadMore": "Load more",
     "unknown": "Unknown",
     "saving": "Saving...",
