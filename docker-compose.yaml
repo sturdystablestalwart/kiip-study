@@ -1,3 +1,14 @@
+# Issue #466 — cap json-file log size per service so a chatty container
+# (morgan access logs at 200 req/min over months → multi-GB) can't fill
+# the host disk. 10MB × 3 rotated files × compressed ≈ ~10MB on disk per
+# service at worst.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+    compress: "true"
+
 services:
   mongo:
     # SHA-pinned (#51) so `docker compose pull` is reproducible across redeploys.
@@ -5,6 +16,7 @@ services:
     container_name: kiip-mongo
     restart: unless-stopped
     init: true
+    logging: *default-logging
     # Issue #465 — enable mongo auth so a compromised sibling container
     # (sharp libpng RCE, pdf-parse RCE, caddy module RCE, ...) can't
     # pivot to the database. Root credentials are stamped on FIRST boot
@@ -44,6 +56,7 @@ services:
     container_name: kiip-server
     restart: unless-stopped
     init: true
+    logging: *default-logging
     expose:
       - "5000"
     environment:
@@ -102,6 +115,7 @@ services:
     container_name: kiip-client
     restart: unless-stopped
     init: true
+    logging: *default-logging
     expose:
       - "8080"
     depends_on:
@@ -139,6 +153,7 @@ services:
     container_name: kiip-caddy
     restart: unless-stopped
     init: true
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
@@ -183,6 +198,7 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: kiip-backup
     init: true
+    logging: *default-logging
     depends_on:
       mongo:
         condition: service_healthy
