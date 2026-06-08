@@ -12,11 +12,11 @@
 # SHA-pin both stages (issue #51).  Refresh via:
 #   docker pull caddy:2-builder-alpine && docker inspect ...
 #   docker pull caddy:2-alpine          && docker inspect ...
-FROM caddy:2-builder-alpine@sha256:52575959b1eeee9900869325a953d71e4c521ab9102dd5cce07d429ea8246b85 AS builder
+FROM caddy:2-builder-alpine@sha256:0ff10d4b83af453e5526b1c3cd7ae43396832aa8a2a55311d624f6812b33767d AS builder
 
 RUN xcaddy build \
     --with github.com/mholt/caddy-ratelimit
 
-FROM caddy:2-alpine@sha256:86deaf5e3d3408a6ccec08fbb79989783dd26e206ae10bcf78a801dc8c9ab794
+FROM caddy:2-alpine@sha256:77c07d5ebfa5be9fd6c820d2094ae662c9e7eeb9bf98346b7f639900263ee2a2
 
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
