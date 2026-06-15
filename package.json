@@ -33,8 +33,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
-    "@playwright/mcp": "^0.0.75",
-    "@playwright/test": "^1.60.0",
+    "@playwright/mcp": "^0.0.76",
+    "@playwright/test": "^1.61.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2"
   },
