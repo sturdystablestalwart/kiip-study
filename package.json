@@ -23,7 +23,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^10.0.4"
   },
   "author": "Alex Reznitskii",
   "license": "UNLICENSED",
